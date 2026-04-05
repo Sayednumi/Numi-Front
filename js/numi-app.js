@@ -52,6 +52,10 @@ window.onload = async () => {
     const saved = sessionStorage.getItem(SESSION_KEY);
     if (saved) {
         currentUser = JSON.parse(saved);
+        if (currentUser.role === 'admin') {
+            window.location.href = 'admin.html';
+            return;
+        }
         showApp(currentUser);
         await loadLessonsFromBackend();
         renderDashboard();
@@ -116,6 +120,10 @@ async function login() {
             currentUser = data.user;
             sessionStorage.setItem(SESSION_KEY, JSON.stringify(currentUser));
             err.style.display = 'none';
+            if (currentUser.role === 'admin') {
+                window.location.href = 'admin.html';
+                return;
+            }
             showApp(currentUser);
             await loadLessonsFromBackend();
             renderDashboard();

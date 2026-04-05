@@ -567,6 +567,11 @@
             <li><a href="#" data-target="question-bank" onclick="renderQuestionBank()"><i class="fas fa-database"></i> بنك الأسئلة</a></li>
             <li><a href="#" data-target="chat" onclick="renderChatHierarchy()"><i class="fas fa-comments"></i> الدردشة</a></li>
             <li><a href="#" data-target="settings"><i class="fas fa-cog"></i> الإعدادات</a></li>
+            <li style="margin-top: auto; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;">
+                <a href="#" onclick="logoutAdmin()" style="color: var(--danger);">
+                    <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
+                </a>
+            </li>
         </ul>
     </div>
 
@@ -1508,6 +1513,18 @@
     <!-- Scripts -->
     <script src="https://numi-production-7484.up.railway.app/socket.io/socket.io.js"></script>
     <script>
+        // Check authentication
+        const SESSION_KEY = 'numi_session_user';
+        const sessionSaved = sessionStorage.getItem(SESSION_KEY);
+        if (!sessionSaved || JSON.parse(sessionSaved).role !== 'admin') {
+            window.location.href = 'index.html';
+        }
+
+        function logoutAdmin() {
+            sessionStorage.removeItem(SESSION_KEY);
+            window.location.href = 'index.html';
+        }
+
         // Database connection to Node.js backend
         const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
             ? 'http://localhost:5000/api'
