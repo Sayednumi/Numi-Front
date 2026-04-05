@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Numi — منصة التعلم الذكي</title>
+    <meta name="description" content="Numi - منصة تعليمية ذكية مدعومة بالذكاء الاصطناعي لتعلم الرياضيات بطريقة تفاعلية وممتعة">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- KaTeX for Math Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body);"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://numi-production-7484.up.railway.app/socket.io/socket.io.js"></script>
+    <style>
+        @media (max-width: 768px) {
+            #view-chat-human > div { flex-direction: column !important; }
+            #view-chat-human .chat-nav-sidebar { width: 100% !important; height: auto !important; border-left: none !important; border-bottom: 1px solid var(--border) !important; }
+            #view-chat-human .chat-tab-human { padding: 10px !important; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     LOGIN / REGISTER PAGE
+     ═══════════════════════════════════════════════════════════ -->
+<div id="login-page">
+    <div class="login-card">
+        <div class="login-logo">Numi</div>
+        <h2 id="auth-title" style="font-size:22px; margin-bottom:4px;">بوابة Numi 🚀</h2>
+        <p id="auth-subtitle" class="login-subtitle">قم بتسجيل الدخول لمتابعة دراستك التفاعلية</p>
+
+        <div id="login-error"></div>
+
+        <!-- Login Fields -->
+        <div id="login-fields">
+            <div class="input-group">
+                <label><i class="fas fa-phone"></i> رقم الهاتف المحمول</label>
+                <input type="text" id="phone" placeholder="أدخل 11 رقم" maxlength="11">
+            </div>
+            <div class="input-group">
+                <label><i class="fas fa-lock"></i> كلمة المرور</label>
+                <div class="password-wrapper">
+                    <input type="password" id="student-code" placeholder="أدخل كلمة المرور">
+                    <i class="fas fa-eye password-toggle" onclick="togglePass('student-code', this)"></i>
+                </div>
+            </div>
+            <button class="btn btn-primary btn-lg w-full" id="btn-login" onclick="login()" style="width:100%; margin-top:8px;">
+                <i class="fas fa-rocket"></i> بدء التعلم الممتع
+            </button>
+            <p style="margin-top:20px; font-size:13px; color:var(--text-secondary);">
+                ليس لديك حساب؟ <a href="#" onclick="toggleAuthMode(true)" style="color:var(--primary-light); font-weight:700;">إنشاء حساب جديد</a>
+            </p>
+        </div>
+
+        <!-- Register Fields -->
+        <div id="register-fields" class="hidden" style="margin-top:20px; border-top:1px solid var(--border); padding-top:16px;">
+            <div class="input-group">
+                <label><i class="fas fa-user"></i> اسم الطالب بالكامل</label>
+                <input type="text" id="reg-name" placeholder="أدخل اسمك كما هو في كشوف المدرسة">
+            </div>
+            <div class="input-group">
+                <label><i class="fas fa-phone"></i> رقم الهاتف المحمول</label>
+                <input type="text" id="reg-phone" placeholder="أدخل رقمك (11 رقم)" maxlength="11">
+            </div>
+            <div class="input-group">
+                <label><i class="fas fa-lock"></i> كلمة المرور</label>
+                <div class="password-wrapper">
+                    <input type="password" id="reg-password" placeholder="أدخل 8 رموز أو حروف أو أرقام على الأقل">
+                    <i class="fas fa-eye password-toggle" onclick="togglePass('reg-password', this)"></i>
+                </div>
+            </div>
+            <div class="input-group">
+                <label><i class="fas fa-user-friends"></i> رقم هاتف ولي الأمر</label>
+                <input type="text" id="reg-parent-phone" placeholder="أدخل رقم ولي الأمر">
+            </div>
+            <div class="input-group">
+                <label><i class="fas fa-school"></i> اسم المدرسة</label>
+                <input type="text" id="reg-school" placeholder="أدخل اسم مدرستك">
+            </div>
+            <div class="input-group">
+                <label><i class="fas fa-graduation-cap"></i> الصف الدراسي</label>
+                <select id="reg-class" onchange="updateGroupsDropdown('reg-class','reg-group')">
+                    <option value="" disabled selected>جارِ تحميل الصفوف...</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label><i class="fas fa-users-rectangle"></i> المجموعة الدراسية</label>
+                <select id="reg-group"><option value="">اختر الصف أولاً...</option></select>
+            </div>
+            <button class="btn btn-primary btn-lg w-full" id="reg-btn" onclick="register()" style="width:100%;">
+                <i class="fas fa-user-plus"></i> سجل الآن مجاناً
+            </button>
+            <p style="margin-top:18px; font-size:13px; color:var(--text-secondary);">
+                لديك حساب بالفعل؟ <a href="#" onclick="toggleAuthMode(false)" style="color:var(--primary-light); font-weight:700;">تسجيل الدخول</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     APP SHELL
+     ═══════════════════════════════════════════════════════════ -->
+<div id="app" class="hidden">
+
+    <!-- ── Sidebar ──────────────────────────────────────────── -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="student-avatar"><span id="display-avatar">ط</span></div>
+            <div class="student-name" id="display-name">طالب Numi</div>
+            <div class="student-grade" id="display-grade">منصة Numi</div>
+            <div class="student-id-badge">ID: <span id="display-id">---</span></div>
+        </div>
+
+        <div class="sidebar-stats">
+            <div class="stat-item stat-xp">
+                <span class="stat-value" id="sidebar-xp">0</span>
+                <span class="stat-label"><i class="fas fa-star"></i> XP</span>
+            </div>
+            <div class="stat-item stat-streak">
+                <span class="stat-value" id="sidebar-streak">0</span>
+                <span class="stat-label"><i class="fas fa-fire"></i> Streak</span>
+            </div>
+            <div class="stat-item stat-badges">
+                <span class="stat-value" id="sidebar-badges">0</span>
+                <span class="stat-label"><i class="fas fa-medal"></i> Badges</span>
+            </div>
+        </div>
+
+        <ul class="menu" id="sidebar-menu">
+            <li class="active" onclick="navigateTo('dashboard', this)"><i class="fas fa-home"></i> الرئيسية</li>
+            <div class="menu-section">📚 الوحدات</div>
+            <div id="dynamic-menu-units"></div>
+            <div class="menu-section">📊 المزيد</div>
+            <li onclick="navigateTo('progress', this)"><i class="fas fa-chart-line"></i> تقدمي</li>
+            <li onclick="navigateTo('achievements', this)"><i class="fas fa-trophy"></i> الإنجازات</li>
+            <li onclick="navigateTo('chat-human', this)" id="nav-chat-human" style="display:flex; align-items:center; justify-content:space-between;">
+                <div><i class="fas fa-comments"></i> المحادثات المباشرة</div>
+                <span id="unread-human-total" class="badge badge-danger" style="display:none; font-size:10px; padding:2px 6px; margin-right:8px;">0</span>
+            </li>
+            <li onclick="navigateTo('settings', this)"><i class="fas fa-cog"></i> الإعدادات</li>
+            <li onclick="toggleChat()"><i class="fas fa-robot"></i> AskMe Pro 💡</li>
+            <li class="logout-item" onclick="logout()"><i class="fas fa-sign-out-alt"></i> تسجيل الخروج</li>
+        </ul>
+    </aside>
+
+    <!-- ── Main Content ─────────────────────────────────────── -->
+    <main class="main-content">
+        <div class="page-header">
+            <div class="flex items-center gap-12">
+                <i class="fas fa-bars mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')"></i>
+            </div>
+            <div class="flex items-center gap-12">
+                <button class="btn btn-ghost btn-sm" onclick="toggleNotifications()" id="notif-btn">
+                    <i class="fas fa-bell"></i> <span id="notif-count" class="badge badge-danger" style="font-size:10px; padding:2px 6px; display:none;">0</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ════════════ DASHBOARD VIEW ════════════ -->
+        <div id="view-dashboard" class="view">
+            <!-- Welcome Banner -->
+            <div class="welcome-banner">
+                <div class="welcome-text">
+                    <h1>مرحباً بك يا بطل! 👋</h1>
+                    <p id="welcome-msg">أكمل درساً اليوم وحافظ على سلسلة انتصاراتك 🔥</p>
+                </div>
+                <div class="welcome-emoji">🧠</div>
+            </div>
+
+            <!-- Honor Board (TOP - eye-catching) -->
+            <div id="honor-board-card" style="display:none; margin-bottom:24px; border-radius:16px; overflow:hidden;
+                 background: linear-gradient(135deg, #1a1200 0%, #2a1c00 40%, #1a1200 100%);
+                 border: 1px solid rgba(234,179,8,0.5);
+                 box-shadow: 0 0 30px rgba(234,179,8,0.15), 0 4px 20px rgba(0,0,0,0.4);
+                 position:relative;">
+
+                <!-- Shimmer overlay -->
+                <div style="position:absolute;inset:0;background:linear-gradient(105deg,transparent 40%,rgba(234,179,8,0.06) 50%,transparent 60%);pointer-events:none;"></div>
+
+                <!-- Header -->
+                <div style="display:flex; align-items:center; justify-content:space-between;
+                            padding:14px 20px; border-bottom:1px solid rgba(234,179,8,0.2);
+                            background:rgba(234,179,8,0.08);">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <span style="font-size:22px;">&#x1F3C6;</span>
+                        <div>
+                            <div style="font-weight:900; font-size:16px; color:#facc15; letter-spacing:0.5px;">لوحة الشرف</div>
+                            <div style="font-size:11px; color:rgba(250,204,21,0.6); margin-top:2px;">متميزو مجموعتك</div>
+                        </div>
+                    </div>
+                    <span id="honor-group-label" style="font-size:11px; background:rgba(234,179,8,0.15);
+                          color:#facc15; border:1px solid rgba(234,179,8,0.35); border-radius:20px;
+                          padding:4px 10px; font-weight:700;"></span>
+                </div>
+
+                <!-- Students -->
+                <div id="honor-board-students" style="display:flex; gap:0; justify-content:center;"></div>
+            </div>
+
+            <!-- Stats Row -->
+            <div class="grid grid-4 mb-24">
+                <div class="stat-card">
+                    <div class="stat-card-icon" style="background:var(--gradient-primary);"><i class="fas fa-book-open"></i></div>
+                    <div class="stat-card-info"><h3 id="dash-completed">0</h3><p>دروس مكتملة</p></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-icon" style="background:linear-gradient(135deg,#f59e0b,#f97316);"><i class="fas fa-star"></i></div>
+                    <div class="stat-card-info"><h3 id="dash-xp">0</h3><p>نقاط الخبرة XP</p></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-icon" style="background:linear-gradient(135deg,#ef4444,#f97316);"><i class="fas fa-fire"></i></div>
+                    <div class="stat-card-info"><h3 id="dash-streak">0</h3><p>أيام متتالية</p></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-icon" style="background:var(--gradient-cool);"><i class="fas fa-trophy"></i></div>
+                    <div class="stat-card-info"><h3 id="dash-badges">0</h3><p>إنجازات</p></div>
+                </div>
+            </div>
+
+            <!-- Continue Learning + AI Suggestion -->
+            <div class="grid grid-2 mb-24">
+                <div>
+                    <h3 class="fw-700 mb-8"><i class="fas fa-play-circle text-primary-color"></i> أكمل تعلمك</h3>
+                    <div class="continue-card" id="continue-card" onclick="resumeLastLesson()">
+                        <div>
+                            <div class="fs-sm text-muted mb-8">آخر درس وصلت إليه</div>
+                            <div class="fw-700" id="last-lesson-name">--</div>
+                            <div class="fs-sm text-muted mt-16" id="last-lesson-unit"></div>
+                        </div>
+                        <button class="play-btn"><i class="fas fa-play" style="margin-right:-2px;"></i></button>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="fw-700 mb-8"><i class="fas fa-robot text-primary-color"></i> AskMe Pro 💡</h3>
+                    <div class="ai-suggestion-card card-interactive" onclick="toggleChat()">
+                        <div class="ai-avatar" style="font-size:24px;">💡</div>
+                        <div style="flex:1;">
+                            <div class="fw-700 mb-8">AskMe Pro 💡</div>
+                            <div class="fs-sm text-muted" id="ai-suggestion-text">أنصحك بمراجعة آخر درس درسته لتثبيت المعلومات قبل الانتقال للدرس التالي 💡</div>
+                            <button class="btn btn-ghost btn-sm mt-16" style="border-color:var(--primary-light); color:var(--primary-light); background:rgba(124,58,237,0.1);">
+                                <i class="fas fa-comment-dots"></i> AskMe Pro 💡
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Daily Goal -->
+            <div class="card mb-24" style="border-right:4px solid var(--warning);">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-bullseye" style="color:var(--warning);"></i> هدف اليوم</h3>
+                    <span class="badge badge-warning" id="daily-goal-badge">0/1</span>
+                </div>
+                <div class="progress-bar" style="margin-bottom:8px;">
+                    <div class="progress-fill progress-fill-warning" id="daily-goal-fill" style="width:0%;"></div>
+                </div>
+                <p class="fs-sm text-muted">أكمل درساً واحداً على الأقل اليوم 🎯</p>
+            </div>
+
+            <!-- Overall Progress -->
+            <div class="card mb-24">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-chart-pie text-primary-color"></i> تقدمك في المنهج</h3>
+                    <span class="badge badge-primary" id="overall-pct">0%</span>
+                </div>
+                <div class="progress-bar mb-8">
+                    <div class="progress-fill" id="overall-fill" style="width:0%;"></div>
+                </div>
+                <p class="fs-sm text-muted" id="overall-text">أنجزت 0 دروس من أصل 0</p>
+            </div>
+
+
+            <!-- Term Browse + Units -->
+            <div class="grid grid-2 mb-24">
+                <div class="card card-interactive" onclick="filterUnitsByTerm('term1')">
+                    <h3 style="color:var(--primary-light);"><i class="fas fa-calendar-alt"></i> الترم الأول</h3>
+                    <p class="fs-sm text-muted mt-16">اضغط لعرض وحدات الترم الأول</p>
+                </div>
+                <div class="card card-interactive" onclick="filterUnitsByTerm('term2')">
+                    <h3 style="color:var(--accent-light);"><i class="fas fa-calendar-check"></i> الترم الثاني</h3>
+                    <p class="fs-sm text-muted mt-16">اضغط لعرض وحدات الترم الثاني</p>
+                </div>
+            </div>
+
+            <div id="units-section">
+                <h2 class="fw-800 mb-16" id="units-section-title">الوحدات المتاحة لك</h2>
+                <div class="grid grid-auto" id="home-units-grid"></div>
+            </div>
+        </div>
+
+        <!-- ════════════ UNIT LESSONS VIEW ════════════ -->
+        <div id="view-unit" class="view hidden">
+            <div class="unit-header">
+                <button class="back-arrow" onclick="navigateTo('dashboard')"><i class="fas fa-arrow-right"></i></button>
+                <div>
+                    <h2 class="fw-800" id="unit-view-title">الوحدة</h2>
+                    <p class="fs-sm text-muted" id="unit-view-subtitle">المنهج الدراسي</p>
+                </div>
+            </div>
+            <div id="unit-lessons-list"></div>
+        </div>
+
+        <!-- ════════════ LESSON VIEW ════════════ -->
+        <div id="view-lesson" class="view hidden" data-lesson-id="">
+            <div class="unit-header">
+                <button class="back-arrow" id="lesson-back-btn"><i class="fas fa-arrow-right"></i></button>
+                <div style="flex:1;">
+                    <h2 class="fw-800" id="lesson-page-title">الدرس</h2>
+                    <p class="fs-sm text-muted" id="lesson-page-subtitle">رياضيات</p>
+                </div>
+                <span class="badge badge-primary" id="lesson-page-badge"></span>
+            </div>
+
+            <!-- Lesson Banner -->
+            <div class="lesson-banner">
+                <div class="lesson-icon" id="lesson-icon-box" style="background:var(--gradient-primary);"><i class="fas fa-tv"></i></div>
+                <div style="flex:1;">
+                    <div class="fs-sm text-muted">الدرس الحالي</div>
+                    <h2 class="fw-700" id="lesson-main-title">---</h2>
+                </div>
+            </div>
+
+            <!-- Step Tracker (Sequential: Video → AI → MindMap → Practice → Game → Quiz) -->
+            <div class="step-tracker" id="step-tracker"></div>
+
+            <!-- Lesson Sections -->
+            <div id="section-video" class="lesson-section">
+                <div class="video-section">
+                    <div class="video-container">
+                        <iframe id="lesson-video-frame" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+                        <div class="iframe-corner-blocker"></div>
+                    </div>
+                    <div class="video-details">
+                        <div class="video-title" id="video-zone-title">شرح الدرس</div>
+                        <div class="video-subtitle" id="video-zone-desc">شاهد الفيديو بالكامل ثم انتقل للخطوة التالية</div>
+                        <div class="flex justify-between items-center" style="flex-wrap:wrap; gap:10px;">
+                            <button class="btn btn-ghost" onclick="toggleChat()"><i class="fas fa-robot"></i> AskMe Pro 💡</button>
+                            <button class="complete-step-btn" onclick="completeCurrentStep()"><i class="fas fa-check-circle"></i> أكملت هذه الخطوة</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="notes-panel">
+                    <div class="fw-700 mb-8" style="color:var(--warning);"><i class="fas fa-thumbtack"></i> ملاحظات سريعة</div>
+                    <textarea id="qn-textarea" placeholder="... اكتب أهم القوانين والملاحظات هنا"></textarea>
+                </div>
+            </div>
+
+            <div id="section-mindscape" class="lesson-section hidden">
+                <div class="practice-container">
+                    <h3 class="fw-700 mb-16"><i class="fas fa-brain" style="color:var(--accent);"></i> الخريطة الذهنية</h3>
+                    <div id="mindmap-box" class="mindmap-container">
+                        <img id="mindscape-img" src="" alt="خريطة ذهنية" class="hidden" onerror="handleImageError(this)">
+                        <div id="mindmap-fallback" class="fallback-zone hidden">
+                            <i class="fas fa-image-slash mb-16" style="font-size:48px; color:var(--text-muted); opacity:0.5;"></i>
+                            <div class="fw-700 mb-8">معاينة المحتوى غير متاحة</div>
+                            <p class="fs-sm text-muted mb-16">الرابط الموفر لا يسمح بالعرض المباشر داخل المنصة.<br>يرجى التأكد من صلاحية الرابط من المعلم.</p>
+                        </div>
+                        <iframe id="mindscape-frame" class="content-frame hidden" src=""></iframe>
+                        <div class="iframe-corner-blocker"></div>
+                    </div>
+                    <button class="complete-step-btn" onclick="completeCurrentStep()"><i class="fas fa-check-circle"></i> الخطوة التالية</button>
+                </div>
+            </div>
+
+
+            <div id="section-game" class="lesson-section hidden">
+                <div class="practice-container">
+                    <h3 class="fw-700 mb-16"><i class="fas fa-gamepad" style="color:var(--danger);"></i> Game Zone</h3>
+                    <div id="games-container" style="display:flex; flex-direction:column; gap:20px; width:100%;"></div>
+                    <button class="complete-step-btn" onclick="completeCurrentStep()"><i class="fas fa-check-circle"></i> الخطوة التالية</button>
+                </div>
+            </div>
+
+            <div id="section-quiz" class="lesson-section hidden">
+                <div class="practice-container">
+                    <h3 class="fw-700 mb-16"><i class="fas fa-clipboard-check" style="color:var(--warning);"></i> اختبار الدرس</h3>
+                    <div id="quiz-container"></div>
+                    <iframe id="quiz-frame" class="content-frame hidden" src="" sandbox="allow-forms allow-scripts allow-same-origin"></iframe>
+                    <button class="complete-step-btn" onclick="completeCurrentStep()" id="quiz-complete-btn">
+                        <i class="fas fa-flag-checkered"></i> إنهاء الدرس وحفظ التقدم
+                    </button>
+                </div>
+            </div>
+
+            <div id="section-podcast" class="lesson-section hidden">
+                <div class="practice-container">
+                    <h3 class="fw-700 mb-16"><i class="fas fa-podcast" style="color:var(--accent);"></i> Podcast Zone</h3>
+                    <iframe id="podcast-frame" class="content-frame" src=""></iframe>
+                    <button class="complete-step-btn" onclick="completeCurrentStep()"><i class="fas fa-check-circle"></i> الخطوة التالية</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════ PROGRESS VIEW ════════════ -->
+        <div id="view-progress" class="view hidden">
+            <h2 class="fw-800 mb-24"><i class="fas fa-chart-line text-primary-color"></i> تقدمي في المنهج</h2>
+            <div class="grid grid-3 mb-24">
+                <div class="card text-center">
+                    <div class="progress-ring" id="progress-ring-container">
+                        <svg width="120" height="120"><circle cx="60" cy="60" r="50" stroke="var(--bg-elevated)" stroke-width="10" fill="none"/><circle id="progress-ring-circle" cx="60" cy="60" r="50" stroke="url(#grad1)" stroke-width="10" fill="none" stroke-dasharray="314" stroke-dashoffset="314" stroke-linecap="round"/><defs><linearGradient id="grad1"><stop offset="0%" stop-color="var(--primary)"/><stop offset="100%" stop-color="var(--accent)"/></linearGradient></defs></svg>
+                        <div class="progress-ring-text" id="ring-pct">0%</div>
+                    </div>
+                    <h3 class="fw-700">التقدم الكلي</h3>
+                </div>
+                <div class="card text-center">
+                    <h2 class="fw-800 text-gold" style="font-size:36px;" id="progress-total-xp">0</h2>
+                    <p class="text-muted fs-sm">إجمالي نقاط XP</p>
+                </div>
+                <div class="card text-center">
+                    <h2 class="fw-800 text-success" style="font-size:36px;" id="progress-completed-count">0</h2>
+                    <p class="text-muted fs-sm">دروس مكتملة</p>
+                </div>
+            </div>
+            <h3 class="fw-700 mb-16">تفاصيل الوحدات</h3>
+            <div id="progress-units-detail"></div>
+        </div>
+
+        <!-- ════════════ ACHIEVEMENTS VIEW ════════════ -->
+        <div id="view-achievements" class="view hidden">
+            <h2 class="fw-800 mb-24"><i class="fas fa-trophy text-gold"></i> الإنجازات والشارات</h2>
+            <div class="grid grid-4" id="achievements-grid"></div>
+        </div>
+
+        <!-- ════════════ SETTINGS VIEW ════════════ -->
+        <div id="view-settings" class="view hidden">
+            <h2 class="fw-800 mb-24"><i class="fas fa-cog text-primary-color"></i> الإعدادات</h2>
+            <div class="card mb-24">
+                <h3 class="card-title mb-16"><i class="fas fa-user"></i> الملف الشخصي</h3>
+                
+                <div style="display:flex; flex-direction:column; align-items:center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border);">
+                    <div style="position:relative; width:90px; height:90px; border-radius:50%; overflow:hidden; background:var(--bg-elevated); display:flex; align-items:center; justify-content:center; border:2px solid var(--primary-light); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                        <img id="settings-avatar-img" src="" alt="Avatar" style="width:100%; height:100%; object-fit:cover; display:none;">
+                        <span id="settings-avatar-text" style="font-size:36px; color:var(--text-muted);"><i class="fas fa-user"></i></span>
+                    </div>
+                    <label class="btn btn-ghost btn-sm mt-16" style="cursor:pointer; background: var(--bg-elevated);">
+                        تغيير الصورة الشخصية <i class="fas fa-camera"></i>
+                        <input type="file" id="avatar-upload" accept="image/*" style="display:none;" onchange="uploadAvatar(this)">
+                    </label>
+                </div>
+
+                <div class="settings-row"><span>الاسم</span><span class="fw-700" id="settings-name">---</span></div>
+                <div class="settings-row"><span>رقم الهاتف</span><span class="fw-700" id="settings-phone">---</span></div>
+                <div class="settings-row"><span>الصف الدراسي</span><span class="fw-700" id="settings-grade">---</span></div>
+                <div class="settings-row"><span>المجموعة</span><span class="fw-700" id="settings-group">---</span></div>
+            </div>
+            <div class="card">
+                <h3 class="card-title mb-16"><i class="fas fa-palette"></i> التفضيلات</h3>
+                <div class="settings-row">
+                    <span>الإشعارات</span>
+                    <label class="switch"><input type="checkbox" checked id="setting-notif"><span class="slider"></span></label>
+                </div>
+                <div class="settings-row">
+                    <span>صوتيات التفاعل</span>
+                    <label class="switch"><input type="checkbox" id="setting-sounds"><span class="slider"></span></label>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════ LIVE CHAT VIEW ════════════ -->
+        <div id="view-chat-human" class="view hidden" style="height: calc(100vh - 100px); padding:0;">
+            <div style="display:flex; height:100%; width:100%; background:var(--bg-card); border-radius:15px; overflow:hidden; border:1px solid var(--border);">
+                <!-- Chat Navigation (Tabs) -->
+                <div class="chat-nav-sidebar" style="width:280px; background:rgba(0,0,0,0.2); border-left:1px solid var(--border); display:flex; flex-direction:column; flex-shrink:0;">
+                    <div style="padding:20px; font-weight:800; border-bottom:1px solid var(--border); background:rgba(var(--primary-rgb),0.1);">المحادثات</div>
+                    <div style="padding:10px;">
+                        <div class="chat-tab-human active" id="tab-group-chat" onclick="switchHumanChat('group')" style="padding:15px; border-radius:10px; cursor:pointer; margin-bottom:8px; display:flex; align-items:center; gap:12px; transition:0.3s;">
+                            <div style="width:40px; height:40px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center;"><i class="fas fa-users"></i></div>
+                            <div>
+                                <div style="font-weight:700;">دردشة المجموعة</div>
+                                <div style="font-size:11px; color:var(--text-muted);" id="chat-group-name">المجموعة د</div>
+                            </div>
+                        </div>
+                        <div class="chat-tab-human" id="tab-admin-chat" onclick="switchHumanChat('private')" style="padding:15px; border-radius:10px; cursor:pointer; margin-bottom:8px; display:flex; align-items:center; gap:12px; transition:0.3s;">
+                            <div style="width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg, #f59e0b, #ef4444); display:flex; align-items:center; justify-content:center;"><i class="fas fa-user-shield"></i></div>
+                            <div>
+                                <div style="font-weight:700;">التواصل مع المستر</div>
+                                <div style="font-size:11px; color:var(--text-muted);">دردشة خاصة مع المدير</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Main Area -->
+                <div style="flex:1; display:flex; flex-direction:column; background-color:var(--bg); position:relative; overflow:hidden;">
+                    <!-- Message Preview Header -->
+                    <div style="padding:15px 25px; background:var(--bg-card); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:15px; z-index:10;">
+                        <div style="width:45px; height:45px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; font-weight:800;" id="hchat-avatar">G</div>
+                        <div style="flex:1;">
+                            <div style="font-weight:800; font-size:16px;" id="hchat-title">دردشة المجموعة</div>
+                            <div style="font-size:11px; color:var(--success-color);" id="hchat-status">متصل الآن</div>
+                        </div>
+                    </div>
+
+                    <!-- Messages Container -->
+                    <div id="hchat-messages" style="flex:1; padding:25px; overflow-y:auto; display:flex; flex-direction:column; gap:15px; position:relative; background: var(--bg-main);">
+                        <!-- Messages populated by JS -->
+                        <div style="padding:40px; text-align:center; color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> جارٍ التحميل...</div>
+                    </div>
+
+                    <!-- Input Area -->
+                    <div style="padding:15px 20px; background:var(--bg-card); border-top:1px solid var(--border); display:flex; align-items:center; gap:15px; z-index:10;">
+                        <input type="text" id="hchat-input" style="flex:1; padding:12px 20px; background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:30px; color:white; outline:none;" placeholder="اكتب رسالتك هنا..." onkeypress="if(event.key==='Enter') sendHumanMessage()" oninput="onHumanTyping()">
+                        <button onclick="sendHumanMessage()" style="width:45px; height:45px; border-radius:50%; background:var(--primary); border:none; color:white; cursor:pointer;"><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ── Floating Numi Chat Button ────────────────────────── -->
+    <button class="floating-chat-btn" onclick="toggleChat()" title="AskMe Pro 💡">
+        💡
+    </button>
+
+    <!-- ── Numi Chat Modal ──────────────────────────────────── -->
+    <div id="chat-modal">
+        <div class="chat-container">
+            <div class="chat-header">
+                <div class="flex items-center gap-12">
+                    <div class="ai-avatar" style="width:36px;height:36px;font-size:16px;">💡</div>
+                    <div>
+                        <h3 style="font-size:15px;">AskMe Pro 💡</h3>
+                        <div class="fs-sm text-muted flex items-center gap-8">
+                            <span style="display:inline-block;width:7px;height:7px;background:var(--success);border-radius:50%;"></span> متصل لمساعدتك
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-16">
+                    <button class="btn btn-ghost p-8" onclick="openChatHistory()" title="سجل المحادثات" style="font-size:14px;color:var(--text-muted);"><i class="fas fa-history"></i></button>
+                    <button class="btn btn-ghost p-8" onclick="startNewChatUI()" title="محادثة جديدة" style="font-size:14px;color:var(--text-muted);"><i class="fas fa-plus"></i></button>
+                    <i class="fas fa-times" style="cursor:pointer; color:var(--text-muted); font-size:18px; padding:4px;" onclick="toggleChat()"></i>
+                </div>
+            </div>
+            <div class="chat-messages" id="chat-history">
+                <div class="msg bot">جاهز للفهم العميق؟ 💪 اسأل أي سؤال، وسنستكشف الإجابة معًا!</div>
+            </div>
+            <div class="chat-input-area">
+                <div class="math-keyboard" id="math-keyboard">
+                    <div class="math-key" onclick="insertMath('+')">+</div>
+                    <div class="math-key" onclick="insertMath('-')">-</div>
+                    <div class="math-key" onclick="insertMath('×')">×</div>
+                    <div class="math-key" onclick="insertMath('÷')">÷</div>
+                    <div class="math-key" onclick="insertMath('=')">=</div>
+                    <div class="math-key" onclick="insertMath('≠')">≠</div>
+                    <div class="math-key" onclick="insertMath('≈')">≈</div>
+                    <div class="math-key" onclick="insertMath('∝')">∝</div>
+                    <div class="math-key" onclick="insertMath('√(')">√</div>
+                    <div class="math-key" onclick="insertMath('²')">x²</div>
+                    <div class="math-key" onclick="insertMath('³')">x³</div>
+                    <div class="math-key" onclick="insertMath('^')">xⁿ</div>
+                    <div class="math-key" onclick="insertMath('π')">π</div>
+                    <div class="math-key" onclick="insertMath('∞')">∞</div>
+                    <div class="math-key" onclick="insertMath('°')">°</div>
+                    <div class="math-key" onclick="insertMath('%')">%</div>
+                    <div class="math-key" onclick="insertMath('∠')">∠</div>
+                    <div class="math-key" onclick="insertMath('∥')">∥</div>
+                    <div class="math-key" onclick="insertMath('⊥')">⊥</div>
+                    <div class="math-key" onclick="insertMath('·')">·</div>
+                    <div class="math-key" onclick="insertMath('∫')">∫</div>
+                    <div class="math-key" onclick="insertMath('∑')">∑</div>
+                    <div class="math-key" onclick="insertMath('∂')">∂</div>
+                    <div class="math-key" onclick="insertMath('∆')">∆</div>
+                    <div class="math-key" onclick="insertMath('sin(')">sin</div>
+                    <div class="math-key" onclick="insertMath('cos(')">cos</div>
+                    <div class="math-key" onclick="insertMath('tan(')">tan</div>
+                    <div class="math-key" onclick="insertMath('log(')">log</div>
+                    <div class="math-key" onclick="insertMath('ln(')">ln</div>
+                    <div class="math-key" onclick="insertMath('lim ')">lim</div>
+                    <div class="math-key" onclick="insertMath('f(')">f(x)</div>
+                    <div class="math-key" onclick="insertMath('!')">!</div>
+                    <div class="math-key" onclick="insertMath('|')">|x|</div>
+                    <div class="math-key" onclick="insertMath('θ')">θ</div>
+                    <div class="math-key" onclick="insertMath('α')">α</div>
+                    <div class="math-key" onclick="insertMath('β')">β</div>
+                    <div class="math-key" onclick="insertMath('≤')">≤</div>
+                    <div class="math-key" onclick="insertMath('≥')">≥</div>
+                    <div class="math-key" onclick="insertMath('±')">±</div>
+                    <div class="math-key" onclick="insertMath('∈')">∈</div>
+                    <div class="math-key" onclick="insertMath('∪')">∪</div>
+                    <div class="math-key" onclick="insertMath('∩')">∩</div>
+                    <div class="math-key" onclick="insertMath('⇒')">⇒</div>
+                    <div class="math-key" onclick="insertMath('dx')">dx</div>
+                    <div class="math-key" onclick="insertMath('dy')">dy</div>
+                    <div class="math-key" onclick="insertMath('(')">(</div>
+                    <div class="math-key" onclick="insertMath(')')">)</div>
+                    <div class="math-key" onclick="insertMath('{')">{</div>
+                    <div class="math-key" onclick="insertMath('}')">}</div>
+                    <div class="math-key" onclick="insertMath(']')">]</div>
+                    <div class="math-key" onclick="insertMath('x')">x</div>
+                    <div class="math-key" onclick="insertMath('y')">y</div>
+                    <div class="math-key" onclick="insertMath('z')">z</div>
+                    <div class="math-key" onclick="insertMath('a')">a</div>
+                    <div class="math-key" onclick="insertMath('b')">b</div>
+                    <div class="math-key" onclick="insertMath('c')">c</div>
+                </div>
+                <div class="chat-input-row">
+                    <button class="btn btn-icon btn-ghost" onclick="document.getElementById('math-keyboard').classList.toggle('active')" title="الرموز الرياضية">
+                        <i class="fas fa-calculator" style="color:var(--accent);"></i>
+                    </button>
+                    <input type="text" id="chat-field" placeholder="اكتب سؤالك هنا..." onkeypress="if(event.key==='Enter') sendMsg()">
+                    <button class="chat-send-btn" onclick="sendMsg()"><i class="fas fa-paper-plane" style="transform:rotate(-10deg);"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Notifications Panel ──────────────────────────────── -->
+    <div class="notif-panel" id="notif-panel">
+        <div style="padding:20px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+            <h3 class="fw-700"><i class="fas fa-bell"></i> الإشعارات</h3>
+            <i class="fas fa-times" style="cursor:pointer; color:var(--text-muted);" onclick="toggleNotifications()"></i>
+        </div>
+        <div id="notif-list" style="flex:1; overflow-y:auto; padding:8px 0;">
+            <div class="notif-item">
+                <div class="notif-icon" style="background:var(--success-glow); color:var(--success);"><i class="fas fa-check"></i></div>
+                <div><div class="fw-600 fs-sm">مرحباً بك في Numi!</div><div class="text-muted fs-sm">ابدأ رحلة التعلم الآن 🚀</div></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="js/numi-app.js"></script>
+</body>
+</html>
