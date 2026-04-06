@@ -562,6 +562,7 @@
             <li><a href="#" data-target="mindscape-zone"><i class="fas fa-project-diagram"></i> Mindscape</a></li>
             <li><a href="#" data-target="game-zone"><i class="fas fa-gamepad"></i> Game Zone</a></li>
             <li><a href="#" data-target="quiz-zone"><i class="fas fa-question-circle"></i> Quiz Zone</a></li>
+            <li><a href="#" data-target="ailesson-zone"><i class="fas fa-magic"></i> الدرس الذكي (/lesson)</a></li>
             <li><a href="#" data-target="students"><i class="fas fa-user-graduate"></i> إدارة الطلاب</a></li>
             <li><a href="#" data-target="reports" onclick="initReports()"><i class="fas fa-chart-bar"></i> التقارير والنتائج</a></li>
             <li><a href="#" data-target="question-bank" onclick="renderQuestionBank()"><i class="fas fa-database"></i> بنك الأسئلة</a></li>
@@ -850,6 +851,36 @@
                     <div style="display:flex; gap:10px; margin-top:20px;">
                         <button type="submit" class="btn">حفظ التغييرات</button>
                         <button type="button" class="btn btn-danger" onclick="deleteZoneData('quizZone')"><i class="fas fa-trash"></i> حذف الاختبار</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- AI Lesson Zone Section -->
+        <div id="ailesson-zone" class="section contents-section">
+            <div class="card">
+                <div class="card-header"><h2>الدرس الذكي (توليد بالذكاء الاصطناعي)</h2></div>
+                <div class="form-group"><label>اختر الدرس أولاً</label><select class="form-control lesson-selector" id="ailesson-lesson-select" onchange="loadZoneData('ailessonZone')"></select></div>
+                <form id="ailessonForm" onsubmit="saveZoneData(event, 'ailessonZone')">
+                    <div style="border:1px solid var(--primary); padding:20px; border-radius:10px; background:rgba(109,58,238,0.05); margin-bottom:20px;">
+                        <h4 class="mb-16"><i class="fas fa-magic"></i> الكلمات المفتاحية لموضوع الدرس (/lesson)</h4>
+                        <div class="form-group">
+                            <textarea class="form-control" id="ailesson-keywords" rows="3" placeholder="أدخل الكلمات المفتاحية... مثال: تحليل المعادلات التربيعية، الصف الثاني الإعدادي" style="background:#000; color:#fff;"></textarea>
+                        </div>
+                        <button type="button" class="btn btn-success w-full" id="btn-generate-ailesson" onclick="generateAILesson()">
+                            <i class="fas fa-microchip"></i> توليد الدرس الآن
+                        </button>
+                    </div>
+                    <input type="hidden" id="ailesson-html-data">
+                    <div id="ailesson-preview" style="margin-top:20px; display:none;">
+                        <h4 style="margin-bottom:10px;"><i class="fas fa-eye"></i> معاينة الدرس التفاعلي:</h4>
+                        <div class="preview-container" style="height: 500px; display: flex; align-items: stretch;">
+                            <iframe id="ailesson-preview-iframe" srcdoc="" style="width:100%; border:none; background:#fff;" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top:20px;">
+                        <button type="submit" class="btn">حفظ التغييرات</button>
+                        <button type="button" class="btn btn-danger" onclick="deleteZoneData('ailessonZone'); document.getElementById('ailesson-preview').style.display='none'; document.getElementById('ailesson-html-data').value='';"><i class="fas fa-trash"></i> حذف الدرس</button>
                     </div>
                 </form>
             </div>
@@ -3769,6 +3800,113 @@
                 }
             } catch (e) { alert('خطأ في الحذف: ' + e.message); }
         }
+
+        // AI Lesson Generator
+        async function generateAILesson() {
+            const keywords = document.getElementById('ailesson-keywords').value.trim();
+            if (!keywords) return alert('يرجى كتابة الكلمات المفتاحية لتوليد الدرس.');
+
+            const btn = document.getElementById('btn-generate-ailesson');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ توليد الدرس... قد يستغرق ذلك دقيقة.';
+
+            try {
+                const res = await fetch(`${API_URL}/lesson/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ keywords })
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'فشل التوليد');
+
+                if (data.success && data.html) {
+                    document.getElementById('ailesson-html-data').value = data.html;
+                    document.getElementById('ailesson-preview-iframe').srcdoc = data.html;
+                    document.getElementById('ailesson-preview').style.display = 'block';
+                    alert('✅ تم توليد الدرس بنجاح! لا تنسَ الضغط على "حفظ التغييرات" ليظهر للطلاب.');
+                }
+            } catch (e) {
+                console.error(e);
+                alert('خطأ أثناء توليد الدرس: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-microchip"></i> توليد الدرس الآن';
+            }
+        }
+        
+        // Add hooking to the loadZoneData to render preview automatically if aiLessonZone exists
+        const originalLoadZoneData = window.loadZoneData;
+        window.loadZoneData = function(zoneType) {
+            if(window.originalLoadZoneData) window.originalLoadZoneData(zoneType);
+            
+            // Custom setup for ailessonZone
+            if (zoneType === 'ailessonZone') {
+                const lessonId = document.getElementById('ailesson-lesson-select').value;
+                if (!lessonId) return;
+                
+                let foundLesson = null;
+                for (const classId in platformDB.classes) {
+                    const classObj = platformDB.classes[classId];
+                    if (!classObj.groups) continue;
+                    for (const groupId in classObj.groups) {
+                        const groupObj = classObj.groups[groupId];
+                        if (!groupObj.courses) continue;
+                        for (const courseId in groupObj.courses) {
+                            const terms = ['term1', 'term2'];
+                            for (const term of terms) {
+                                const units = groupObj.courses[courseId][term]?.units || {};
+                                for (const unitId in units) {
+                                    if (units[unitId].lessons && units[unitId].lessons[lessonId]) {
+                                        foundLesson = units[unitId].lessons[lessonId];
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                document.getElementById('ailesson-html-data').value = '';
+                document.getElementById('ailesson-preview').style.display = 'none';
+                
+                if (foundLesson && foundLesson.ailessonZone) {
+                    if(foundLesson.ailessonZone.html) {
+                        document.getElementById('ailesson-html-data').value = foundLesson.ailessonZone.html || '';
+                        document.getElementById('ailesson-preview-iframe').srcdoc = foundLesson.ailessonZone.html || '';
+                        document.getElementById('ailesson-preview').style.display = 'block';
+                    }
+                }
+            }
+        };
+
+        const originalSaveZoneData = window.saveZoneData;
+        window.saveZoneData = function(e, zoneType) {
+            if (zoneType === 'ailessonZone') {
+                e.preventDefault();
+                const lessonId = document.getElementById('ailesson-lesson-select').value;
+                if (!lessonId) return alert('يرجى اختيار الدرس أولاً.');
+                const htmlVal = document.getElementById('ailesson-html-data').value;
+                const updatePath = buildLessonUpdatePath(lessonId, 'ailessonZone');
+                if (!updatePath) return alert('حدث خطأ في تحديد مسار الدرس.');
+                
+                const pathParts = updatePath.split('.');
+                let currentObj = platformDB.data;
+                for (let i = 0; i < pathParts.length - 1; i++) {
+                    currentObj = currentObj[pathParts[i]];
+                }
+                
+                if (htmlVal) {
+                    currentObj[pathParts[pathParts.length - 1]] = { html: htmlVal };
+                } else {
+                    delete currentObj[pathParts[pathParts.length - 1]];
+                }
+                
+                saveDataToServer();
+                return;
+            }
+            if (window.originalSaveZoneData) window.originalSaveZoneData(e, zoneType);
+        };
     </script>
 
 

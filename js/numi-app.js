@@ -506,6 +506,7 @@ function showUnitView(unitId, menuItem) {
         const done = completed.includes(l.id);
         const zones = [];
         if (l.videoZone?.url) zones.push('<div class="zone-icon" title="فيديو"><i class="fas fa-video"></i></div>');
+        if (l.ailessonZone?.html) zones.push('<div class="zone-icon" title="الدرس التفاعلي (AI)"><i class="fas fa-magic"></i></div>');
         if (l.podcastZone?.url) zones.push('<div class="zone-icon" title="بودكاست"><i class="fas fa-microphone"></i></div>');
         if (l.mindscapeZone?.url) zones.push('<div class="zone-icon" title="خريطة"><i class="fas fa-brain"></i></div>');
         if (l.gameZone?.url) zones.push('<div class="zone-icon" title="لعبة"><i class="fas fa-gamepad"></i></div>');
@@ -610,15 +611,16 @@ function openLesson(id) {
     };
 
     currentLessonSteps = [];
-    const zones = { video: lesson.videoZone, podcast: lesson.podcastZone, mindscape: lesson.mindscapeZone, game: lesson.gameZone, quiz: lesson.quizZone };
+    const zones = { video: lesson.videoZone, podcast: lesson.podcastZone, mindscape: lesson.mindscapeZone, game: lesson.gameZone, quiz: lesson.quizZone, ailesson: lesson.ailessonZone };
 
     if (zones.video?.url) currentLessonSteps.push({ key: 'video', icon: 'fa-play-circle', label: 'الفيديو' });
+    if (zones.ailesson?.html) currentLessonSteps.push({ key: 'ailesson', icon: 'fa-magic', label: 'الدرس التفاعلي' });
     if (zones.mindscape?.url) currentLessonSteps.push({ key: 'mindscape', icon: 'fa-brain', label: 'الخريطة الذهنية' });
     if (zones.game?.url) currentLessonSteps.push({ key: 'game', icon: 'fa-gamepad', label: 'الألعاب التعليمية' });
     if (zones.quiz?.url || zones.quiz?.nativeData) currentLessonSteps.push({ key: 'quiz', icon: 'fa-clipboard-check', label: 'الاختبار' });
     if (zones.podcast?.url) currentLessonSteps.push({ key: 'podcast', icon: 'fa-podcast', label: 'بودكاست' });
 
-    if (currentLessonSteps.length < 2 && !zones.video?.url && !zones.quiz?.url && !zones.quiz?.nativeData) {
+    if (currentLessonSteps.length < 2 && !zones.video?.url && !zones.quiz?.url && !zones.quiz?.nativeData && !zones.ailesson?.html) {
         currentLessonSteps = [
             { key: 'video', icon: 'fa-play-circle', label: 'الفيديو' },
             { key: 'quiz', icon: 'fa-clipboard-check', label: 'الاختبار' },
@@ -647,6 +649,10 @@ function openLesson(id) {
             };
             window.addEventListener('message', window._ytErrHandler);
         }
+    }
+
+    if (zones.ailesson?.html) {
+        document.getElementById('ailesson-student-frame').srcdoc = zones.ailesson.html;
     }
 
     if (zones.mindscape?.url) {
