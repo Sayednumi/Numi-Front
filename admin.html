@@ -306,10 +306,30 @@
         }
 
         @media (max-width: 768px) {
-            .sidebar { transform: translateX(100%); }
+            .sidebar { transform: translateX(100%); width: 260px; box-shadow: -5px 0 25px rgba(0,0,0,0.5); }
             .sidebar.show { transform: translateX(0); }
-            .main-content { margin-right: 0; }
+            .main-content { margin-right: 0; padding: 15px; overflow-x: hidden; width: 100%; box-sizing: border-box; }
             .mobile-toggle { display: block !important; }
+            .grid { grid-template-columns: 1fr !important; }
+            .header { flex-direction: row; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
+            .header h1 { font-size: 22px; }
+            .card { padding: 15px; }
+            .card-header { flex-direction: column; gap: 15px; text-align: center; }
+            .card-header .btn { width: 100%; justify-content: center; }
+            .form-group { width: 100%; }
+            table { display: block; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; width: 100%; }
+            th, td { padding: 10px; font-size: 14px; }
+            .chat-container { flex-direction: column; height: calc(100vh - 120px); border-radius: 12px; }
+            .chat-sidebar { width: 100%; height: 200px; flex-shrink: 0; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.05); }
+            .chat-main { flex: 1; height: calc(100% - 200px); }
+            .chat-messages { padding: 15px; }
+            .chat-input-area { padding: 10px 15px; flex-wrap: wrap; }
+            .chat-input-wrapper input { padding: 10px 15px; font-size: 14px; }
+            .chat-send-btn { width: 40px; height: 40px; font-size: 14px; }
+            .modal-content { padding: 15px; width: 95%; max-height: 95vh; }
+            .item-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .item-actions { align-self: flex-end; width: 100%; display: flex; justify-content: space-between; }
+            .item-actions .btn { flex: 1; }
         }
         .mobile-toggle { display: none; font-size: 24px; cursor: pointer; color: var(--text-main); }
         .card.clickable:hover { transform: translateY(-5px); border-color: var(--primary); cursor: pointer; }
@@ -1546,13 +1566,13 @@
     <script>
         // Check authentication
         const SESSION_KEY = 'numi_session_user';
-        const sessionSaved = sessionStorage.getItem(SESSION_KEY);
+        const sessionSaved = localStorage.getItem(SESSION_KEY);
         if (!sessionSaved || JSON.parse(sessionSaved).role !== 'admin') {
             window.location.href = 'index.html';
         }
 
         function logoutAdmin() {
-            sessionStorage.removeItem(SESSION_KEY);
+            localStorage.removeItem(SESSION_KEY);
             window.location.href = 'index.html';
         }
 

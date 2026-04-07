@@ -753,20 +753,29 @@ input:checked + .slider::before { transform: translateX(24px); }
 @media (max-width: 768px) {
     .sidebar {
         position: fixed; right: -280px; height: 100%;
-        width: 270px; z-index: 150;
+        width: 270px; z-index: 1000;
         box-shadow: none;
     }
     .sidebar.open { right: 0; box-shadow: -5px 0 30px rgba(0,0,0,0.6); }
     .mobile-toggle { display: block; }
-    .main-content { padding: 16px; }
-    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
-    .grid-auto { grid-template-columns: 1fr; }
+    .main-content { padding: 16px; width: 100%; overflow-x: hidden; }
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr !important; }
+    .grid-auto { grid-template-columns: 1fr !important; }
     .welcome-banner { flex-direction: column; text-align: center; padding: 20px; }
-    .welcome-emoji { font-size: 36px; }
-    .step-tracker { flex-wrap: nowrap; overflow-x: auto; }
-    .chat-container { max-width: 100%; height: 100vh; border-radius: 0; }
+    .welcome-emoji { font-size: 36px; margin-top: 10px; }
+    .step-tracker { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .chat-container { max-width: 100%; height: 100vh; border-radius: 0; display: flex; flex-direction: column; }
+    .chat-messages { padding: 15px; }
+    .math-keyboard { max-height: 120px; }
     .notif-panel { width: 100%; right: -100%; }
-    .page-header { flex-wrap: wrap; gap: 12px; }
+    .page-header { flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+    .card { padding: 16px; }
+    .card-header { flex-direction: column; text-align: center; gap: 10px; }
+    .btn { font-size: 13px; }
+    .lesson-banner { flex-direction: column; text-align: center; gap: 12px; padding: 15px; }
+    .lesson-card { flex-direction: column; text-align: center; gap: 15px; }
+    #unit-lessons-list .flex { justify-content: center; width: 100%; }
+    .zone-icons { justify-content: center; margin-top: 10px; }
 }
 @media (max-width: 480px) {
     .login-card { padding: 24px 20px; }

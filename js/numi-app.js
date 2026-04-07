@@ -49,7 +49,7 @@ const AI_RESPONSES = [
 // ── Initialisation ────────────────────────────────────────────
 window.onload = async () => {
     await fetchPlatformData();
-    const saved = sessionStorage.getItem(SESSION_KEY);
+    const saved = localStorage.getItem(SESSION_KEY);
     if (saved) {
         currentUser = JSON.parse(saved);
         if (currentUser.role === 'admin') {
@@ -118,7 +118,7 @@ async function login() {
         const data = await res.json();
         if (data.success) {
             currentUser = data.user;
-            sessionStorage.setItem(SESSION_KEY, JSON.stringify(currentUser));
+            localStorage.setItem(SESSION_KEY, JSON.stringify(currentUser));
             err.style.display = 'none';
             if (currentUser.role === 'admin') {
                 window.location.href = 'admin.html';
@@ -175,7 +175,7 @@ function showSuccess(el, msg) { el.textContent = msg; el.style.display = 'block'
 
 function logout() {
     currentUser = null;
-    sessionStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(CHAT_KEY);
     document.getElementById('chat-history').innerHTML = '<div class="msg bot">جاهز للفهم العميق؟ 💪 اسأل أي سؤال، وسنستكشف الإجابة معًا!</div>';
     document.getElementById('app').classList.add('hidden');
@@ -265,7 +265,7 @@ function uploadAvatar(input) {
 
                 if (res.ok) {
                     currentUser.avatar = base64;
-                    sessionStorage.setItem(SESSION_KEY, JSON.stringify(currentUser));
+                    localStorage.setItem(SESSION_KEY, JSON.stringify(currentUser));
                     updateSidebarAvatar();
                 } else {
                     alert('❌ حدث خطأ أثناء حفظ الصورة في الخادم.');
@@ -875,7 +875,7 @@ async function completeLesson() {
             currentUser.xp = data.xp;
             currentUser.quizScores = data.quizScores;
             currentUser.quizAnswers = data.quizAnswers;
-            sessionStorage.setItem(SESSION_KEY, JSON.stringify(currentUser));
+            localStorage.setItem(SESSION_KEY, JSON.stringify(currentUser));
 
             // Navigate back HOME first, then show celebration
             navigateTo('dashboard');
