@@ -3835,37 +3835,17 @@
             }
         }
         
-        // Add hooking to the loadZoneData to render preview automatically if aiLessonZone exists
+        // Add hooking to the loadZoneData to render preview automatically if ailessonZone exists
         const originalLoadZoneData = window.loadZoneData;
         window.loadZoneData = function(zoneType) {
             if(window.originalLoadZoneData) window.originalLoadZoneData(zoneType);
             
             // Custom setup for ailessonZone
             if (zoneType === 'ailessonZone') {
-                const lessonId = document.getElementById('ailesson-lesson-select').value;
-                if (!lessonId) return;
+                const lPath = document.getElementById('ailesson-lesson-select').value;
+                if (!lPath) return;
                 
-                let foundLesson = null;
-                for (const classId in platformDB.classes) {
-                    const classObj = platformDB.classes[classId];
-                    if (!classObj.groups) continue;
-                    for (const groupId in classObj.groups) {
-                        const groupObj = classObj.groups[groupId];
-                        if (!groupObj.courses) continue;
-                        for (const courseId in groupObj.courses) {
-                            const terms = ['term1', 'term2'];
-                            for (const term of terms) {
-                                const units = groupObj.courses[courseId][term]?.units || {};
-                                for (const unitId in units) {
-                                    if (units[unitId].lessons && units[unitId].lessons[lessonId]) {
-                                        foundLesson = units[unitId].lessons[lessonId];
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                const foundLesson = getLessonRef(lPath);
 
                 document.getElementById('ailesson-html-data').value = '';
                 document.getElementById('ailesson-preview').style.display = 'none';
@@ -3884,31 +3864,26 @@
         window.saveZoneData = function(e, zoneType) {
             if (zoneType === 'ailessonZone') {
                 e.preventDefault();
-                const lessonId = document.getElementById('ailesson-lesson-select').value;
-                if (!lessonId) return alert('يرجى اختيار الدرس أولاً.');
+                const lPath = document.getElementById('ailesson-lesson-select').value;
+                if (!lPath) return alert('يرجى اختيار الدرس أولاً.');
                 const htmlVal = document.getElementById('ailesson-html-data').value;
-                const updatePath = buildLessonUpdatePath(lessonId, 'ailessonZone');
-                if (!updatePath) return alert('حدث خطأ في تحديد مسار الدرس.');
                 
-                const pathParts = updatePath.split('.');
-                let currentObj = platformDB.data;
-                for (let i = 0; i < pathParts.length - 1; i++) {
-                    currentObj = currentObj[pathParts[i]];
-                }
-                
-                if (htmlVal) {
-                    currentObj[pathParts[pathParts.length - 1]] = { html: htmlVal };
+                const l = getLessonRef(lPath);
+                if (l) {
+                    if (htmlVal) {
+                        l.ailessonZone = { html: htmlVal };
+                    } else {
+                        l.ailessonZone = {};
+                    }
+                    saveDB();
+                    alert('تم الحفظ بنجاح!');
                 } else {
-                    delete currentObj[pathParts[pathParts.length - 1]];
+                    alert('خطأ في إيجاد مسار الدرس.');
                 }
-                
-                saveDataToServer();
                 return;
             }
             if (window.originalSaveZoneData) window.originalSaveZoneData(e, zoneType);
         };
     </script>
-
-
 </body>
 </html>
