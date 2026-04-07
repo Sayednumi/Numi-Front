@@ -477,11 +477,8 @@ img { max-width: 100%; display: block; }
 /* Mind Map Fitting */
 .mindmap-container {
     width: 100%;
-    min-height: 400px;
     height: auto;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display: block;
     overflow: hidden;
     background: var(--bg-deep);
     border-radius: var(--radius-lg);
@@ -491,7 +488,6 @@ img { max-width: 100%; display: block; }
 .mindmap-container img {
     width: 100%;
     height: auto;
-    max-height: 80vh;
     object-fit: contain;
     transition: transform 0.3s ease;
     display: block;
@@ -514,8 +510,6 @@ img { max-width: 100%; display: block; }
 .fallback-zone p { max-width: 320px; line-height: 1.6; }
 
 @media (max-width: 768px) {
-    .mindmap-container { min-height: 200px; }
-    .mindmap-container img { max-height: 400px; }
     .fallback-zone { padding: 24px; }
     .fallback-zone i { font-size: 32px !important; }
 }
