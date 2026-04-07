@@ -764,6 +764,7 @@ input:checked + .slider::before { transform: translateX(24px); }
     .welcome-banner { flex-direction: column; text-align: center; padding: 20px; }
     .welcome-emoji { font-size: 36px; margin-top: 10px; }
     .step-tracker { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .step-item { flex-shrink: 0; }
     .chat-container { max-width: 100%; height: 100vh; border-radius: 0; display: flex; flex-direction: column; }
     .chat-messages { padding: 15px; }
     .math-keyboard { max-height: 120px; }
