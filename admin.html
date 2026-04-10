@@ -334,6 +334,96 @@
         .mobile-toggle { display: none; font-size: 24px; cursor: pointer; color: var(--text-main); }
         .card.clickable:hover { transform: translateY(-5px); border-color: var(--primary); cursor: pointer; }
 
+        /* ═══ Teacher Platforms Styles ═══ */
+        .platforms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: 18px;
+            margin-top: 10px;
+        }
+        .platform-card {
+            background: linear-gradient(135deg, #1e1740 0%, #2a1f55 100%);
+            border: 1px solid rgba(109,58,238,0.25);
+            border-radius: 16px;
+            padding: 22px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .platform-card::before {
+            content: '';
+            position: absolute;
+            top: -40px; right: -40px;
+            width: 100px; height: 100px;
+            border-radius: 50%;
+            background: rgba(109,58,238,0.12);
+            transition: all 0.3s ease;
+        }
+        .platform-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 8px 25px rgba(109,58,238,0.35);
+        }
+        .platform-card:hover::before { transform: scale(2); }
+        .platform-icon {
+            width: 56px; height: 56px;
+            border-radius: 14px;
+            background: rgba(109,58,238,0.2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 26px;
+            transition: all 0.25s ease;
+        }
+        .platform-card:hover .platform-icon {
+            background: var(--primary);
+            transform: scale(1.1);
+        }
+        .platform-name {
+            font-size: 14px; font-weight: 700;
+            color: #e2e8f0; text-align: center;
+            line-height: 1.3;
+        }
+        .platform-delete-btn {
+            position: absolute; top: 8px; left: 8px;
+            background: rgba(255,71,87,0.15);
+            border: none; border-radius: 6px;
+            color: var(--danger); width: 26px; height: 26px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; cursor: pointer;
+            opacity: 0; transition: opacity 0.2s ease;
+        }
+        .platform-card:hover .platform-delete-btn { opacity: 1; }
+        .platform-iframe-wrapper {
+            width: 100%; border-radius: 12px;
+            overflow: hidden; border: 1px solid rgba(109,58,238,0.3);
+            background: #000;
+            display: none;
+            margin-top: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        .platform-iframe-wrapper.active { display: block; animation: fadeIn 0.3s ease; }
+        .platform-iframe-topbar {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 16px;
+            background: linear-gradient(90deg, var(--primary), #9d72ff);
+            color: white; font-size: 14px; font-weight: 700;
+        }
+        .platform-iframe-topbar button {
+            background: rgba(255,255,255,0.2); border: none;
+            color: white; padding: 5px 12px; border-radius: 6px;
+            cursor: pointer; font-size: 12px; font-weight: 600;
+            transition: background 0.2s;
+        }
+        .platform-iframe-topbar button:hover { background: rgba(255,255,255,0.35); }
+        .platform-iframe-wrapper iframe {
+            width: 100%; border: none;
+            height: 600px; display: block;
+        }
+
         /* Chat Interface Styles */
         .chat-container {
             display: flex;
@@ -587,6 +677,7 @@
             <li><a href="#" data-target="reports" onclick="initReports()"><i class="fas fa-chart-bar"></i> التقارير والنتائج</a></li>
             <li><a href="#" data-target="question-bank" onclick="renderQuestionBank()"><i class="fas fa-database"></i> بنك الأسئلة</a></li>
             <li><a href="#" data-target="chat" onclick="renderChatHierarchy()"><i class="fas fa-comments"></i> الدردشة</a></li>
+            <li><a href="#" data-target="teacher-platforms" onclick="loadTeacherPlatforms()"><i class="fas fa-th-large"></i> المنصات المساعدة</a></li>
             <li><a href="#" data-target="settings"><i class="fas fa-cog"></i> الإعدادات</a></li>
             <li style="margin-top: auto; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;">
                 <a href="#" onclick="logoutAdmin()" style="color: var(--danger);">
@@ -1171,6 +1262,34 @@
         </div>
 
 
+        <!-- ═══ Teacher Platforms Section ═══ -->
+        <div id="teacher-platforms" class="section">
+            <!-- iframe viewer (hidden until a platform that supports embedding is opened) -->
+            <div class="platform-iframe-wrapper" id="platform-iframe-wrapper">
+                <div class="platform-iframe-topbar">
+                    <span><i class="fas fa-external-link-alt" style="margin-left:8px;"></i><span id="platform-iframe-title">المنصة</span></span>
+                    <div style="display:flex;gap:8px;">
+                        <button onclick="openCurrentPlatformTab()"><i class="fas fa-external-link-alt"></i> فتح في تبويب</button>
+                        <button onclick="closePlatformIframe()"><i class="fas fa-times"></i> إغلاق</button>
+                    </div>
+                </div>
+                <iframe id="platform-iframe" src="about:blank" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation" loading="lazy"></iframe>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-th-large" style="color:var(--primary); margin-left:10px;"></i> المنصات المساعدة</h2>
+                    <button class="btn" onclick="openModal('platformModal')"><i class="fas fa-plus"></i> إضافة منصة</button>
+                </div>
+                <p style="color:var(--text-muted); font-size:13px; margin-bottom:20px;">اضغط على أي منصة لفتحها مباشرةً. المنصات التي لا تدعم الدمج ستفتح تلقائياً في تبويب جديد.</p>
+                <div class="platforms-grid" id="platforms-grid">
+                    <div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted);">
+                        <i class="fas fa-spinner fa-spin fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div id="settings" class="section">
             <div class="card">
                 <div class="card-header">
@@ -1199,6 +1318,27 @@
     </div>
 
     <!-- Modals -->
+
+    <!-- Platform Add Modal -->
+    <div class="modal" id="platformModal">
+        <div class="modal-content" style="max-width:440px;">
+            <h2 style="margin-bottom:20px;"><i class="fas fa-plus-circle" style="color:var(--primary);"></i> إضافة منصة جديدة</h2>
+            <form id="platformForm" onsubmit="handlePlatformSubmit(event)">
+                <div class="form-group">
+                    <label><i class="fas fa-tag" style="margin-left:6px;"></i> اسم المنصة</label>
+                    <input type="text" id="platform-name-input" class="form-control" required placeholder="مثال: Google Classroom">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-link" style="margin-left:6px;"></i> رابط المنصة (URL)</label>
+                    <input type="url" id="platform-url-input" class="form-control" required placeholder="https://...">
+                </div>
+                <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:10px;">
+                    <button type="button" class="btn btn-danger" onclick="closeModal('platformModal')">إلغاء</button>
+                    <button type="submit" class="btn"><i class="fas fa-save"></i> حفظ المنصة</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Class Modal -->
     <div class="modal" id="classModal">
@@ -3820,6 +3960,173 @@
                 }
             } catch (e) { alert('خطأ في الحذف: ' + e.message); }
         }
+
+        // ═══════════════════════════════════════════════════════════
+        // ═══         TEACHER PLATFORMS MODULE                     ═══
+        // ═══════════════════════════════════════════════════════════
+
+        // Current logged-in admin/teacher ID used as teacherId
+        const _adminUser = JSON.parse(localStorage.getItem(SESSION_KEY) || '{}');
+        const TEACHER_ID = _adminUser.id || _adminUser._id || 'admin_main';
+
+        // Default platforms that always appear (not stored in DB)
+        const DEFAULT_PLATFORMS = [
+            { _id: 'default_notebooklm', name: 'NotebookLM', url: 'https://notebooklm.google.com', icon: '📓', isDefault: true },
+            { _id: 'default_googledrive', name: 'Google Drive', url: 'https://drive.google.com', icon: '📁', isDefault: true },
+            { _id: 'default_canva',       name: 'Canva',       url: 'https://www.canva.com',       icon: '🎨', isDefault: true }
+        ];
+
+        // Sites known to block iframes — open in new tab directly
+        const IFRAME_BLOCKED_PATTERNS = [
+            'notebooklm.google.com',
+            'drive.google.com',
+            'docs.google.com',
+            'accounts.google.com',
+            'canva.com',
+            'facebook.com',
+            'instagram.com',
+            'twitter.com',
+            'x.com'
+        ];
+
+        let _currentPlatformUrl  = '';
+        let _currentPlatformName = '';
+
+        function platformIsBlocked(url) {
+            try {
+                const host = new URL(url).hostname;
+                return IFRAME_BLOCKED_PATTERNS.some(p => host.includes(p));
+            } catch { return true; }
+        }
+
+        function getPlatformIcon(platform) {
+            if (platform.icon) return platform.icon;
+            const name = (platform.name || '').toLowerCase();
+            if (name.includes('google') || name.includes('drive') || name.includes('docs')) return '📁';
+            if (name.includes('canva'))    return '🎨';
+            if (name.includes('notebook')) return '📓';
+            if (name.includes('youtube'))  return '▶️';
+            if (name.includes('zoom'))     return '📹';
+            if (name.includes('meet'))     return '📹';
+            if (name.includes('teams'))    return '💬';
+            if (name.includes('classroom')) return '🏫';
+            if (name.includes('kahoot'))   return '🎯';
+            if (name.includes('quiziz'))   return '❓';
+            if (name.includes('padlet'))   return '📌';
+            return '🌐';
+        }
+
+        async function loadTeacherPlatforms() {
+            const grid = document.getElementById('platforms-grid');
+            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
+            try {
+                const res  = await fetch(`${API_URL}/teacher-platforms?teacherId=${encodeURIComponent(TEACHER_ID)}`);
+                const data = await res.json();
+                const customPlatforms = data.success ? data.platforms : [];
+                const allPlatforms = [...DEFAULT_PLATFORMS, ...customPlatforms];
+                renderPlatformsGrid(allPlatforms);
+            } catch (e) {
+                renderPlatformsGrid(DEFAULT_PLATFORMS);
+            }
+        }
+
+        function renderPlatformsGrid(platforms) {
+            const grid = document.getElementById('platforms-grid');
+            if (!platforms.length) {
+                grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);"><i class="fas fa-th-large fa-3x" style="opacity:0.2;"></i><p style="margin-top:15px;">لا توجد منصات بعد. اضغط «إضافة منصة» للبدء.</p></div>';
+                return;
+            }
+            grid.innerHTML = platforms.map(p => `
+                <div class="platform-card" onclick="openPlatform('${escHtml(p.url)}', '${escHtml(p.name)}')"
+                     title="${escHtml(p.name)}">
+                    ${!p.isDefault ? `<button class="platform-delete-btn" onclick="event.stopPropagation(); deletePlatform('${p._id}')" title="حذف"><i class="fas fa-times"></i></button>` : ''}
+                    <div class="platform-icon">${getPlatformIcon(p)}</div>
+                    <div class="platform-name">${escHtml(p.name)}</div>
+                </div>
+            `).join('');
+        }
+
+        function escHtml(str) {
+            return String(str || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        function openPlatform(url, name) {
+            _currentPlatformUrl  = url;
+            _currentPlatformName = name;
+
+            if (platformIsBlocked(url)) {
+                // Open in new tab
+                window.open(url, '_blank', 'noopener,noreferrer');
+                return;
+            }
+
+            // Try to load in iframe
+            const wrapper = document.getElementById('platform-iframe-wrapper');
+            const iframe  = document.getElementById('platform-iframe');
+            const title   = document.getElementById('platform-iframe-title');
+
+            iframe.src     = url;
+            title.textContent = name;
+            wrapper.classList.add('active');
+            wrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            // Fallback: if iframe fails to load (X-Frame-Options), open in tab
+            iframe.onerror = () => {
+                wrapper.classList.remove('active');
+                iframe.src = 'about:blank';
+                window.open(url, '_blank', 'noopener,noreferrer');
+            };
+        }
+
+        function closePlatformIframe() {
+            const wrapper = document.getElementById('platform-iframe-wrapper');
+            const iframe  = document.getElementById('platform-iframe');
+            wrapper.classList.remove('active');
+            iframe.src = 'about:blank';
+        }
+
+        function openCurrentPlatformTab() {
+            if (_currentPlatformUrl) window.open(_currentPlatformUrl, '_blank', 'noopener,noreferrer');
+        }
+
+        async function handlePlatformSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('platform-name-input').value.trim();
+            const url  = document.getElementById('platform-url-input').value.trim();
+            if (!name || !url) return;
+
+            try {
+                const res  = await fetch(`${API_URL}/teacher-platforms`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, url, teacherId: TEACHER_ID })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    closeModal('platformModal');
+                    document.getElementById('platformForm').reset();
+                    loadTeacherPlatforms();
+                } else {
+                    alert('خطأ: ' + (data.msg || data.error));
+                }
+            } catch (err) {
+                alert('خطأ في الاتصال بالخادم.');
+            }
+        }
+
+        async function deletePlatform(id) {
+            if (!confirm('هل تريد حذف هذه المنصة؟')) return;
+            try {
+                const res  = await fetch(`${API_URL}/teacher-platforms/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.success) loadTeacherPlatforms();
+                else alert('خطأ أثناء الحذف.');
+            } catch (err) {
+                alert('خطأ في الاتصال.');
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════
 
         // AI Lesson Generator
         async function generateAILesson() {
