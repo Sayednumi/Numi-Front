@@ -753,6 +753,37 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- ═══ Schedule Widgets ═══ -->
+            <div class="grid" style="grid-template-columns:1fr 1fr; gap:20px; margin-top:25px;">
+
+                <!-- Today's Schedule -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-calendar-day" style="color:var(--primary);"></i> جدول اليوم</h3>
+                        <span id="today-date-label" style="font-size:12px; color:var(--text-muted);"></span>
+                    </div>
+                    <div id="today-schedule" style="min-height:100px;">
+                        <div style="text-align:center;padding:20px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i></div>
+                    </div>
+                </div>
+
+                <!-- Weekly Schedule -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-calendar-week" style="color:var(--accent);"></i> جدول الأسبوع</h3>
+                        <div style="display:flex;gap:8px;">
+                            <button class="btn btn-sm" onclick="shiftWeek(-1)"><i class="fas fa-chevron-right"></i></button>
+                            <span id="week-label" style="font-size:12px; color:var(--text-muted); align-self:center;"></span>
+                            <button class="btn btn-sm" onclick="shiftWeek(1)"><i class="fas fa-chevron-left"></i></button>
+                        </div>
+                    </div>
+                    <div id="weekly-schedule" style="overflow-x:auto;">
+                        <div style="text-align:center;padding:20px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i></div>
+                    </div>
+                </div>
+
+            </div>
         </div>
 
         <!-- Classes Section -->
@@ -1102,17 +1133,27 @@
                 
                 <form id="liveClassForm" style="margin-bottom: 30px; background:rgba(0,0,0,0.2); padding:20px; border-radius:12px;" onsubmit="handleLiveClassSubmit(event)">
                     <h3 style="margin-bottom:15px; color:var(--primary);"><i class="fas fa-plus-circle"></i> جدولة حصة جديدة</h3>
-                    <div class="grid">
+                    <div class="grid" style="grid-template-columns:1fr 1fr;">
                         <div class="form-group">
-                            <label>الصف - المجموعة</label>
-                            <select id="live-group-select" class="form-control" required></select>
+                            <label><i class="fas fa-layer-group" style="color:var(--primary);"></i> الصف الدراسي</label>
+                            <select id="live-class-select" class="form-control" onchange="updateLiveGroupSelect()" required>
+                                <option value="">― اختر الصف أولاً―</option>
+                            </select>
                         </div>
                         <div class="form-group">
-                            <label>اسم الحصة</label>
+                            <label><i class="fas fa-users" style="color:var(--accent);"></i> المجموعة</label>
+                            <select id="live-group-select" class="form-control" required>
+                                <option value="">― اختر الصف أولاً ―</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid">
+                        <div class="form-group">
+                            <label><i class="fas fa-pen" style="color:var(--primary);"></i> اسم الحصة</label>
                             <input type="text" id="live-title" class="form-control" placeholder="مثال: مراجعة الوحدة الأولى" required>
                         </div>
                         <div class="form-group">
-                            <label>رابط الحصة (Zoom, Meet...)</label>
+                            <label><i class="fas fa-link" style="color:var(--accent);"></i> رابط الحصة (Zoom, Meet...)</label>
                             <input type="url" id="live-link" class="form-control" placeholder="https://..." required>
                         </div>
                     </div>
@@ -2368,6 +2409,9 @@
                 if(document.getElementById('stats-groups')) document.getElementById('stats-groups').innerText = groupCount;
                 document.getElementById('stats-lessons').innerText = lessonCount;
                 document.getElementById('stats-students').innerText = allStudents.filter(u => u.role === 'student').length;
+
+                // Refresh schedule widgets on dashboard
+                loadScheduleWidgets();
             } catch (e) { console.error("Update Stats Error", e); }
         }
 
@@ -4350,50 +4394,17 @@
         // ═══         LIVE CLASSES SYSTEM                          ═══
         // ═══════════════════════════════════════════════════════════
 
-        async function loadLiveClasses() {
-            // Fill groups that have liveEnabled = true
-            const sel = document.getElementById('live-group-select');
-            sel.innerHTML = '<option value="">اختر المجموعة...</option>';
-            if (db && db.classes) {
-                for (let cid in db.classes) {
-                    let groups = db.classes[cid].groups || {};
-                    for (let gid in groups) {
-                        if (groups[gid].liveEnabled) {
-                            sel.innerHTML += `<option value="${cid}_${gid}">${db.classes[cid].name} - ${groups[gid].name}</option>`;
-                        }
-                    }
+        // Populate class selector in the form (live-class-select)
+        function updateLiveGroupSelect() {
+            const cid = document.getElementById('live-class-select').value;
+            const grpSel = document.getElementById('live-group-select');
+            grpSel.innerHTML = '<option value="">― اختر المجموعة ―</option>';
+            if (!cid || !db?.classes?.[cid]?.groups) return;
+            const groups = db.classes[cid].groups;
+            for (const gid in groups) {
+                if (groups[gid].liveEnabled) {
+                    grpSel.innerHTML += `<option value="${cid}_${gid}">${groups[gid].name}</option>`;
                 }
-            }
-
-            // Fetch admin stats
-            let totalSessions = 0;
-            let completedSessions = 0;
-            try {
-                const uRes = await fetch(`${API_URL}/users/${TEACHER_ID}`);
-                if (uRes.ok) {
-                    const uData = await uRes.json();
-                    if (uData.liveStats) {
-                        totalSessions = uData.liveStats.totalSessions || 0;
-                        completedSessions = uData.liveStats.completedSessions || 0;
-                    }
-                }
-            } catch(e) {}
-            
-            document.getElementById('stats-live-total').innerText = totalSessions;
-            document.getElementById('stats-live-completed').innerText = completedSessions;
-            document.getElementById('stats-live-remaining').innerText = Math.max(0, totalSessions - completedSessions);
-
-            // Fetch classes
-            const grid = document.getElementById('live-classes-grid');
-            grid.innerHTML = '<div style="text-align:center;width:100%;"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
-            try {
-                const res = await fetch(`${API_URL}/live-classes?teacherId=${TEACHER_ID}`);
-                const data = await res.json();
-                if (data.success) {
-                    renderLiveClassesGrid(data.liveClasses);
-                }
-            } catch(e) {
-                grid.innerHTML = '<div style="color:var(--danger);">خطأ في جلب البيانات</div>';
             }
         }
 
@@ -4404,6 +4415,17 @@
             // Fill form groups that have liveEnabled = true
             const sel = document.getElementById('live-group-select');
             sel.innerHTML = '<option value="">اختر المجموعة...</option>';
+
+            // Fill class selector in scheduling form
+            const classSel = document.getElementById('live-class-select');
+            if (classSel) {
+                classSel.innerHTML = '<option value="">― اختر الصف أولاً―</option>';
+                if (db && db.classes) {
+                    for (let cid in db.classes) {
+                        classSel.innerHTML += `<option value="${cid}">${db.classes[cid].name}</option>`;
+                    }
+                }
+            }
 
             // Fill filter dropdowns
             const filterClass = document.getElementById('live-filter-class');
@@ -4580,7 +4602,7 @@
         async function handleLiveClassSubmit(e) {
             e.preventDefault();
             const groupVal = document.getElementById('live-group-select').value;
-            if (!groupVal) return alert('يرجى اختيار المجموعة');
+            if (!groupVal) return alert('يرجى اختيار الصف والمجموعة');
             const [classId, groupId] = groupVal.split('_');
 
             const payload = {
@@ -4661,6 +4683,121 @@
                 loadLiveClasses();
                 alert('تم بدء الدورة بنجاح!');
             } catch(e) { alert('حدث خطأ'); }
+        }
+
+        // ─── Schedule Widgets ─────────────────────────────────────────────────────
+        let _scheduleWeekOffset = 0;   // 0 = current week, -1 = previous, +1 = next
+        let _scheduleClasses   = [];   // cached live classes for schedule
+
+        async function loadScheduleWidgets() {
+            try {
+                const res = await fetch(`${API_URL}/live-classes?teacherId=${TEACHER_ID}`);
+                const data = await res.json();
+                if (data.success) {
+                    _scheduleClasses = data.liveClasses;
+                    renderTodaySchedule();
+                    renderWeeklySchedule();
+                }
+            } catch(e) {}
+        }
+
+        function renderTodaySchedule() {
+            const el = document.getElementById('today-schedule');
+            const lbl = document.getElementById('today-date-label');
+            if (!el) return;
+            const now = new Date();
+            const todayStr = now.toISOString().slice(0,10);
+            const days = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+            if (lbl) lbl.textContent = `${days[now.getDay()]} ${todayStr}`;
+
+            const todayClasses = _scheduleClasses
+                .filter(c => c.date === todayStr)
+                .sort((a,b) => a.time.localeCompare(b.time));
+
+            if (todayClasses.length === 0) {
+                el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);"><i class="fas fa-moon fa-2x" style="opacity:0.3;"></i><p style="margin-top:10px;">لا توجد حصص اليوم</p></div>`;
+                return;
+            }
+
+            el.innerHTML = todayClasses.map(c => {
+                const status = computeStatus(c);
+                const gName = db?.classes?.[c.classId]?.name + ' • ' + (db?.classes?.[c.classId]?.groups?.[c.groupId]?.name || '');
+                const dotColor = status === 'live' ? 'var(--danger)' : status === 'finished' ? 'var(--success)' : 'var(--warning)';
+                return `
+                <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+                    <div style="width:10px;height:10px;border-radius:50%;background:${dotColor};flex-shrink:0;${status==='live'?'animation:pulse 1.5s infinite;':''}"></div>
+                    <div style="flex:1;">
+                        <div style="font-weight:700;font-size:13px;">${c.title}</div>
+                        <div style="font-size:11px;color:var(--text-muted);">${gName} | ${c.time} (${c.duration} د)</div>
+                    </div>
+                    ${status !== 'finished' ? `<button class="btn btn-sm" onclick="window.open('${c.link}','_blank'); startLiveClass('${c._id}')" style="background:${status==='live'?'var(--danger)':'var(--primary)'}; font-size:11px; padding:4px 10px;"><i class="fas fa-play"></i></button>` : '<i class="fas fa-check-circle" style="color:var(--success);"></i>'}
+                </div>`;
+            }).join('');
+        }
+
+        function renderWeeklySchedule() {
+            const el = document.getElementById('weekly-schedule');
+            const lbl = document.getElementById('week-label');
+            if (!el) return;
+
+            const now = new Date();
+            const dayOfWeek = now.getDay(); // 0=Sun
+            const weekStart = new Date(now);
+            weekStart.setDate(now.getDate() - dayOfWeek + (_scheduleWeekOffset * 7));
+            weekStart.setHours(0,0,0,0);
+
+            const dayNames = ['أحد','اثنين','ثلاثاء','أربعاء','خميس','جمعة','سبت'];
+            const days = Array.from({length:7}, (_,i) => {
+                const d = new Date(weekStart);
+                d.setDate(weekStart.getDate() + i);
+                return d;
+            });
+
+            if (lbl) {
+                const s = days[0].toISOString().slice(0,10);
+                const e = days[6].toISOString().slice(0,10);
+                lbl.textContent = `${s} → ${e}`;
+            }
+
+            const todayStr = now.toISOString().slice(0,10);
+            let html = `<table style="width:100%;border-collapse:collapse;font-size:11px;">
+                <thead><tr>`;
+            days.forEach((d,i) => {
+                const ds = d.toISOString().slice(0,10);
+                const isToday = ds === todayStr;
+                html += `<th style="padding:6px 4px;text-align:center;font-weight:700;color:${isToday?'var(--primary)':'var(--text-muted)'};border-bottom:2px solid ${isToday?'var(--primary)':'rgba(255,255,255,0.1)'};">${dayNames[i]}<br><span style="font-size:10px;font-weight:400;">${ds.slice(5)}</span></th>`;
+            });
+            html += `</tr></thead><tbody><tr>`;
+
+            days.forEach(d => {
+                const ds = d.toISOString().slice(0,10);
+                const dayClasses = _scheduleClasses
+                    .filter(c => c.date === ds)
+                    .sort((a,b) => a.time.localeCompare(b.time));
+                const isToday = ds === todayStr;
+                html += `<td style="padding:4px;vertical-align:top;min-width:85px;background:${isToday?'rgba(109,58,238,0.07)':'transparent'};">`;
+                if (dayClasses.length === 0) {
+                    html += `<div style="text-align:center;color:rgba(255,255,255,0.15);font-size:18px;padding:8px;">·</div>`;
+                } else {
+                    dayClasses.forEach(c => {
+                        const status = computeStatus(c);
+                        const col = status==='live'?'var(--danger)':status==='finished'?'var(--success)':'var(--primary)';
+                        const gName = db?.classes?.[c.classId]?.groups?.[c.groupId]?.name || '';
+                        html += `<div title="${c.title} | ${gName}" style="background:${col};border-radius:6px;padding:4px 6px;margin-bottom:4px;cursor:pointer;opacity:${status==='finished'?'0.5':'1'};" onclick="window.open('${c.link}','_blank')">
+                            <div style="font-weight:700;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px;">${c.title}</div>
+                            <div style="color:rgba(255,255,255,0.8);font-size:10px;">${c.time} | ${gName}</div>
+                        </div>`;
+                    });
+                }
+                html += `</td>`;
+            });
+            html += `</tr></tbody></table>`;
+            el.innerHTML = html;
+        }
+
+        function shiftWeek(dir) {
+            _scheduleWeekOffset += dir;
+            renderWeeklySchedule();
         }
         
     </script>

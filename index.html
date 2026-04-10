@@ -250,6 +250,23 @@
                 </div>
             </div>
 
+            <!-- Upcoming Live Class (shown only if liveEnabled for student's group) -->
+            <div id="upcoming-live-card" style="display:none;" class="card mb-24" style="border-right:4px solid var(--danger);">
+                <div class="card-header" style="border-bottom:1px solid rgba(255,255,255,0.07); padding-bottom:12px; margin-bottom:12px;">
+                    <h3 class="card-title"><i class="fas fa-video" style="color:var(--danger);"></i> الحصة المباشرة القادمة</h3>
+                    <span id="upcoming-live-badge" class="badge badge-warning">قريباً</span>
+                </div>
+                <div id="upcoming-live-content" style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+                    <div style="flex:1; min-width:200px;">
+                        <div class="fw-700 mb-8" id="upcoming-live-title">--</div>
+                        <div class="fs-sm text-muted" id="upcoming-live-datetime"></div>
+                    </div>
+                    <button id="upcoming-live-btn" class="btn" style="background:var(--danger); min-width:130px;" onclick="joinUpcomingLive()" disabled>
+                        <i class="fas fa-video"></i> انضم للحصة
+                    </button>
+                </div>
+            </div>
+
             <!-- Daily Goal -->
             <div class="card mb-24" style="border-right:4px solid var(--warning);">
                 <div class="card-header">

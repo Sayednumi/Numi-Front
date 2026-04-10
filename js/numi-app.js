@@ -413,6 +413,9 @@ function renderDashboard(filterTerm = null) {
         setEl('continue-card-label', 'textContent', 'أكمل تعلمك');
     }
 
+    // Upcoming Live Class
+    renderUpcomingLiveCard();
+
     // AI suggestion
     const suggestions = [
         'أنصحك بمراجعة آخر درس لتثبيت المعلومات 💡',
@@ -2074,5 +2077,77 @@ async function loadStudentLiveClasses(u) {
         container.innerHTML = '<div style="color:var(--danger); grid-column:1/-1;">خطأ في جلب بيانات الحصص</div>';
     }
 }
+
+// ── Upcoming Live Class Card ─────────────────────────────────────
+let _upcomingLiveLink = '';
+
+async function renderUpcomingLiveCard() {
+    const card = document.getElementById('upcoming-live-card');
+    if (!card || !currentUser) return;
+
+    // Only for groups with liveEnabled
+    const isLiveEnabled = platformDB?.classes?.[currentUser.classId]?.groups?.[currentUser.groupId]?.liveEnabled;
+    if (!isLiveEnabled) { card.style.display = 'none'; return; }
+
+    try {
+        const res = await fetch(`${API_URL}/live-classes?classId=${currentUser.classId}&groupId=${currentUser.groupId}`);
+        const data = await res.json();
+        if (!data.success) { card.style.display = 'none'; return; }
+
+        const now = new Date();
+        // Find the next non-finished class (closest upcoming or currently live)
+        const upcoming = data.liveClasses
+            .filter(c => {
+                const start = new Date(`${c.date}T${c.time}`);
+                const end   = new Date(start.getTime() + c.duration * 60000);
+                return now < end; // not yet finished
+            })
+            .sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time))[0];
+
+        if (!upcoming) { card.style.display = 'none'; return; }
+
+        const start = new Date(`${upcoming.date}T${upcoming.time}`);
+        const end   = new Date(start.getTime() + upcoming.duration * 60000);
+        const isLive = now >= start && now <= end;
+
+        card.style.display = 'block';
+        card.style.borderRight = `4px solid ${isLive ? 'var(--danger)' : 'var(--warning)'}`;
+        _upcomingLiveLink = upcoming.link;
+
+        document.getElementById('upcoming-live-title').textContent = upcoming.title;
+        document.getElementById('upcoming-live-datetime').textContent =
+            `${upcoming.date}  |  ${upcoming.time}  (${upcoming.duration} دقيقة)`;
+
+        const badge = document.getElementById('upcoming-live-badge');
+        const btn   = document.getElementById('upcoming-live-btn');
+
+        if (isLive) {
+            badge.textContent = '🔴 مباشر الآن';
+            badge.className = 'badge badge-danger';
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.innerHTML = '<i class="fas fa-video"></i> انضم الآن';
+        } else {
+            // Show countdown
+            const diffMs  = start - now;
+            const diffMin = Math.floor(diffMs / 60000);
+            const diffHr  = Math.floor(diffMin / 60);
+            const remMin  = diffMin % 60;
+            const countdownTxt = diffHr > 0 ? `بعد ${diffHr}س ${remMin}د` : `بعد ${diffMin} دقيقة`;
+            badge.textContent = `⏰ ${countdownTxt}`;
+            badge.className = 'badge badge-warning';
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.innerHTML = '<i class="fas fa-clock"></i> انتظر الموعد';
+        }
+    } catch(e) {
+        card.style.display = 'none';
+    }
+}
+
+function joinUpcomingLive() {
+    if (_upcomingLiveLink) window.open(_upcomingLiveLink, '_blank');
+}
+
 
 
