@@ -132,6 +132,12 @@
 
         <ul class="menu" id="sidebar-menu">
             <li class="active" onclick="navigateTo('dashboard', this)"><i class="fas fa-home"></i> الرئيسية</li>
+            
+            <li onclick="navigateTo('live-class', this)" id="nav-live-class" style="display:none; align-items:center; justify-content:space-between; background:var(--danger-glow); color:var(--danger); border:1px solid rgba(239, 68, 68, 0.3); margin-top:5px; margin-bottom:5px;">
+                <div><i class="fas fa-video"></i> الحصص المباشرة</div>
+                <span class="badge badge-danger" id="nav-live-badge" style="display:none; animation:blink 1s infinite;"><i class="fas fa-circle" style="font-size:8px;"></i> Live</span>
+            </li>
+
             <div class="menu-section">📚 الوحدات</div>
             <div id="dynamic-menu-units"></div>
             <div class="menu-section">📊 المزيد</div>
@@ -500,6 +506,23 @@
                 </div>
             </div>
         </div>
+        <!-- ════════════ LIVE CLASS VIEW ════════════ -->
+        <div id="view-live-class" class="view hidden">
+            <div class="card" style="margin-bottom: 24px;">
+                <div style="display:flex; align-items:center; gap:15px; margin-bottom:10px;">
+                    <i class="fas fa-video fa-2x text-danger"></i>
+                    <h2 class="fw-800">الحصص المباشرة (Live)</h2>
+                </div>
+                <p class="text-muted">هنا تجد الحصص المباشرة المجدولة لك. عندما يفتح المعلم البث، سيظهر زر الدخول هنا.</p>
+            </div>
+
+            <div id="student-live-container" class="grid grid-2">
+                <div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted);">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                </div>
+            </div>
+        </div>
+
 
         <!-- ════════════ LIVE CHAT VIEW ════════════ -->
         <div id="view-chat-human" class="view hidden" style="height: calc(100vh - 100px); padding:0;">
