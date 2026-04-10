@@ -1,4 +1,5 @@
 
+
         // Check authentication
         const SESSION_KEY = 'numi_session_user';
         const sessionSaved = localStorage.getItem(SESSION_KEY);
@@ -1028,27 +1029,19 @@
             }
         }
 
-        async function loadZoneData(zone) {
+        function loadZoneData(zone) {
             const prefix = zone.replace('Zone', '').toLowerCase();
             const selEl = document.getElementById(`${prefix}-lesson-select`);
+            const lPath = selEl.value;
 
-            // ① Save the currently selected lesson before any rebuild
-            const savedPath = selEl.value;
-            if (!savedPath) return document.getElementById(`${prefix}Form`).reset();
+            if (!lPath) return document.getElementById(`${prefix}Form`).reset();
 
-            // ② Fetch fresh data from backend so we always see latest saved values
-            await fetchDB();
-
-            // ③ Rebuild lesson selectors then restore the selection
-            buildNavLessonSelectors();
-            selEl.value = savedPath;
-
-            // ④ Get the lesson reference from refreshed db
-            const l = getLessonRef(savedPath);
+            const l = getLessonRef(lPath);
             if (!l) return document.getElementById(`${prefix}Form`).reset();
 
             const data = l[zone] || {};
-            document.getElementById(`${prefix}-title`).value = data.title || '';
+            const titleEl = document.getElementById(`${prefix}-title`);
+            if (titleEl) titleEl.value = data.title || '';
 
             if (zone === 'quizZone') {
                 document.getElementById('quiz-url').value = data.url || '';
@@ -1064,13 +1057,17 @@
                     document.getElementById('ai-quiz-preview').innerHTML = '';
                 }
             } else {
-                document.getElementById(`${prefix}-url`).value = data.url || '';
+                const urlEl = document.getElementById(`${prefix}-url`);
+                if (urlEl) urlEl.value = data.url || '';
             }
 
             if (zone === 'videoZone') {
-                document.getElementById('video-watermark').value = data.watermark || '';
-                document.getElementById('video-drm').checked = data.drm || false;
-                document.getElementById('video-learn-file').value = data.learnFile || '';
+                const wm = document.getElementById('video-watermark');
+                if (wm) wm.value = data.watermark || '';
+                const drm = document.getElementById('video-drm');
+                if (drm) drm.checked = data.drm || false;
+                const lrn = document.getElementById('video-learn-file');
+                if (lrn) lrn.value = data.learnFile || '';
             }
 
             if (zone === 'gameZone') {
@@ -1085,6 +1082,7 @@
             const prefix = zone.replace('Zone', '').toLowerCase();
             const selEl = document.getElementById(`${prefix}-lesson-select`);
             const lPath = selEl.value;
+
             if (!lPath) return alert('برجاء اختيار الدرس أولاً');
 
             try {
@@ -1092,26 +1090,34 @@
                 if (!l) return alert('خطأ: لم يتم العثور على بيانات الدرس. جرب تحديث الصفحة.');
 
                 let data = {
-                    title: document.getElementById(`${prefix}-title`).value,
-                    url:   (document.getElementById(`${prefix}-url`) || {}).value || ''
+                    title: document.getElementById(`${prefix}-title`)?.value || '',
+                    url:   document.getElementById(`${prefix}-url`)?.value || ''
                 };
+
                 if (zone === 'quizZone') {
-                    const nativeJson = document.getElementById('quiz-native-data').value;
-                    if (nativeJson) { try { data.nativeData = JSON.parse(nativeJson); } catch(_){} }
-                    data.duration = document.getElementById('quiz-duration').value;
-                    data.deadline = document.getElementById('quiz-deadline').value;
+                    const str = document.getElementById('quiz-native-data')?.value;
+                    if (str) {
+                        try { data.nativeData = JSON.parse(str); } catch(_) {}
+                    }
+                    data.duration = document.getElementById('quiz-duration')?.value || '';
+                    data.deadline = document.getElementById('quiz-deadline')?.value || '';
                 }
+
                 if (zone === 'videoZone') {
-                    data.watermark = document.getElementById('video-watermark').value;
-                    data.drm       = document.getElementById('video-drm').checked;
-                    data.learnFile = document.getElementById('video-learn-file').value.trim();
+                    data.watermark = document.getElementById('video-watermark')?.value || '';
+                    data.drm       = document.getElementById('video-drm')?.checked || false;
+                    data.learnFile = document.getElementById('video-learn-file')?.value.trim() || '';
                 }
 
                 l[zone] = data;
 
-                // Save to server and restore selection
                 await saveDB();
-                selEl.value = lPath; // restore after buildNavLessonSelectors inside saveDB
+
+                // Re-select the option because saveDB rebuilt the dropdowns!
+                setTimeout(() => {
+                    const freshSel = document.getElementById(`${prefix}-lesson-select`);
+                    if (freshSel) freshSel.value = lPath;
+                }, 50);
 
                 alert('تم حفظ التعديلات بنجاح ✅');
             } catch (err) {
