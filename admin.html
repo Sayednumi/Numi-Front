@@ -4400,11 +4400,23 @@
             const grpSel = document.getElementById('live-group-select');
             grpSel.innerHTML = '<option value="">― اختر المجموعة ―</option>';
             if (!cid || !db?.classes?.[cid]?.groups) return;
+
             const groups = db.classes[cid].groups;
+            let hasAnyLive = false;
+
             for (const gid in groups) {
-                if (groups[gid].liveEnabled) {
-                    grpSel.innerHTML += `<option value="${cid}_${gid}">${groups[gid].name}</option>`;
+                const g = groups[gid];
+                if (g.liveEnabled) {
+                    grpSel.innerHTML += `<option value="${cid}_${gid}">✅ ${g.name}</option>`;
+                    hasAnyLive = true;
+                } else {
+                    // Show but disabled — teacher can see it and know to enable first
+                    grpSel.innerHTML += `<option value="" disabled style="color:#888;">⚠️ ${g.name} (غير مفعل لها Live)</option>`;
                 }
+            }
+
+            if (!hasAnyLive) {
+                grpSel.innerHTML += `<option value="" disabled style="color:var(--warning);">— لا توجد مجموعات مفعل لها Live في هذا الصف —</option>`;
             }
         }
 
