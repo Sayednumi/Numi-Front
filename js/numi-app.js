@@ -243,9 +243,6 @@ function showApp(u) {
 
     // Init Real-time Chat
     initHumanChatSocket();
-    
-    // Init Live Classes Check
-    checkLiveClasses();
 }
 
 function updateSidebarAvatar() {
@@ -1047,7 +1044,6 @@ function navigateTo(viewId, menuItem) {
     if (viewId === 'progress') renderProgressPage();
     if (viewId === 'achievements') renderAchievements();
     if (viewId === 'dashboard') renderDashboard();
-    if (viewId === 'live-class') fetchStudentLiveClasses();
     if (viewId === 'chat-human') {
         switchHumanChat('group');
         const badge = document.getElementById('unread-human-total');
@@ -2010,89 +2006,3 @@ async function sendHumanMessage() {
     }
 }
 
-// ═══════════════════════════════════════════════════════════
-// LIVE CLASSES - STUDENT VIEW
-// ═══════════════════════════════════════════════════════════
-let studentLivePoll = null;
-
-async function checkLiveClasses() {
-    if (!currentUser || !currentUser.classId || !currentUser.groupId) return;
-    
-    // Check if live classes are enabled for this group
-    const group = platformDB?.classes?.[currentUser.classId]?.groups?.[currentUser.groupId];
-    const navItem = document.getElementById('nav-live-class');
-    
-    if (group && group.enableLive) {
-        navItem.style.display = 'flex';
-        // Polling to check if there's any active LIVE session
-        fetchStudentLiveClasses();
-        if(studentLivePoll) clearInterval(studentLivePoll);
-        studentLivePoll = setInterval(fetchStudentLiveClasses, 30000); // Check every 30s
-    } else {
-        navItem.style.display = 'none';
-        if(studentLivePoll) clearInterval(studentLivePoll);
-    }
-}
-
-async function fetchStudentLiveClasses() {
-    if (!currentUser || !currentUser.groupId) return;
-    try {
-        const res = await fetch(`${API_URL}/live-classes?groupId=${currentUser.groupId}`);
-        const data = await res.json();
-        if (data.success) {
-            const classes = data.classes;
-            if(document.getElementById('view-live-class').classList.contains('hidden') === false){
-                renderStudentLiveClasses(classes);
-            }
-            
-            // Check if any is "Live"
-            const hasLive = classes.some(c => c.status === 'Live');
-            const badge = document.getElementById('nav-live-badge');
-            if(badge) badge.style.display = hasLive ? 'inline-block' : 'none';
-        }
-    } catch(e) { console.error('Live Fetch Error:', e); }
-}
-
-function renderStudentLiveClasses(classes) {
-    const listEl = document.getElementById('student-live-container');
-    if (!listEl) return;
-    listEl.innerHTML = '';
-
-    const validClasses = classes.filter(c => c.status === 'Scheduled' || c.status === 'Live');
-    
-    if (validClasses.length === 0) {
-        listEl.innerHTML = `
-            <div style="grid-column:1/-1; text-align:center; padding:40px; background:var(--card); border-radius:16px; border:1px dashed rgba(255,255,255,0.1);">
-                <i class="fas fa-calendar-times fa-3x" style="color:var(--text-muted); margin-bottom:15px;"></i>
-                <h3 style="color:var(--text-muted);">لا توجد حصص مباشرة مجدولة حالياً</h3>
-                <p style="font-size:14px; color:var(--text-muted); margin-top:5px;">سنقوم بإعلامك فور جدولة المعلم لحصة جديدة.</p>
-            </div>
-        `;
-        return;
-    }
-
-    validClasses.forEach(c => {
-        const isLive = c.status === 'Live';
-        listEl.innerHTML += `
-            <div class="card" style="border:1px solid ${isLive ? 'var(--danger)' : 'rgba(255,255,255,0.1)'}; background:${isLive ? 'rgba(239, 68, 68, 0.05)' : 'var(--card)'}; position:relative; overflow:hidden;">
-                ${isLive ? '<div style="position:absolute; top:0; left:0; right:0; height:4px; background:var(--danger); animation:pulse 1.5s infinite;"></div>' : ''}
-                <div style="margin-bottom:15px;">
-                    ${isLive 
-                        ? '<span class="badge" style="background:#ef4444; float:left; animation:blink 1s infinite;"><i class="fas fa-circle" style="font-size:8px;"></i> البث يعمل الآن</span>' 
-                        : '<span class="badge badge-warning" style="float:left;">مجدولة</span>'}
-                    <h3 style="margin-bottom:5px; font-weight:800; font-size:18px;">${c.title}</h3>
-                    <div style="color:var(--text-muted); font-size:13px; display:flex; gap:15px;">
-                        <span><i class="far fa-calendar-alt"></i> ${c.date}</span>
-                        <span><i class="far fa-clock"></i> ${c.time}</span>
-                    </div>
-                </div>
-                
-                <div style="margin-top:20px;">
-                    ${isLive 
-                        ? `<button class="btn w-full" style="background:var(--danger); font-size:16px; padding:12px;" onclick="window.open('${c.link}', '_blank')"><i class="fas fa-sign-in-alt"></i> انضم للحصة الآن (فتح الرابط)</button>`
-                        : `<button class="btn btn-ghost w-full" disabled style="opacity:0.6;"><i class="fas fa-lock"></i> الرابط سيظهر عند بدء المعلم للبث</button>`}
-                </div>
-            </div>
-        `;
-    });
-}

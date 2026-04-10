@@ -676,7 +676,6 @@
             <li><a href="#" data-target="students"><i class="fas fa-user-graduate"></i> إدارة الطلاب</a></li>
             <li><a href="#" data-target="reports" onclick="initReports()"><i class="fas fa-chart-bar"></i> التقارير والنتائج</a></li>
             <li><a href="#" data-target="question-bank" onclick="renderQuestionBank()"><i class="fas fa-database"></i> بنك الأسئلة</a></li>
-            <li><a href="#" data-target="live-classes" onclick="loadLiveClassesAdmin()"><i class="fas fa-video"></i> إدارة الحصص المباشرة</a></li>
             <li><a href="#" data-target="chat" onclick="renderChatHierarchy()"><i class="fas fa-comments"></i> الدردشة</a></li>
             <li><a href="#" data-target="teacher-platforms" onclick="loadTeacherPlatforms()"><i class="fas fa-th-large"></i> المنصات المساعدة</a></li>
             <li><a href="#" data-target="settings"><i class="fas fa-cog"></i> الإعدادات</a></li>
@@ -1010,78 +1009,6 @@
                         <button type="button" class="btn btn-danger" onclick="deleteZoneData('ailessonZone'); document.getElementById('ailesson-preview').style.display='none'; document.getElementById('ailesson-html-data').value='';"><i class="fas fa-trash"></i> حذف الدرس</button>
                     </div>
                 </form>
-            </div>
-        </div>
-
-        <!-- Live Classes Section -->
-        <div id="live-classes" class="section">
-            <div class="card">
-                <div class="card-header">
-                    <h2><i class="fas fa-video"></i> إدارة الحصص المباشرة</h2>
-                    <select id="live-group-select" class="form-control" style="max-width:300px;" onchange="renderLiveClassesAdmin()">
-                        <option value="">اختر المجموعة...</option>
-                    </select>
-                </div>
-                
-                <div id="live-stats-container" style="display:none; margin:20px 0;">
-                    <div class="grid grid-3">
-                        <div class="card" style="background:rgba(255,255,255,0.02); text-align:center;">
-                            <h4 style="color:var(--text-muted); margin-bottom:10px;">إجمالي الحصص المقررة</h4>
-                            <input type="number" id="live-total-input" class="form-control" style="font-size:24px; font-weight:bold; text-align:center; width:100px; margin:0 auto;" value="0" onchange="updateLiveStats()">
-                        </div>
-                        <div class="card" style="background:rgba(255,255,255,0.02); text-align:center;">
-                            <h4 style="color:var(--text-muted); margin-bottom:10px;">الحصص المنفذة</h4>
-                            <div id="live-completed-lbl" style="font-size:32px; font-weight:bold; color:var(--success);">0</div>
-                        </div>
-                        <div class="card" style="background:rgba(255,255,255,0.02); text-align:center;">
-                            <h4 style="color:var(--text-muted); margin-bottom:10px;">الحصص المتبقية</h4>
-                            <div id="live-remaining-lbl" style="font-size:32px; font-weight:bold; color:var(--warning);">0</div>
-                        </div>
-                    </div>
-                    <div style="text-align:left; margin-top:10px;">
-                        <button class="btn btn-danger btn-sm" onclick="resetLiveStats()"><i class="fas fa-redo"></i> بدء دورة جديدة (تصفير الحصص)</button>
-                    </div>
-                </div>
-
-                <div id="live-add-container" style="display:none; margin-top:30px; border-top:1px solid rgba(255,255,255,0.1); padding-top:20px;">
-                    <h3>جدولة حصة جديدة</h3>
-                    <form onsubmit="handleLiveSubmit(event)" style="display:flex; flex-wrap:wrap; gap:15px; margin-top:15px; align-items:flex-end;">
-                        <div style="flex:1; min-width:200px;">
-                            <label>عنوان الحصة</label>
-                            <input type="text" id="live-title" class="form-control" required>
-                        </div>
-                        <div style="flex:1; min-width:200px;">
-                            <label>رابط الحصة (Zoom/Meet)</label>
-                            <input type="url" id="live-link" class="form-control" required>
-                        </div>
-                        <div style="width:140px;">
-                            <label>التاريخ</label>
-                            <input type="date" id="live-date" class="form-control" required>
-                        </div>
-                        <div style="width:120px;">
-                            <label>الوقت</label>
-                            <input type="time" id="live-time" class="form-control" required>
-                        </div>
-                        <div style="width:120px;">
-                            <label>المدة (دقيقة)</label>
-                            <input type="number" id="live-duration" class="form-control" value="60" required>
-                        </div>
-                        <div>
-                            <button type="submit" class="btn"><i class="fas fa-plus"></i> جدولة</button>
-                        </div>
-                    </form>
-                </div>
-
-                <div id="live-list-container" style="display:none; margin-top:30px;">
-                    <h3>سجل الحصص</h3>
-                    <div id="live-list" style="margin-top:15px; display:flex; flex-direction:column; gap:10px;">
-                        <!-- Live Classes Cards Go Here -->
-                    </div>
-                </div>
-                
-                <div id="live-empty-msg" style="text-align:center; padding:40px; color:var(--text-muted);">
-                    يرجى تحديد مجموعة مفعل لها "الحصص المباشرة" من القائمة لنتمكن من عرض التحكم.
-                </div>
             </div>
         </div>
 
@@ -1460,11 +1387,7 @@
                     <label>اسم المجموعة</label>
                     <input type="text" id="group-name" class="form-control" required>
                 </div>
-                <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-top:15px; padding:15px; background:rgba(255,255,255,0.03); border-radius:8px;">
-                    <input type="checkbox" id="group-live-enable" style="width:18px;height:18px;accent-color:var(--primary);">
-                    <label for="group-live-enable" style="margin:0;cursor:pointer;font-weight:bold;">تفعيل الحصص المباشرة (Live Classes)</label>
-                </div>
-                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top:20px;">
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
                     <button type="button" class="btn btn-danger" onclick="closeModal('groupModal')">إلغاء</button>
                     <button type="submit" class="btn">حفظ</button>
                 </div>
@@ -2479,14 +2402,9 @@
             const id = document.getElementById('group-id').value || generateId();
             const classId = document.getElementById('group-class-id').value;
             const name = document.getElementById('group-name').value;
-            const enableLive = document.getElementById('group-live-enable').checked;
-            
             if(!db.classes[classId].groups) db.classes[classId].groups = {};
             if(!db.classes[classId].groups[id]) db.classes[classId].groups[id] = { courses: {} };
-            
             db.classes[classId].groups[id].name = name;
-            db.classes[classId].groups[id].enableLive = enableLive;
-            
             saveDB(); renderGroups(); closeModal('groupModal');
         }
         function renderGroups() {
@@ -2497,12 +2415,8 @@
                 if(classFilter && classFilter !== cid) continue;
                 let groups = db.classes[cid].groups || {};
                 for(let gid in groups) {
-                    const hasLive = groups[gid].enableLive ? '<span class="badge badge-success"><i class="fas fa-video"></i> لايف مفعل</span>' : '';
                     list.innerHTML += `<div class="item-row">
-                        <div>
-                            <strong>${groups[gid].name}</strong> <small style="color:var(--text-muted);">(${db.classes[cid].name})</small>
-                            <div style="margin-top:5px;">${hasLive}</div>
-                        </div>
+                        <div><strong>${groups[gid].name}</strong> <small style="color:var(--text-muted);">(${db.classes[cid].name})</small></div>
                         <div class="item-actions">
                             <button class="btn btn-sm" onclick="editGroup('${cid}','${gid}')"><i class="fas fa-edit"></i></button>
                             <button class="btn btn-sm btn-danger" onclick="deleteGroup('${cid}','${gid}')"><i class="fas fa-trash"></i></button>
@@ -2512,11 +2426,9 @@
             }
         }
         function editGroup(cid, gid) {
-            const group = db.classes[cid].groups[gid];
             document.getElementById('group-id').value = gid;
             document.getElementById('group-class-id').value = cid;
-            document.getElementById('group-name').value = group.name;
-            document.getElementById('group-live-enable').checked = group.enableLive || false;
+            document.getElementById('group-name').value = db.classes[cid].groups[gid].name;
             document.getElementById('groupModalTitle').innerText = "تعديل المجموعة";
             openModal('groupModal');
         }
@@ -4330,180 +4242,6 @@
             }
         }
         
-        // ═══════════════════════════════════════════════════════════
-        // LIVE CLASSES SYSTEM
-        // ═══════════════════════════════════════════════════════════
-        let _liveClassesData = [];
-
-        function loadLiveClassesAdmin() {
-            showSection('live-classes');
-            const select = document.getElementById('live-group-select');
-            const selectedVal = select.value;
-            select.innerHTML = '<option value="">اختر المجموعة...</option>';
-            for(let cid in db.classes) {
-                for(let gid in db.classes[cid].groups) {
-                    if (db.classes[cid].groups[gid].enableLive) {
-                        select.innerHTML += `<option value="${cid}_${gid}" ${selectedVal === `${cid}_${gid}` ? 'selected' : ''}>${db.classes[cid].groups[gid].name} (${db.classes[cid].name})</option>`;
-                    }
-                }
-            }
-            if (selectedVal) renderLiveClassesAdmin();
-        }
-
-        async function fetchLiveClassesList(groupId) {
-            try {
-                const res = await fetch(`${API_URL}/live-classes?groupId=${groupId}`);
-                const data = await res.json();
-                if (data.success) {
-                    _liveClassesData = data.classes;
-                }
-            } catch(e) { console.error('Error fetching live classes', e); }
-        }
-
-        async function renderLiveClassesAdmin() {
-            const val = document.getElementById('live-group-select').value;
-            const containerStats = document.getElementById('live-stats-container');
-            const containerAdd = document.getElementById('live-add-container');
-            const containerList = document.getElementById('live-list-container');
-            const emptyMsg = document.getElementById('live-empty-msg');
-            
-            if (!val) {
-                containerStats.style.display = 'none'; containerAdd.style.display = 'none'; containerList.style.display = 'none';
-                emptyMsg.style.display = 'block';
-                return;
-            }
-
-            const [cid, gid] = val.split('_');
-            const group = db.classes[cid]?.groups[gid];
-            if (!group) return;
-
-            // Stats handling
-            if (!group.liveStats) group.liveStats = { total: 0, completed: 0 };
-            document.getElementById('live-total-input').value = group.liveStats.total;
-            document.getElementById('live-completed-lbl').textContent = group.liveStats.completed;
-            document.getElementById('live-remaining-lbl').textContent = Math.max(0, group.liveStats.total - group.liveStats.completed);
-
-            emptyMsg.style.display = 'none';
-            containerStats.style.display = 'block';
-            containerAdd.style.display = 'block';
-            containerList.style.display = 'block';
-
-            await fetchLiveClassesList(gid);
-            
-            const listEl = document.getElementById('live-list');
-            if (_liveClassesData.length === 0) {
-                listEl.innerHTML = '<div style="text-align:center; padding:15px; color:var(--text-muted);">لا توجد حصص مجدولة لهذه المجموعة حالياً.</div>';
-                return;
-            }
-
-            listEl.innerHTML = _liveClassesData.map(c => `
-                <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:15px; display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <div style="font-weight:700; font-size:16px;">${c.title}</div>
-                        <div style="color:var(--text-muted); font-size:13px; margin-top:5px;">
-                            <i class="far fa-calendar-alt"></i> ${c.date} | <i class="far fa-clock"></i> ${c.time} | <i class="fas fa-hourglass-half"></i> ${c.duration} دقيقة
-                        </div>
-                        <div style="margin-top:8px;">
-                            ${c.status === 'Scheduled' ? '<span class="badge badge-warning">مجدولة</span>' : 
-                              c.status === 'Live' ? '<span class="badge" style="background:#ef4444;"><i class="fas fa-circle" style="font-size:8px; animation:blink 1s infinite;"></i> جاري البث (Live)</span>' : 
-                              '<span class="badge badge-success">مكتملة</span>'}
-                        </div>
-                    </div>
-                    <div style="display:flex; gap:10px;">
-                        ${c.status === 'Scheduled' ? `<button class="btn btn-sm" style="background:var(--success);" onclick="setLiveClassStatus('${c._id}', 'Live')"><i class="fas fa-play"></i> بدء البث</button>` : ''}
-                        ${c.status === 'Live' ? `<button class="btn btn-sm btn-danger" onclick="setLiveClassStatus('${c._id}', 'Finished')"><i class="fas fa-stop"></i> إنهاء البث</button>` : ''}
-                        <button class="btn btn-sm" onclick="window.open('${c.link}', '_blank')"><i class="fas fa-external-link-alt"></i> فتح الرابط</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteLiveClass('${c._id}')"><i class="fas fa-trash"></i></button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function updateLiveStats() {
-            const val = document.getElementById('live-group-select').value;
-            if(!val) return;
-            const [cid, gid] = val.split('_');
-            const group = db.classes[cid].groups[gid];
-            group.liveStats.total = parseInt(document.getElementById('live-total-input').value) || 0;
-            saveDB();
-            renderLiveClassesAdmin(); // update UI re-calculation
-            alert('تم حفظ العداد.');
-        }
-
-        function resetLiveStats() {
-            const val = document.getElementById('live-group-select').value;
-            if(!val) return;
-            if(!confirm('هل أنت متأكد من تصفير حصص هذه الدورة وبدء دورة جديدة؟')) return;
-            const [cid, gid] = val.split('_');
-            db.classes[cid].groups[gid].liveStats.completed = 0;
-            saveDB();
-            renderLiveClassesAdmin();
-            alert('تم بدء الدورة الجديدة وتصفير العداد.');
-        }
-
-        async function handleLiveSubmit(e) {
-            e.preventDefault();
-            const val = document.getElementById('live-group-select').value;
-            if(!val) return;
-            const [, gid] = val.split('_');
-
-            const payload = {
-                title: document.getElementById('live-title').value,
-                link: document.getElementById('live-link').value,
-                date: document.getElementById('live-date').value,
-                time: document.getElementById('live-time').value,
-                duration: parseInt(document.getElementById('live-duration').value) || 60,
-                groupId: gid,
-                teacherId: TEACHER_ID
-            };
-
-            const btn = e.target.querySelector('button[type="submit"]');
-            btn.disabled = true; btn.innerHTML = 'جاري الحفظ...';
-
-            try {
-                const res = await fetch(`${API_URL}/live-classes`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
-                });
-                if(res.ok) {
-                    e.target.reset();
-                    await renderLiveClassesAdmin();
-                } else alert('حدث خطأ');
-            } catch(err) { alert('فشل الاتصال'); }
-            btn.disabled = false; btn.innerHTML = '<i class="fas fa-plus"></i> جدولة';
-        }
-
-        async function setLiveClassStatus(id, newStatus) {
-            if (newStatus === 'Finished') {
-                if(!confirm('هل انتهيت بالفعل من هذه الحصة؟')) return;
-            }
-            try {
-                const res = await fetch(`${API_URL}/live-classes/${id}`, {
-                    method: 'PUT',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ status: newStatus })
-                });
-                if (res.ok) {
-                    // Update stats
-                    if (newStatus === 'Finished') {
-                        const val = document.getElementById('live-group-select').value;
-                        const [cid, gid] = val.split('_');
-                        if(db.classes[cid].groups[gid].liveStats) {
-                            db.classes[cid].groups[gid].liveStats.completed++;
-                            saveDB();
-                        }
-                    }
-                    await renderLiveClassesAdmin();
-                }
-            } catch(e) { console.error(e); alert('خطأ'); }
-        }
-
-        async function deleteLiveClass(id) {
-            if(!confirm('هل تريد حذف هذه الحصة؟')) return;
-            try {
-                await fetch(`${API_URL}/live-classes/${id}`, { method: 'DELETE' });
-                await renderLiveClassesAdmin();
-            } catch(e) { alert('خطأ'); }
-        }
+    </script>
+</body>
 </html>
