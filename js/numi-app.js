@@ -597,9 +597,12 @@ function openLetsLearnFile() {
     if (url) window.open(url, '_blank', 'noopener,noreferrer');
 }
 
-function openLesson(id) {
+async function openLesson(id) {
+    // Always fetch latest lesson data so student sees teacher's newest edits
+    await loadLessonsFromBackend();
     const lesson = lessonsList.find(l => l.id === id);
     if (!lesson) return;
+
     currentLessonObj = lesson;
     // Reset Quiz state for the new lesson
     currentQuizScore = null;

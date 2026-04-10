@@ -2748,21 +2748,34 @@
             }
         }
 
-        function loadZoneData(zone) {
+        async function loadZoneData(zone) {
             const prefix = zone.replace('Zone', '').toLowerCase();
-            const lPath = document.getElementById(`${prefix}-lesson-select`).value;
-            const l = getLessonRef(lPath);
-            if(!l) return document.getElementById(`${prefix}Form`).reset();
-            
+            const selEl = document.getElementById(`${prefix}-lesson-select`);
+
+            // ① Save the currently selected lesson before any rebuild
+            const savedPath = selEl.value;
+            if (!savedPath) return document.getElementById(`${prefix}Form`).reset();
+
+            // ② Fetch fresh data from backend so we always see latest saved values
+            await fetchDB();
+
+            // ③ Rebuild lesson selectors then restore the selection
+            buildNavLessonSelectors();
+            selEl.value = savedPath;
+
+            // ④ Get the lesson reference from refreshed db
+            const l = getLessonRef(savedPath);
+            if (!l) return document.getElementById(`${prefix}Form`).reset();
+
             const data = l[zone] || {};
             document.getElementById(`${prefix}-title`).value = data.title || '';
-            
-            if(zone === 'quizZone') {
+
+            if (zone === 'quizZone') {
                 document.getElementById('quiz-url').value = data.url || '';
                 document.getElementById('quiz-duration').value = data.duration || '';
                 document.getElementById('quiz-deadline').value = data.deadline || '';
                 document.getElementById('quiz-native-data').value = data.nativeData ? JSON.stringify(data.nativeData) : '';
-                if(data.nativeData) {
+                if (data.nativeData) {
                     toggleQuizMode('native');
                     let rawQs = Array.isArray(data.nativeData) ? data.nativeData : (data.nativeData.questions || []);
                     renderQuizPreview(rawQs);
@@ -2774,11 +2787,12 @@
                 document.getElementById(`${prefix}-url`).value = data.url || '';
             }
 
-            if(zone === 'videoZone') {
+            if (zone === 'videoZone') {
                 document.getElementById('video-watermark').value = data.watermark || '';
                 document.getElementById('video-drm').checked = data.drm || false;
                 document.getElementById('video-learn-file').value = data.learnFile || '';
             }
+
             if (zone === 'gameZone') {
                 updateGamePreview(`${prefix}-preview`, data.url || '');
             } else {
@@ -2786,31 +2800,39 @@
             }
         }
 
-        function saveZoneData(e, zone) {
+        async function saveZoneData(e, zone) {
             e.preventDefault();
             const prefix = zone.replace('Zone', '').toLowerCase();
-            const lPath = document.getElementById(`${prefix}-lesson-select`).value;
-            if(!lPath) return alert('برجاء اختيار الدرس');
-            
+            const selEl = document.getElementById(`${prefix}-lesson-select`);
+            const lPath = selEl.value;
+            if (!lPath) return alert('برجاء اختيار الدرس');
+
             const l = getLessonRef(lPath);
             let data = {
                 title: document.getElementById(`${prefix}-title`).value,
-                url: document.getElementById(`${prefix}-url`).value
+                url:   document.getElementById(`${prefix}-url`)?.value || ''
             };
-            if(zone === 'quizZone') {
+            if (zone === 'quizZone') {
                 const nativeJson = document.getElementById('quiz-native-data').value;
-                if(nativeJson) data.nativeData = JSON.parse(nativeJson);
+                if (nativeJson) data.nativeData = JSON.parse(nativeJson);
                 data.duration = document.getElementById('quiz-duration').value;
                 data.deadline = document.getElementById('quiz-deadline').value;
             }
-            if(zone === 'videoZone') {
+            if (zone === 'videoZone') {
                 data.watermark = document.getElementById('video-watermark').value;
-                data.drm = document.getElementById('video-drm').checked;
+                data.drm       = document.getElementById('video-drm').checked;
                 data.learnFile = document.getElementById('video-learn-file').value.trim();
             }
             l[zone] = data;
-            saveDB();
-            alert('تم الحفظ بنجاح!');
+
+            // Save to server
+            await saveDB();
+
+            // ✔ Restore lesson selection after buildNavLessonSelectors() rebuilds the dropdown
+            buildNavLessonSelectors();
+            selEl.value = lPath;
+
+            alert('تم الحفظ بنجاح! ✅');
         }
 
         function deleteZoneData(zone) {
