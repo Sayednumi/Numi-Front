@@ -590,53 +590,11 @@ function getEmbedUrl(url) {
     return finalUrl;
 }
 
-let pendingExternalUrl = '';
-
-function openFileGateway(url) {
-    if (!url) return;
-    pendingExternalUrl = url;
-    
-    // Switch to file gateway view
-    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-    document.getElementById('view-file-gateway').classList.remove('hidden');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    
-    // Reset state
-    const loader = document.getElementById('file-gateway-loader');
-    const icon = document.getElementById('file-gateway-icon');
-    const btn = document.getElementById('file-gateway-btn');
-    const title = document.getElementById('file-gateway-title');
-    const desc = document.getElementById('file-gateway-desc');
-    
-    if(loader) loader.style.display = 'block';
-    if(icon) icon.style.display = 'none';
-    if(btn) btn.style.display = 'none';
-    if(title) title.textContent = 'جاري التجهيز...';
-    if(desc) desc.textContent = 'يرجى الانتظار، نقوم بتجهيز الملف الخارجي لك لفتحه بأمان خارج إطار المنصة.';
-    
-    setTimeout(() => {
-        const gw = document.getElementById('view-file-gateway');
-        if (gw && !gw.classList.contains('hidden')) {
-            if(loader) loader.style.display = 'none';
-            if(icon) icon.style.display = 'block';
-            if(title) title.textContent = 'تم التجهيز بنجاح ✅';
-            if(desc) desc.textContent = 'الملف جاهز الآن. اضغط على الزر أدناه لفتحه في نافذة جديدة.';
-            if(btn) btn.style.display = 'block';
-        }
-    }, 1500);
-}
-
-function executeExternalLink() {
-    if (pendingExternalUrl) {
-        window.open(pendingExternalUrl, '_blank', 'noopener,noreferrer');
-    }
-}
-
-// يلا نتعلم 🚀 — redirects through Numi Gateway instead of immediate blank tab
+// يلا نتعلم 🚀 — opens the teacher-attached file in a new tab
 function openLetsLearnFile() {
     const btnWrap = document.getElementById('lets-learn-btn-wrap');
     const url = btnWrap?.dataset?.learnFile || '';
-    if (url) openFileGateway(url);
+    if (url) window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 async function openLesson(id) {
