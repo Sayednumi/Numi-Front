@@ -542,8 +542,6 @@ function getYouTubeID(url) {
 
 function getEmbedUrl(url) {
     if (!url) return '';
-
-    // If user pasted an entire <iframe> code (e.g., from OneDrive/SharePoint), extract the src link
     let finalUrl = url.trim();
     if (finalUrl.toLowerCase().startsWith('<iframe')) {
         const match = finalUrl.match(/src=["']([^"']+)["']/i);

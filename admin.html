@@ -1768,13 +1768,15 @@
             buildNavLessonSelectors();
             try {
                 // Save to Backend
-                await fetch(`${API_URL}/platform-data`, {
+                const res = await fetch(`${API_URL}/platform-data`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(db)
                 });
+                return res.ok;
             } catch (err) {
                 console.error("Failed to save DB to backend", err);
+                return false;
             }
         }
         function generateId() { return Date.now().toString(36) + Math.random().toString(36).substr(2); }
@@ -2809,12 +2811,22 @@
 
             try {
                 const l = getLessonRef(lPath);
-                if (!l) return alert('خطأ: لم يتم العثور على بيانات الدرس. جرب تحديث الصفحة.');
+                if (!l) return alert('خطأ: لم يتم العثور على بيانات الدرس.');
+
+                let rawUrl = (document.getElementById(`${prefix}-url`) || {}).value || '';
+                
+                // Sanitize URL (if user pasted <iframe>, extract src)
+                let cleanUrl = rawUrl.trim();
+                if (cleanUrl.toLowerCase().startsWith('<iframe')) {
+                    const match = cleanUrl.match(/src=["']([^"']+)["']/i);
+                    if (match) cleanUrl = match[1];
+                }
 
                 let data = {
                     title: document.getElementById(`${prefix}-title`).value,
-                    url:   (document.getElementById(`${prefix}-url`) || {}).value || ''
+                    url:   cleanUrl
                 };
+
                 if (zone === 'quizZone') {
                     const nativeJson = document.getElementById('quiz-native-data').value;
                     if (nativeJson) { try { data.nativeData = JSON.parse(nativeJson); } catch(_){} }
@@ -2829,14 +2841,16 @@
 
                 l[zone] = data;
 
-                // Save to server and restore selection
-                await saveDB();
-                selEl.value = lPath; // restore after buildNavLessonSelectors inside saveDB
-
-                alert('تم حفظ التعديلات بنجاح ✅');
+                const success = await saveDB();
+                if (success) {
+                    selEl.value = lPath; // Restore selection
+                    alert('تم حفظ التعديلات بنجاح ✅');
+                } else {
+                    alert('❌ حدث خطأ أثناء الاتصال بالسيرفر، لم يتم الحفظ.');
+                }
             } catch (err) {
                 console.error('saveZoneData error:', err);
-                alert('حدث خطأ أثناء الحفظ: ' + err.message);
+                alert('حدث خطأ غير متوقع: ' + err.message);
             }
         }
 
