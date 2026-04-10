@@ -1171,8 +1171,25 @@
                             <input type="number" id="live-duration" class="form-control" value="60" min="15" required>
                         </div>
                     </div>
+                    <div style="background:rgba(109,58,238,0.12); border:1px solid rgba(109,58,238,0.3); border-radius:10px; padding:15px; margin-bottom:10px;">
+                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-weight:700; margin-bottom:0;">
+                            <input type="checkbox" id="live-recurring" style="width:18px;height:18px;accent-color:var(--primary);" onchange="toggleRecurringOptions()">
+                            <span><i class="fas fa-redo" style="color:var(--primary);"></i> تكرار أسبوعي (حفظ نفس الموعد كل أسبوع)</span>
+                        </label>
+                        <div id="recurring-options" style="display:none; margin-top:12px;">
+                            <div class="grid" style="grid-template-columns:1fr 1fr; gap:12px;">
+                                <div class="form-group" style="margin:0;">
+                                    <label style="font-size:12px;">عدد الأسابيع الإجمالية (شاملاً التاريخ الأول)</label>
+                                    <input type="number" id="live-weeks" class="form-control" value="4" min="2" max="52" oninput="previewRecurringDates()">
+                                </div>
+                                <div style="display:flex; align-items:flex-end;">
+                                    <div id="recurring-preview" style="font-size:12px; color:var(--text-muted); line-height:1.8;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div style="text-align:left;">
-                        <button type="submit" class="btn"><i class="fas fa-save"></i> حفظ الحصة</button>
+                        <button type="submit" class="btn" id="live-submit-btn"><i class="fas fa-save"></i> حفظ الحصة</button>
                     </div>
                 </form>
 
@@ -4611,36 +4628,95 @@
             container.innerHTML = html;
         }
 
+        function toggleRecurringOptions() {
+            const isChecked = document.getElementById('live-recurring').checked;
+            document.getElementById('recurring-options').style.display = isChecked ? 'block' : 'none';
+            const btn = document.getElementById('live-submit-btn');
+            if (isChecked) {
+                btn.innerHTML = '<i class="fas fa-calendar-plus"></i> حفظ الجدول الأسبوعي';
+                previewRecurringDates();
+            } else {
+                btn.innerHTML = '<i class="fas fa-save"></i> حفظ الحصة';
+                document.getElementById('recurring-preview').innerHTML = '';
+            }
+        }
+
+        function previewRecurringDates() {
+            const dateVal = document.getElementById('live-date').value;
+            const weeks   = parseInt(document.getElementById('live-weeks').value) || 1;
+            if (!dateVal || !weeks) return;
+
+            const preview = document.getElementById('recurring-preview');
+            let html = '<strong style="color:var(--primary);">المواعيد التي ستُنشأ:</strong><br>';
+            const base = new Date(dateVal);
+            for (let i = 0; i < weeks; i++) {
+                const d = new Date(base);
+                d.setDate(base.getDate() + i * 7);
+                const ds = d.toISOString().slice(0, 10);
+                html += `<span style="color:var(--accent);">📅 ${ds}</span><br>`;
+            }
+            preview.innerHTML = html;
+        }
+
         async function handleLiveClassSubmit(e) {
             e.preventDefault();
             const groupVal = document.getElementById('live-group-select').value;
             if (!groupVal) return alert('يرجى اختيار الصف والمجموعة');
             const [classId, groupId] = groupVal.split('_');
 
-            const payload = {
+            const basePayload = {
                 teacherId: TEACHER_ID,
                 classId,
                 groupId,
                 title: document.getElementById('live-title').value,
-                link: document.getElementById('live-link').value,
-                date: document.getElementById('live-date').value,
-                time: document.getElementById('live-time').value,
+                link:  document.getElementById('live-link').value,
+                date:  document.getElementById('live-date').value,
+                time:  document.getElementById('live-time').value,
                 duration: parseInt(document.getElementById('live-duration').value)
             };
 
+            const isRecurring = document.getElementById('live-recurring').checked;
+            const weeks = isRecurring ? (parseInt(document.getElementById('live-weeks').value) || 1) : 1;
+
+            const btn = document.getElementById('live-submit-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ الحفظ...';
+
             try {
-                const res = await fetch(`${API_URL}/live-classes`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                if (data.success) {
-                    document.getElementById('liveClassForm').reset();
-                    loadLiveClasses();
-                    alert('تم جدولة الحصة بنجاح!');
+                const baseDate = new Date(basePayload.date);
+                let savedCount = 0;
+
+                for (let i = 0; i < weeks; i++) {
+                    const d = new Date(baseDate);
+                    d.setDate(baseDate.getDate() + i * 7);
+                    const payload = { ...basePayload, date: d.toISOString().slice(0, 10) };
+                    if (isRecurring) btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> حفظ ${i+1} من ${weeks}...`;
+
+                    const res = await fetch(`${API_URL}/live-classes`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+                    if (data.success) savedCount++;
                 }
-            } catch(err) { alert('خطأ في الحفظ!'); }
+
+                document.getElementById('liveClassForm').reset();
+                document.getElementById('recurring-options').style.display = 'none';
+                document.getElementById('recurring-preview').innerHTML = '';
+                loadLiveClasses();
+
+                if (isRecurring) {
+                    alert(`✅ تم جدولة ${savedCount} حصة (${weeks} أسابيع) بنجاح!`);
+                } else {
+                    alert('✅ تم جدولة الحصة بنجاح!');
+                }
+            } catch(err) {
+                alert('خطأ في الحفظ!');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save"></i> حفظ الحصة';
+            }
         }
 
         async function startLiveClass(id) {
