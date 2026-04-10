@@ -598,10 +598,44 @@ function openLetsLearnFile() {
 }
 
 async function openLesson(id) {
-    // Always fetch latest lesson data so student sees teacher's newest edits
-    await loadLessonsFromBackend();
+    // Refresh lesson data silently in background WITHOUT blocking lesson render.
+    // This ensures the student sees the teacher's latest edits on every visit.
+    fetch(`${API_URL}/platform-data`)
+        .then(r => r.ok ? r.json() : null)
+        .then(freshData => {
+            if (freshData?.classes) {
+                platformDB = freshData;
+                // Silently rebuild lessonsList so next openLesson call has fresh data
+                lessonsList = []; unitsList = [];
+                if (platformDB?.classes && currentUser) {
+                    const cls = platformDB.classes[currentUser.classId];
+                    if (cls?.groups?.[currentUser.groupId]) {
+                        const grp = cls.groups[currentUser.groupId];
+                        for (const crId in (grp.courses || {})) {
+                            for (const term of ['term1', 'term2']) {
+                                const units = grp.courses[crId][term]?.units || {};
+                                for (const uId in units) {
+                                    const unit = units[uId];
+                                    const unitObj = { id: uId, title: unit.title, term, lessons: [], desc: unit.desc || '' };
+                                    for (const lId in (unit.lessons || {})) {
+                                        const lesson = { ...unit.lessons[lId], _term: term, _unitId: uId, _unit: unit.title || '', _class: cls.name || '' };
+                                        if (!lesson.id) lesson.id = lId;
+                                        lessonsList.push(lesson);
+                                        unitObj.lessons.push(lesson);
+                                    }
+                                    unitsList.push(unitObj);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        })
+        .catch(() => {}); // silent fail — offline is ok
+
     const lesson = lessonsList.find(l => l.id === id);
     if (!lesson) return;
+
 
     currentLessonObj = lesson;
     // Reset Quiz state for the new lesson
