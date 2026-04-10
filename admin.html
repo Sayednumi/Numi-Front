@@ -845,6 +845,21 @@
                     <div class="form-group"><label>عنوان الفيديو</label><input type="text" class="form-control" id="video-title" required></div>
                     <div class="form-group"><label>رابط يوتيوب (Embed)</label><input type="text" class="form-control" id="video-url" oninput="updatePreview('video-preview', this.value)" required></div>
                     <div class="form-group"><label>العلامة المائية (Watermark)</label><input type="text" class="form-control" id="video-watermark"></div>
+
+                    <!-- يلا نتعلم File Field -->
+                    <div class="form-group" style="border: 1px solid rgba(168,85,247,0.35); border-radius: 12px; padding: 16px; background: rgba(124,58,237,0.06);">
+                        <label style="color: #a855f7; font-weight: 800;">
+                            <i class="fas fa-rocket" style="margin-left:6px;"></i>
+                            رابط ملف "يلا نتعلم 🚀" (اختياري)
+                        </label>
+                        <input type="text" class="form-control" id="video-learn-file"
+                               placeholder="رابط PDF / Google Drive / أي ملف دراسي...">
+                        <p style="font-size:12px; color:var(--text-muted); margin-top:8px; margin-bottom:0;">
+                            <i class="fas fa-info-circle"></i>
+                            سيظهر زر "يلا نتعلم 🚀" تحت الفيديو للطلاب عند إضافة رابط هنا.
+                        </p>
+                    </div>
+
                     <div class="form-group">
                         <label>تفعيل حماية النقل (DRM)</label>
                         <label class="switch"><input type="checkbox" id="video-drm"><span class="slider"></span></label>
@@ -2762,6 +2777,7 @@
             if(zone === 'videoZone') {
                 document.getElementById('video-watermark').value = data.watermark || '';
                 document.getElementById('video-drm').checked = data.drm || false;
+                document.getElementById('video-learn-file').value = data.learnFile || '';
             }
             if (zone === 'gameZone') {
                 updateGamePreview(`${prefix}-preview`, data.url || '');
@@ -2790,6 +2806,7 @@
             if(zone === 'videoZone') {
                 data.watermark = document.getElementById('video-watermark').value;
                 data.drm = document.getElementById('video-drm').checked;
+                data.learnFile = document.getElementById('video-learn-file').value.trim();
             }
             l[zone] = data;
             saveDB();

@@ -590,6 +590,13 @@ function getEmbedUrl(url) {
     return finalUrl;
 }
 
+// يلا نتعلم 🚀 — opens the teacher-attached file in a new tab
+function openLetsLearnFile() {
+    const btnWrap = document.getElementById('lets-learn-btn-wrap');
+    const url = btnWrap?.dataset?.learnFile || '';
+    if (url) window.open(url, '_blank', 'noopener,noreferrer');
+}
+
 function openLesson(id) {
     const lesson = lessonsList.find(l => l.id === id);
     if (!lesson) return;
@@ -649,6 +656,18 @@ function openLesson(id) {
             };
             window.addEventListener('message', window._ytErrHandler);
         }
+
+        // يلا نتعلم Button visibility
+        const learnFile = zones.video.learnFile || '';
+        const btnWrap = document.getElementById('lets-learn-btn-wrap');
+        if (btnWrap) {
+            btnWrap.style.display = learnFile ? 'block' : 'none';
+            btnWrap.dataset.learnFile = learnFile;
+        }
+    } else {
+        // Hide يلا نتعلم if no video zone
+        const btnWrap = document.getElementById('lets-learn-btn-wrap');
+        if (btnWrap) { btnWrap.style.display = 'none'; btnWrap.dataset.learnFile = ''; }
     }
 
     if (zones.ailesson?.html) {

@@ -337,6 +337,36 @@
                     <div class="video-details">
                         <div class="video-title" id="video-zone-title">شرح الدرس</div>
                         <div class="video-subtitle" id="video-zone-desc">شاهد الفيديو بالكامل ثم انتقل للخطوة التالية</div>
+
+                        <!-- يلا نتعلم Button (shown only when teacher adds a file) -->
+                        <div id="lets-learn-btn-wrap" style="display:none; margin: 14px 0;">
+                            <button id="lets-learn-btn" onclick="openLetsLearnFile()" style="
+                                display: inline-flex;
+                                align-items: center;
+                                gap: 10px;
+                                padding: 14px 28px;
+                                background: linear-gradient(135deg, #7c3aed, #a855f7, #ec4899);
+                                border: none;
+                                border-radius: 14px;
+                                color: white;
+                                font-size: 16px;
+                                font-weight: 800;
+                                cursor: pointer;
+                                font-family: 'Cairo', sans-serif;
+                                letter-spacing: 0.3px;
+                                box-shadow: 0 4px 20px rgba(124, 58, 237, 0.45);
+                                transition: all 0.25s ease;
+                                width: 100%;
+                                justify-content: center;
+                            "
+                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 28px rgba(124,58,237,0.6)';"
+                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 20px rgba(124,58,237,0.45)';">
+                                <span style="font-size:20px;">🚀</span>
+                                <span>يلا نتعلم</span>
+                                <i class="fas fa-arrow-left" style="font-size:14px; opacity:0.85;"></i>
+                            </button>
+                        </div>
+
                         <div class="flex justify-between items-center" style="flex-wrap:wrap; gap:10px;">
                             <button class="btn btn-ghost" onclick="toggleChat()"><i class="fas fa-robot"></i> AskMe Pro 💡</button>
                             <button class="complete-step-btn" onclick="completeCurrentStep()"><i class="fas fa-check-circle"></i> أكملت هذه الخطوة</button>
