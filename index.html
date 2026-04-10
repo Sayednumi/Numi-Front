@@ -135,6 +135,7 @@
             <div class="menu-section">📚 الوحدات</div>
             <div id="dynamic-menu-units"></div>
             <div class="menu-section">📊 المزيد</div>
+            <li id="nav-live-class" style="display:none;" onclick="navigateTo('live-class', this)"><i class="fas fa-video"></i> الحصص المباشرة</li>
             <li onclick="navigateTo('progress', this)"><i class="fas fa-chart-line"></i> تقدمي</li>
             <li onclick="navigateTo('achievements', this)"><i class="fas fa-trophy"></i> الإنجازات</li>
             <li onclick="navigateTo('chat-human', this)" id="nav-chat-human" style="display:flex; align-items:center; justify-content:space-between;">
@@ -432,6 +433,17 @@
                     <h3 class="fw-700 mb-16"><i class="fas fa-podcast" style="color:var(--accent);"></i> Podcast Zone</h3>
                     <iframe id="podcast-frame" class="content-frame" src=""></iframe>
                     <button class="complete-step-btn" onclick="completeCurrentStep()"><i class="fas fa-check-circle"></i> الخطوة التالية</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════ LIVE CLASS VIEW ════════════ -->
+        <div id="view-live-class" class="view hidden">
+            <h2 class="fw-800 mb-24"><i class="fas fa-video text-primary-color"></i> الحصص المباشرة</h2>
+            <div class="card p-24 text-center">
+                <p class="text-muted mb-24">مرحباً بك في فصلك الافتراضي المباشر مع المعلم.</p>
+                <div id="student-live-classes-container" class="grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:20px; text-align:right;">
+                    <i class="fas fa-spinner fa-spin fa-2x text-muted" style="grid-column: 1/-1; text-align:center;"></i>
                 </div>
             </div>
         </div>

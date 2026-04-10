@@ -243,6 +243,15 @@ function showApp(u) {
 
     // Init Real-time Chat
     initHumanChatSocket();
+
+    // Check Live Class Enabled
+    const isLiveEnabled = platformDB?.classes?.[u.classId]?.groups?.[u.groupId]?.liveEnabled;
+    if (isLiveEnabled) {
+        document.getElementById('nav-live-class').style.display = 'flex';
+        loadStudentLiveClasses(u);
+    } else {
+        document.getElementById('nav-live-class').style.display = 'none';
+    }
 }
 
 function updateSidebarAvatar() {
@@ -2005,4 +2014,65 @@ async function sendHumanMessage() {
         alert('تأكد من الاتصال بالإنترنت، حدث خطأ في الاتصال بالسيرفر.');
     }
 }
+
+// ── Live Classes ────────────────────────────────────────────────
+async function loadStudentLiveClasses(u) {
+    const container = document.getElementById('student-live-classes-container');
+    if (!container) return;
+    try {
+        const res = await fetch(`${API_URL}/live-classes?classId=${u.classId}&groupId=${u.groupId}`);
+        const data = await res.json();
+        
+        if (!data.success || !data.liveClasses || data.liveClasses.length === 0) {
+            container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);">لا توجد حصص مباشرة مجدولة لك حالياً.</div>';
+            return;
+        }
+
+        const now = new Date();
+        container.innerHTML = data.liveClasses.map(c => {
+            const classDate = new Date(`${c.date}T${c.time}`);
+            const endTime = new Date(classDate.getTime() + c.duration * 60000);
+
+            let actualStatus = c.status;
+            if (actualStatus !== 'finished') {
+                if (now > endTime) actualStatus = 'finished';
+                else if (now >= classDate && now <= endTime) actualStatus = 'live';
+                else actualStatus = 'scheduled';
+            }
+
+            if (actualStatus === 'finished') {
+                return ''; // Hide finished classes for students
+            }
+
+            let badge = '';
+            let btn = '';
+            
+            if (actualStatus === 'scheduled') {
+                badge = '<span class="badge badge-warning">مجدولة قريبًا</span>';
+                btn = `<button class="btn w-full" disabled style="opacity:0.5;cursor:not-allowed;"><i class="fas fa-clock"></i> انتظر الموعد</button>`;
+            } else if (actualStatus === 'live') {
+                badge = '<span class="badge badge-danger"><i class="fas fa-circle blink"></i> مباشر الآن</span>';
+                btn = `<button class="btn w-full text-white" onclick="window.open('${c.link}', '_blank')" style="background:var(--danger);"><i class="fas fa-video"></i> الدخول للحصة</button>`;
+            }
+
+            return `
+            <div class="card p-16" style="text-align:right; border-right: 4px solid ${actualStatus === 'live' ? 'var(--danger)' : 'var(--warning)'}; display:flex; flex-direction:column; gap:10px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <h4 class="fw-800 m-0">${c.title}</h4>
+                    ${badge}
+                </div>
+                <div class="fs-sm text-muted"><i class="fas fa-calendar-alt"></i> ${c.date} | <i class="fas fa-clock"></i> ${c.time}</div>
+                <div class="mt-8">${btn}</div>
+            </div>`;
+        }).join('');
+
+        if (container.innerHTML.trim() === '') {
+            container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);">لا توجد حصص مباشرة متاحة حالياً.</div>';
+        }
+
+    } catch (e) {
+        container.innerHTML = '<div style="color:var(--danger); grid-column:1/-1;">خطأ في جلب بيانات الحصص</div>';
+    }
+}
+
 
