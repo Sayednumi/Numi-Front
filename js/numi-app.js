@@ -391,19 +391,17 @@ function renderDashboard(filterTerm = null) {
     setEl('daily-goal-badge', 'textContent', `${Math.min(todayCount, 1)}/1`);
     setEl('daily-goal-fill', 'style.width', (todayCount >= 1 ? '100' : '0') + '%');
 
-    // Continue learning (or Review Last Lesson)
-    const lastId = completed[completed.length - 1];
-    const lastLesson = lessonsList.find(l => l.id === lastId);
-
-    if (lastLesson) {
-        setEl('last-lesson-name', 'textContent', lastLesson.title);
-        setEl('last-lesson-unit', 'textContent', lastLesson._unit || '');
-    } else if (lessonsList.length > 0) {
-        setEl('last-lesson-name', 'textContent', lessonsList[0].title);
-        setEl('last-lesson-unit', 'textContent', 'ابدأ الآن!');
+    // Continue learning card — show next lesson or last lesson
+    const nextLesson = getNextLesson();
+    if (nextLesson) {
+        const isNext = nextLesson._isNext || (currentUser?.completedLessons || []).length === 0;
+        setEl('last-lesson-name', 'textContent', nextLesson.title);
+        setEl('last-lesson-unit', 'textContent', nextLesson._unit || '');
+        setEl('continue-card-label', 'textContent', isNext ? 'الدرس التالي عليك 🚀' : 'آخر درس وصلت إليه');
     } else {
         setEl('last-lesson-name', 'textContent', 'لا يوجد دروس حالياً');
         setEl('last-lesson-unit', 'textContent', '');
+        setEl('continue-card-label', 'textContent', 'أكمل تعلمك');
     }
 
     // AI suggestion
@@ -515,11 +513,37 @@ async function renderHonorBoard() {
         console.warn('Honor board fetch failed', e);
     }
 }
-function resumeLastLesson() {
+// ── Smart Next Lesson Logic ───────────────────────────────────
+function getNextLesson() {
     const completed = currentUser?.completedLessons || [];
-    const lastId = completed[completed.length - 1];
-    if (lastId) openLesson(lastId);
-    else if (lessonsList.length > 0) openLesson(lessonsList[0].id);
+
+    if (lessonsList.length === 0) return null;
+
+    if (completed.length === 0) {
+        // Never attended any lesson → return first lesson
+        return lessonsList[0];
+    }
+
+    // Find the index of the last completed lesson in the ordered list
+    const lastCompletedId = completed[completed.length - 1];
+    const lastIdx = lessonsList.findIndex(l => l.id === lastCompletedId);
+
+    // Look for the next uncompleted lesson after the last completed one
+    if (lastIdx !== -1 && lastIdx + 1 < lessonsList.length) {
+        const nextLesson = lessonsList[lastIdx + 1];
+        if (!completed.includes(nextLesson.id)) {
+            return { ...nextLesson, _isNext: true };
+        }
+    }
+
+    // No next lesson found → return the last completed lesson (for review)
+    const lastLesson = lessonsList.find(l => l.id === lastCompletedId);
+    return lastLesson || lessonsList[0];
+}
+
+function resumeLastLesson() {
+    const lesson = getNextLesson();
+    if (lesson) openLesson(lesson.id);
 }
 
 // ── Unit View ─────────────────────────────────────────────────
