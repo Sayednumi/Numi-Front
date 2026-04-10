@@ -2789,7 +2789,20 @@
                 if (lrn) lrn.value = data.learnFile || '';
             }
 
-            if (zone === 'gameZone') {
+            if (zone === 'ailessonZone') {
+                const htmlData = document.getElementById('ailesson-html-data');
+                const previewIframe = document.getElementById('ailesson-preview-iframe');
+                const previewDiv = document.getElementById('ailesson-preview');
+                
+                if (htmlData) htmlData.value = '';
+                if (previewDiv) previewDiv.style.display = 'none';
+                
+                if (data.html) {
+                    if (htmlData) htmlData.value = data.html;
+                    if (previewIframe) previewIframe.srcdoc = data.html;
+                    if (previewDiv) previewDiv.style.display = 'block';
+                }
+            } else if (zone === 'gameZone') {
                 updateGamePreview(`${prefix}-preview`, data.url || '');
             } else {
                 updatePreview(`${prefix}-preview`, data.url || '');
@@ -2828,6 +2841,15 @@
                     data.learnFile = document.getElementById('video-learn-file')?.value.trim() || '';
                 }
 
+                if (zone === 'ailessonZone') {
+                    const htmlVal = document.getElementById('ailesson-html-data')?.value;
+                    if (htmlVal) {
+                        data.html = htmlVal;
+                    } else {
+                        data = {}; // if no HTML, save as empty
+                    }
+                }
+
                 l[zone] = data;
 
                 await saveDB();
@@ -2845,9 +2867,10 @@
             }
         }
 
-        function deleteZoneData(zone) {
+        async function deleteZoneData(zone) {
             const prefix = zone.replace('Zone', '').toLowerCase();
-            const lPath = document.getElementById(`${prefix}-lesson-select`).value;
+            const selEl = document.getElementById(`${prefix}-lesson-select`);
+            const lPath = selEl.value;
             if(!lPath) return alert('برجاء اختيار الدرس أولاً');
             
             if(!confirm(`هل أنت متأكد من حذف محتوى هذا القسم لهذا الدرس؟`)) return;
@@ -2855,8 +2878,16 @@
             const l = getLessonRef(lPath);
             if(l) {
                 l[zone] = {}; // مسح البيانات
-                saveDB();
-                loadZoneData(zone); // تحديث الحقول والمعاينة
+                await saveDB(); // Save safely
+                
+                // Re-select after rebuild
+                setTimeout(() => {
+                    if (selEl) {
+                        selEl.value = lPath;
+                        loadZoneData(zone); // Refresh preview correctly
+                    }
+                }, 50);
+
                 alert('تم حذف المحتوى بنجاح!');
             }
         }
@@ -4211,55 +4242,6 @@
             }
         }
         
-        // Add hooking to the loadZoneData to render preview automatically if ailessonZone exists
-        const originalLoadZoneData = window.loadZoneData;
-        window.loadZoneData = function(zoneType) {
-            if(window.originalLoadZoneData) window.originalLoadZoneData(zoneType);
-            
-            // Custom setup for ailessonZone
-            if (zoneType === 'ailessonZone') {
-                const lPath = document.getElementById('ailesson-lesson-select').value;
-                if (!lPath) return;
-                
-                const foundLesson = getLessonRef(lPath);
-
-                document.getElementById('ailesson-html-data').value = '';
-                document.getElementById('ailesson-preview').style.display = 'none';
-                
-                if (foundLesson && foundLesson.ailessonZone) {
-                    if(foundLesson.ailessonZone.html) {
-                        document.getElementById('ailesson-html-data').value = foundLesson.ailessonZone.html || '';
-                        document.getElementById('ailesson-preview-iframe').srcdoc = foundLesson.ailessonZone.html || '';
-                        document.getElementById('ailesson-preview').style.display = 'block';
-                    }
-                }
-            }
-        };
-
-        const originalSaveZoneData = window.saveZoneData;
-        window.saveZoneData = function(e, zoneType) {
-            if (zoneType === 'ailessonZone') {
-                e.preventDefault();
-                const lPath = document.getElementById('ailesson-lesson-select').value;
-                if (!lPath) return alert('يرجى اختيار الدرس أولاً.');
-                const htmlVal = document.getElementById('ailesson-html-data').value;
-                
-                const l = getLessonRef(lPath);
-                if (l) {
-                    if (htmlVal) {
-                        l.ailessonZone = { html: htmlVal };
-                    } else {
-                        l.ailessonZone = {};
-                    }
-                    saveDB();
-                    alert('تم الحفظ بنجاح!');
-                } else {
-                    alert('خطأ في إيجاد مسار الدرس.');
-                }
-                return;
-            }
-            if (window.originalSaveZoneData) window.originalSaveZoneData(e, zoneType);
-        };
     </script>
 </body>
 </html>
