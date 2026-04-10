@@ -56,6 +56,38 @@ window.onload = async () => {
             window.location.href = 'admin.html';
             return;
         }
+
+        // ✅ Verify the account is still active on the server before allowing access
+        try {
+            const verifyRes = await fetch(`${API_URL}/users/${currentUser.id}`);
+            if (verifyRes.ok) {
+                const freshUser = await verifyRes.json();
+                if (freshUser.status === 'inactive') {
+                    localStorage.removeItem(SESSION_KEY);
+                    alert('⚠️ تم إيقاف تفعيل حسابك. يرجى التواصل مع الإدارة.');
+                    currentUser = null;
+                    return;
+                }
+                if (freshUser.status === 'locked') {
+                    localStorage.removeItem(SESSION_KEY);
+                    alert('🔒 تم إغلاق حسابك. يرجى التواصل مع الإدارة.');
+                    currentUser = null;
+                    return;
+                }
+                // Update local session with latest data from server
+                currentUser = { ...currentUser, ...freshUser };
+                localStorage.setItem(SESSION_KEY, JSON.stringify(currentUser));
+            } else {
+                // Server returned error (user not found, deleted, etc.) — force logout
+                localStorage.removeItem(SESSION_KEY);
+                currentUser = null;
+                return;
+            }
+        } catch (e) {
+            // If offline / server error, allow access with cached session (graceful degradation)
+            console.warn('Could not verify session online, using cached session:', e.message);
+        }
+
         showApp(currentUser);
         await loadLessonsFromBackend();
         renderDashboard();
