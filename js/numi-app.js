@@ -628,11 +628,14 @@ function getEmbedUrl(url) {
 
     // Google Drive Detection
     if (finalUrl.includes('drive.google.com')) {
+        let driveUrl = finalUrl;
         if (finalUrl.includes('view')) {
-            return finalUrl.replace(/\/view.*/, '/preview');
+            driveUrl = finalUrl.replace(/\/view.*/, '/preview');
         } else if (finalUrl.includes('open?id=')) {
-            return finalUrl.replace('open?id=', 'file/d/') + '/preview';
+            driveUrl = finalUrl.replace('open?id=', 'file/d/') + '/preview';
         }
+        const separator = driveUrl.includes('?') ? '&' : '?';
+        return driveUrl + separator + 'rm=minimal';
     }
 
     // OneDrive & SharePoint Detection
@@ -778,7 +781,6 @@ async function openLesson(id) {
     if (zones.ailesson?.html || zones.ailesson?.driveLink) {
         const studentFrame = document.getElementById('ailesson-student-frame');
         const driveFrame = document.getElementById('ailesson-drive-frame');
-        const driveExternalLink = document.getElementById('ailesson-drive-external-link');
         const studentContainer = document.getElementById('ailesson-student-container');
         const driveContainer = document.getElementById('ailesson-drive-container');
 
@@ -792,11 +794,9 @@ async function openLesson(id) {
 
         if (zones.ailesson?.driveLink) {
             driveFrame.src = getEmbedUrl(zones.ailesson.driveLink);
-            if (driveExternalLink) driveExternalLink.href = zones.ailesson.driveLink;
             driveContainer.style.display = 'block';
         } else {
             driveFrame.src = '';
-            if (driveExternalLink) driveExternalLink.href = '#';
             driveContainer.style.display = 'none';
         }
     }
