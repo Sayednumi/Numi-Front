@@ -311,6 +311,7 @@
             .main-content { margin-right: 0; padding: 20px; overflow-x: hidden; width: 100%; box-sizing: border-box; }
             .mobile-toggle { display: block !important; }
             .grid { grid-template-columns: repeat(2, 1fr) !important; }
+            .mobile-close-btn { display: flex !important; }
         }
 
         @media (max-width: 768px) {
@@ -334,10 +335,18 @@
             .chat-send-btn { width: 40px; height: 40px; font-size: 14px; }
             .modal-content { padding: 15px; width: 95%; max-height: 95vh; }
             .item-row { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .item-actions { align-self: flex-end; width: 100%; display: flex; justify-content: space-between; }
-            .item-actions .btn { flex: 1; }
+            .item-actions { align-self: flex-end; width: 100%; display: flex; justify-content: space-between; gap: 10px; }
+            .item-actions .btn { flex: 1; justify-content: center; }
         }
         .mobile-toggle { display: none; font-size: 24px; cursor: pointer; color: var(--text-main); }
+        .mobile-close-btn { 
+            display: none; position: absolute; left: 16px; top: 16px; 
+            font-size: 20px; color: var(--text-muted); cursor: pointer;
+            width: 32px; height: 32px; align-items: center; justify-content: center;
+            background: var(--card); border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.1); transition: all 0.3s;
+        }
+        .mobile-close-btn:hover { color: var(--danger); border-color: var(--danger); transform: scale(1.1); }
         .card.clickable:hover { transform: translateY(-5px); border-color: var(--primary); cursor: pointer; }
 
         /* ═══ Teacher Platforms Styles ═══ */
@@ -665,6 +674,7 @@
 
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
+        <i class="fas fa-times mobile-close-btn" onclick="document.getElementById('sidebar').classList.remove('show')"></i>
         <div class="brand">Numi Platform</div>
         <ul class="menu" id="nav-menu">
             <li><a href="#" data-target="dashboard"><i class="fas fa-home"></i> لوحة التحكم</a></li>
@@ -2178,7 +2188,7 @@
             
             pageTitle.innerText = link ? link.innerText : 'لوحة التحكم';
             
-            if (window.innerWidth <= 768) {
+            if (window.innerWidth <= 1024) {
                 document.getElementById('sidebar')?.classList.remove('show');
             }
             if (targetId === 'dashboard') updateStats();
