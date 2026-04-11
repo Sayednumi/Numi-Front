@@ -902,9 +902,8 @@ async function openLesson(id) {
 
     if (zones.podcast?.url) document.getElementById('podcast-frame').src = getEmbedUrl(zones.podcast.url);
 
-    // Render step tracker
+    // Initialize step tracking
     currentStepIndex = 0;
-    renderStepTracker();
 
     // Show lesson view
     document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
@@ -1010,7 +1009,7 @@ function showStep(index) {
         targetSection.classList.remove('hidden');
         
         // Move section into the exact card slot!
-        const contentSlot = document.querySelector(\`#step-card-\${index} .step-content-slot\`);
+        const contentSlot = document.querySelector(`#step-card-${index} .step-content-slot`);
         if (contentSlot) {
             contentSlot.appendChild(targetSection);
         }
@@ -1051,7 +1050,6 @@ function completeCurrentStep() {
         currentStepIndex++;
         renderStepTracker();
         showStep(currentStepIndex);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
         completeLesson();
     }
