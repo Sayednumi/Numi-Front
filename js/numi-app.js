@@ -973,8 +973,8 @@ function renderStepTracker() {
         tracker.innerHTML += `
             <div class="journey-node-container" id="step-card-${i}">
                 ${i > 0 ? '<div class="journey-path-connector ' + (isCompleted || isActive ? 'active' : '') + '"></div>' : ''}
-                <div class="journey-card ${stateClass}" onclick="${isLocked ? '' : `showStep(${i})`}">
-                    <div class="journey-card-header" style="background: ${colorGrad}">
+                <div class="journey-card ${stateClass}">
+                    <div class="journey-card-header" style="background: ${colorGrad}" onclick="${isLocked ? '' : `showStep(${i})`}">
                         <div class="icon-circle"><i class="fas ${isCompleted && !isActive ? 'fa-check-circle' : step.icon}"></i></div>
                         <div class="card-title-area">
                             <div class="step-num">مرحلة ${i + 1}</div>
