@@ -670,7 +670,7 @@
             <li><a href="#" data-target="video-zone"><i class="fas fa-play-circle"></i> Video Zone</a></li>
             <li><a href="#" data-target="podcast-zone"><i class="fas fa-podcast"></i> Wood Podcast Zone</a></li>
             <li><a href="#" data-target="mindscape-zone"><i class="fas fa-project-diagram"></i> Mindscape</a></li>
-            <li><a href="#" data-target="game-zone" onclick="loadGlobalGames()"><i class="fas fa-gamepad"></i> Game Zone</a></li>
+            <li><a href="#" data-target="game-zone"><i class="fas fa-gamepad"></i> Game Zone</a></li>
             <li><a href="#" data-target="quiz-zone"><i class="fas fa-question-circle"></i> Quiz Zone</a></li>
             <li><a href="#" data-target="ailesson-zone"><i class="fas fa-magic"></i> الدرس (/lesson)</a></li>
             <li><a href="#" data-target="students"><i class="fas fa-user-graduate"></i> إدارة الطلاب</a></li>
@@ -939,110 +939,21 @@
         </div>
 
         <!-- Game Zone Section -->
-        <!-- ══════════ New Global Game Zone ══════════ -->
-        <div id="game-zone" class="section">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
-                <h2>🎮 إدارة الألعاب (Game Zone)</h2>
-                <button class="btn" style="background:var(--accent);" onclick="openGlobalGameModal(null)"><i class="fas fa-plus"></i> إضافة لعبة جديدة</button>
-            </div>
-            
-            <!-- Dashboard Stats -->
-            <div class="dashboard-cards" style="margin-bottom:20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                <div class="stat-card" style="background:var(--bg-card); padding:20px; border-radius:10px; border:1px solid var(--border);">
-                    <h3 style="color:var(--text-muted); font-size:14px;"><i class="fas fa-link"></i> ألعاب خارجية</h3>
-                    <div class="stat-value" id="stat-ext-games" style="font-size:24px; font-weight:bold; color:var(--primary);">0</div>
-                </div>
-                <div class="stat-card" style="background:var(--bg-card); padding:20px; border-radius:10px; border:1px solid var(--border);">
-                    <h3 style="color:var(--text-muted); font-size:14px;"><i class="fas fa-puzzle-piece"></i> ألعاب داخلية (مبنية بالمنصة)</h3>
-                    <div class="stat-value" id="stat-int-games" style="font-size:24px; font-weight:bold; color:var(--success-color);">0</div>
-                </div>
-                <div class="stat-card" style="background:var(--bg-card); padding:20px; border-radius:10px; border:1px solid var(--border);">
-                    <h3 style="color:var(--text-muted); font-size:14px;"><i class="fas fa-gamepad"></i> إجمالي مرات اللعب</h3>
-                    <div class="stat-value" id="stat-total-plays" style="font-size:24px; font-weight:bold; color:#fbbf24;">0</div>
-                </div>
-            </div>
-
+        <div id="game-zone" class="section contents-section">
             <div class="card">
-                <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-                    <h3 style="margin:0;"><i class="fas fa-table"></i> قائمة ألعاب المنصة</h3>
-                    <div style="display:flex; gap:10px;">
-                        <input type="text" id="game-filter-search" class="form-control" placeholder="بحث باسم اللعبة..." oninput="loadGlobalGames()" style="width:200px; padding:8px;" />
-                        <select id="game-filter-group" class="form-control" style="width:200px; padding:8px;" onchange="loadGlobalGames()">
-                            <option value="">جميع المجموعات</option>
-                        </select>
-                    </div>
-                </div>
-                <div style="overflow-x:auto;">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>اسم اللعبة</th>
-                                <th>النوع</th>
-                                <th>المجموعة</th>
-                                <th>مرات اللعب</th>
-                                <th>إجراءات</th>
-                            </tr>
-                        </thead>
-                        <tbody id="games-table-body">
-                            <!-- Filled by JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Add/Edit Global Game Modal -->
-        <div id="game-modal" class="modal">
-            <div class="modal-content" style="max-width:700px; width:90%; border-radius:20px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:15px;">
-                    <h2 id="game-modal-title" style="margin:0; color:var(--accent);">إضافة لعبة جديدة</h2>
-                    <span class="close" onclick="closeModal('game-modal')" style="font-size:24px; cursor:pointer;">&times;</span>
-                </div>
-                <form id="save-game-form" onsubmit="saveGlobalGame(event)" style="margin-top:20px;">
-                    <input type="hidden" id="global-game-id">
-                    
-                    <div class="form-group row" style="display:flex; gap:15px;">
-                        <div style="flex:1;">
-                            <label><i class="fas fa-cogs"></i> نوع اللعبة</label>
-                            <select id="global-game-type" class="form-control" onchange="toggleGameTypeFields()" required>
-                                <option value="external">لعبة خارجية (رابط Kahoot, Wordwall الخ)</option>
-                                <option value="internal">لعبة داخلية (مُنشئ الألعاب Game Builder)</option>
-                            </select>
-                        </div>
-                        <div style="flex:1;">
-                            <label><i class="fas fa-users"></i> المجموعة المسموح لها</label>
-                            <select id="global-game-group-id" class="form-control" required></select>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label><i class="fas fa-heading"></i> عنوان اللعبة</label>
-                        <input type="text" id="global-game-title" class="form-control" required placeholder="مثال: تحدي ملوك الفيزياء - الجولة الأولى">
-                    </div>
-
-                    <!-- External Game Field -->
-                    <div id="global-external-fields">
-                        <div class="form-group">
-                            <label><i class="fas fa-link"></i> رابط اللعبة الخارجي</label>
-                            <input type="url" id="global-game-url" class="form-control" placeholder="https://wordwall.net/...">
-                        </div>
-                    </div>
-
-                    <!-- Internal Game Field (Game Builder) -->
-                    <div id="global-internal-fields" style="display:none; margin-top:20px; border-top:1px solid var(--border); padding-top:20px;">
-                        <h3 style="margin-bottom:15px; color:var(--primary);"><i class="fas fa-hammer"></i> بناء الأسئلة (Game Builder)</h3>
-                        <div id="game-questions-list" style="display:flex; flex-direction:column; gap:15px; max-height:400px; overflow-y:auto; padding-right:5px;"></div>
-                        <button type="button" class="btn" style="background:#555; margin-top:15px; width:100%; border:1px dashed #aaa; padding:12px;" onclick="addGlobalGameQuestion()"><i class="fas fa-plus"></i> إضافة سؤال جديد</button>
-                    </div>
-
-                    <div style="margin-top:30px; display:flex; gap:15px;">
-                        <button type="submit" class="btn" style="flex:2; padding:12px; font-size:16px;"><i class="fas fa-save"></i> حفظ اللعبة لساحة الطلاب</button>
-                        <button type="button" class="btn btn-danger" onclick="closeModal('game-modal')" style="flex:1; background:var(--border); padding:12px; font-size:16px;">إلغاء</button>
+                <div class="card-header"><h2>Game Zone</h2></div>
+                <div class="form-group"><label>اختر الدرس</label><select class="form-control lesson-selector" id="game-lesson-select" onchange="loadZoneData('gameZone')"></select></div>
+                <form id="gameForm" onsubmit="saveZoneData(event, 'gameZone')">
+                    <div class="form-group"><label>عنوان اللعبة</label><input type="text" class="form-control" id="game-title" required></div>
+                    <div class="form-group"><label>روابط الألعاب (لإضافة أكتر من لعبة افصل بين الروابط بسطر جديد)</label><textarea class="form-control" id="game-url" rows="3" oninput="updateGamePreview('game-preview', this.value)" required placeholder="مثال:\nhttps://game1.com\nhttps://game2.com"></textarea></div>
+                    <div class="preview-container" id="game-preview"></div>
+                    <div style="display:flex; gap:10px; margin-top:20px;">
+                        <button type="submit" class="btn">حفظ التغييرات</button>
+                        <button type="button" class="btn btn-danger" onclick="deleteZoneData('gameZone')"><i class="fas fa-trash"></i> حذف الألعاب</button>
                     </div>
                 </form>
             </div>
         </div>
-
 
         <!-- Quiz Zone Section -->
         <div id="quiz-zone" class="section contents-section">
@@ -5007,182 +4918,6 @@
         function shiftWeek(dir) {
             _scheduleWeekOffset += dir;
             renderWeeklySchedule();
-        }
-        // ------------------ GLOBAL GAMES MANAGEMENT (GAME ZONE) ------------------
-        let globalGamesList = [];
-
-        async function loadGlobalGames() {
-            try {
-                // Hide other sections - handled automatically by data-target click if wired properly
-                
-                // Populate groups dropdown if empty
-                const grpSelect = document.getElementById('game-filter-group');
-                const formGrpSelect = document.getElementById('global-game-group-id');
-                if (grpSelect.options.length <= 1) {
-                    for (const c in db.classes) {
-                        for (const g in db.classes[c].groups) {
-                            const opt1 = new Option(db.classes[c].groups[g].name, g);
-                            const opt2 = new Option(db.classes[c].groups[g].name, g);
-                            grpSelect.add(opt1);
-                            formGrpSelect.add(opt2);
-                        }
-                    }
-                }
-
-                // Make API call
-                const res = await fetch(`${API_URL}/games?teacherId=${encodeURIComponent(TEACHER_ID)}`);
-                const data = await res.json();
-                if(data.success) {
-                    globalGamesList = data.games;
-                    renderGlobalGames();
-                }
-            } catch(e) { console.error('Failed to load games', e); }
-        }
-
-        function renderGlobalGames() {
-            const tbody = document.getElementById('games-table-body');
-            const search = document.getElementById('game-filter-search')?.value.toLowerCase();
-            const groupFilter = document.getElementById('game-filter-group')?.value;
-            
-            let extCount = 0, intCount = 0, totalPlays = 0;
-
-            let html = '';
-            globalGamesList.forEach(game => {
-                if(game.type === 'external') extCount++;
-                if(game.type === 'internal') intCount++;
-                totalPlays += (game.playsCount || 0);
-
-                if(groupFilter && game.groupId !== groupFilter) return;
-                if(search && !game.title.toLowerCase().includes(search)) return;
-
-                const tr = `
-                    <tr>
-                        <td style="font-weight:bold;">${game.title}</td>
-                        <td><span class="badge" style="background:${game.type==='external'?'var(--primary)':'var(--success-color)'}">${game.type==='external'?'لعبة خارجية':'لعبة Kahoot-like'}</span></td>
-                        <td>${game.groupId}</td>
-                        <td>${game.playsCount || 0}</td>
-                        <td style="display:flex; gap:5px;">
-                            <button onclick="openGlobalGameModal('${game._id}')" class="btn-icon" title="تعديل"><i class="fas fa-edit text-primary"></i></button>
-                            <button onclick="deleteGlobalGame('${game._id}')" class="btn-icon" title="حذف"><i class="fas fa-trash text-danger"></i></button>
-                        </td>
-                    </tr>
-                `;
-                html += tr;
-            });
-            tbody.innerHTML = html || '<tr><td colspan="5" style="text-align:center;">لا توجد ألعاب متطابقة</td></tr>';
-
-            // Update Dashboard Stats
-            document.getElementById('stat-ext-games').innerText = extCount;
-            document.getElementById('stat-int-games').innerText = intCount;
-            document.getElementById('stat-total-plays').innerText = totalPlays;
-        }
-
-        function openGlobalGameModal(gameId) {
-            document.getElementById('game-modal').classList.add('active');
-            const form = document.getElementById('save-game-form');
-            form.reset();
-            document.getElementById('game-questions-list').innerHTML = ''; // clear 
-
-            if(gameId) {
-                const game = globalGamesList.find(g => g._id === gameId);
-                if(game) {
-                    document.getElementById('global-game-id').value = game._id;
-                    document.getElementById('global-game-type').value = game.type;
-                    document.getElementById('global-game-title').value = game.title;
-                    document.getElementById('global-game-group-id').value = game.groupId;
-                    if(game.type === 'external') {
-                        document.getElementById('global-game-url').value = game.url || '';
-                    } else {
-                        if(game.questions) game.questions.forEach(q => addGlobalGameQuestion(q));
-                    }
-                }
-            } else {
-                document.getElementById('global-game-id').value = '';
-                addGlobalGameQuestion(); // Add one default question
-            }
-            toggleGameTypeFields();
-        }
-
-        function toggleGameTypeFields() {
-            const type = document.getElementById('global-game-type').value;
-            document.getElementById('global-external-fields').style.display = type === 'external' ? 'block' : 'none';
-            document.getElementById('global-internal-fields').style.display = type === 'internal' ? 'block' : 'none';
-            document.getElementById('global-game-url').required = (type === 'external');
-        }
-
-        function addGlobalGameQuestion(qData = null) {
-            const container = document.getElementById('game-questions-list');
-            const qDiv = document.createElement('div');
-            qDiv.style.cssText = "background:var(--bg-main); padding:15px; border-radius:10px; border:1px solid var(--border); position:relative;";
-            
-            qDiv.innerHTML = `
-                <button type="button" onclick="this.parentElement.remove()" style="position:absolute; top:10px; left:10px; background:none; border:none; color:#ef4444; cursor:pointer; font-size:16px;"><i class="fas fa-times"></i></button>
-                <div class="form-group" style="margin-bottom:10px;">
-                    <label>نص السؤال</label>
-                    <input type="text" class="form-control question-text" value="${qData?.question || ''}" required>
-                </div>
-                <div class="form-group row" style="display:flex; gap:10px; flex-wrap:wrap;">
-                    <div style="flex:1;"><input type="text" class="form-control q-opt-1" value="${qData?.options?.[0] || ''}" placeholder="اختيار 1" required></div>
-                    <div style="flex:1;"><input type="text" class="form-control q-opt-2" value="${qData?.options?.[1] || ''}" placeholder="اختيار 2" required></div>
-                    <div style="flex:1;"><input type="text" class="form-control q-opt-3" value="${qData?.options?.[2] || ''}" placeholder="اختيار 3 (اختياري)"></div>
-                    <div style="flex:1;"><input type="text" class="form-control q-opt-4" value="${qData?.options?.[3] || ''}" placeholder="اختيار 4 (اختياري)"></div>
-                </div>
-                <div class="form-group" style="width:250px; margin-top:10px; margin-bottom:0;">
-                    <label>رقم الاختيار الصحيح (1-4)</label>
-                    <input type="number" class="form-control correct-index" value="${qData?.correctIndex !== undefined ? qData.correctIndex + 1 : 1}" min="1" max="4" required>
-                </div>
-            `;
-            container.appendChild(qDiv);
-        }
-
-        async function saveGlobalGame(e) {
-            e.preventDefault();
-            const id = document.getElementById('global-game-id').value;
-            const type = document.getElementById('global-game-type').value;
-            const groupId = document.getElementById('global-game-group-id').value;
-            const title = document.getElementById('global-game-title').value;
-            
-            let payload = { teacherId: TEACHER_ID, groupId, title, type };
-            
-            if(type === 'external') {
-                payload.url = document.getElementById('global-game-url').value;
-            } else {
-                let questions = [];
-                document.querySelectorAll('#game-questions-list > div').forEach(node => {
-                    const text = node.querySelector('.question-text').value;
-                    const opts = [
-                        node.querySelector('.q-opt-1').value,
-                        node.querySelector('.q-opt-2').value,
-                        node.querySelector('.q-opt-3').value,
-                        node.querySelector('.q-opt-4').value
-                    ].filter(Boolean);
-                    const correctIdx = node.querySelector('.correct-index').value;
-                    questions.push({ question: text, options: opts, correctIndex: correctIdx - 1 });
-                });
-                if(questions.length === 0) return alert('يرجى إضافة سؤال واحد على الأقل.');
-                payload.questions = questions;
-            }
-
-            try {
-                const method = id ? 'PUT' : 'POST';
-                const url = id ? `${API_URL}/games/${id}` : `${API_URL}/games`;
-                const res = await fetch(url, {
-                    method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
-                });
-                if(res.ok) {
-                    closeModal('game-modal');
-                    loadGlobalGames();
-                    alert('تم حفظ اللعبة بنجاح' + (!id ? ' وتم تنبيه الطلاب!' : ''));
-                } else alert('حدث خطأ أثناء حفظ اللعبة');
-            } catch(e) { console.error(e); }
-        }
-
-        async function deleteGlobalGame(id) {
-            if(!confirm('هل أنت متأكد من حذف هذه اللعبة بالكامل؟')) return;
-            try {
-                await fetch(`${API_URL}/games/${id}`, { method: 'DELETE' });
-                loadGlobalGames();
-            } catch(e) { console.error(e); }
         }
         
     </script>
