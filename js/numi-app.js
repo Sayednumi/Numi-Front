@@ -915,19 +915,78 @@ async function openLesson(id) {
 
 function renderStepTracker() {
     const tracker = document.getElementById('step-tracker');
+    
+    // Safety: move sections out before wiping innerHTML
+    document.querySelectorAll('.lesson-section').forEach(sec => {
+        document.getElementById('view-lesson').appendChild(sec);
+        sec.classList.add('hidden');
+    });
+
     tracker.innerHTML = '';
+    tracker.className = 'journey-container';
+    
+    // Add Motivational Guide Message
+    tracker.innerHTML += `
+        <div class="guide-message">
+            <div class="guide-avatar">👩‍🏫</div>
+            <p class="guide-bubble">ابطال المنصة! هنمشي في الرحلة دي مع بعض لحد ما نوصل القمة 🏔️💪</p>
+        </div>
+    `;
+    
     const isFullyCompleted = currentUser?.completedLessons?.includes(currentLessonObj.id);
+    let completedSteps = isFullyCompleted ? currentLessonSteps.length : currentStepIndex;
+    let progressPercent = Math.round((completedSteps / currentLessonSteps.length) * 100);
+
+    // Add Progress Bar
+    tracker.innerHTML += `
+        <div style="width: 100%; margin-bottom: 30px; background: var(--bg-card); padding: 15px 20px; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-weight:800; font-size:14px;">
+                <span class="text-primary-color">تقدم الرحلة 🚀</span>
+                <span style="color:var(--success);">${progressPercent}%</span>
+            </div>
+            <div style="width:100%; height:14px; background:var(--bg-elevated); border-radius:10px; overflow:hidden;">
+                <div style="width:${progressPercent}%; height:100%; background:var(--gradient-primary); transition:width 0.8s cubic-bezier(0.4, 0, 0.2, 1); box-shadow:0 0 10px var(--primary-glow);"></div>
+            </div>
+        </div>
+    `;
+
+    const gradients = [
+        'linear-gradient(135deg, #7c3aed, #4f46e5)', // Purple/Blue
+        'linear-gradient(135deg, #059669, #10b981)', // Green
+        'linear-gradient(135deg, #e11d48, #f43f5e)', // Rose
+        'linear-gradient(135deg, #d97706, #f59e0b)', // Orange
+        'linear-gradient(135deg, #0284c7, #0ea5e9)'  // Light Blue
+    ];
 
     currentLessonSteps.forEach((step, i) => {
         const isActive = i === currentStepIndex;
         const isCompleted = isFullyCompleted || i < currentStepIndex;
         const isLocked = !isFullyCompleted && i > currentStepIndex;
+        
+        // Let's create varying motivational badges
+        let btnText = 'مغلق 🔒';
+        if (isCompleted) btnText = 'بطل! ✅';
+        if (isActive) btnText = i === currentLessonSteps.length - 1 ? 'التحدي النهائي 🔥' : 'ابدأ الآن 🚀';
+        
+        let stateClass = isActive ? 'state-active' : (isCompleted ? 'state-completed' : 'state-locked');
+        let colorGrad = isLocked ? 'linear-gradient(135deg, #2a2550, #1c1938)' : gradients[i % gradients.length];
+        
         tracker.innerHTML += `
-            <div class="step-item ${isActive ? 'active' : ''} ${isCompleted && !isActive ? 'completed' : ''} ${isLocked ? 'locked' : ''}"
-                 onclick="${isLocked ? '' : `showStep(${i})`}">
-                <i class="fas ${isCompleted && !isActive ? 'fa-check-circle' : step.icon}"></i>
-                <span>${step.label}</span>
-            </div>`;
+            <div class="journey-node-container" id="step-card-${i}">
+                ${i > 0 ? '<div class="journey-path-connector ' + (isCompleted || isActive ? 'active' : '') + '"></div>' : ''}
+                <div class="journey-card ${stateClass}" onclick="${isLocked ? '' : `showStep(${i})`}">
+                    <div class="journey-card-header" style="background: ${colorGrad}">
+                        <div class="icon-circle"><i class="fas ${isCompleted && !isActive ? 'fa-check-circle' : step.icon}"></i></div>
+                        <div class="card-title-area">
+                            <div class="step-num">مرحلة ${i + 1}</div>
+                            <h3>${step.label}</h3>
+                        </div>
+                        <div class="status-badge">${btnText}</div>
+                    </div>
+                    <div class="step-content-slot" style="display: ${isActive ? 'block' : 'none'}"></div>
+                </div>
+            </div>
+        `;
     });
 }
 
@@ -935,26 +994,43 @@ function showStep(index) {
     const isFullyCompleted = currentUser?.completedLessons?.includes(currentLessonObj.id);
 
     if (!isFullyCompleted && index > currentStepIndex) return; // Can't skip ahead
+    
+    // Update active index
+    currentStepIndex = index;
+    renderStepTracker();
 
     const step = currentLessonSteps[index];
     if (!step) return;
 
-    // Hide all sections
+    // Hide all sections natively first
     document.querySelectorAll('.lesson-section').forEach(s => s.classList.add('hidden'));
+    
     const targetSection = document.getElementById('section-' + step.key);
     if (targetSection) {
         targetSection.classList.remove('hidden');
+        
+        // Move section into the exact card slot!
+        const contentSlot = document.querySelector(\`#step-card-\${index} .step-content-slot\`);
+        if (contentSlot) {
+            contentSlot.appendChild(targetSection);
+        }
+
         // Update button text if it's the last step
         const btn = targetSection.querySelector('.complete-step-btn');
         if (btn) {
             if (index === currentLessonSteps.length - 1) {
-                btn.innerHTML = '<i class="fas fa-flag-checkered"></i> إنهاء الدرس وحفظ التقدم';
+                btn.innerHTML = '<i class="fas fa-trophy"></i> أتممت الرحلة بنجاح!';
                 btn.classList.add('finish-btn');
             } else {
-                btn.innerHTML = '<i class="fas fa-check-circle"></i> الخطوة التالية';
+                btn.innerHTML = '<i class="fas fa-arrow-down"></i> التالي';
                 btn.classList.remove('finish-btn');
             }
         }
+        
+        // Scroll smoothly to active card
+        setTimeout(()=> {
+            document.getElementById('step-card-' + index).scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
     }
 
     // Pause Video if moving away from video step
@@ -964,15 +1040,10 @@ function showStep(index) {
             if (videoFrame.src.includes('youtube')) {
                 videoFrame.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
             } else {
-                // For Google Drive/Generic: resetting SRC reloads the frame (stops sound)
                 videoFrame.src = videoFrame.src;
             }
         }
     }
-
-    // Update active index
-    currentStepIndex = index;
-    renderStepTracker();
 }
 
 function completeCurrentStep() {

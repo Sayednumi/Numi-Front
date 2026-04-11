@@ -455,25 +455,55 @@ img { max-width: 100%; display: block; }
     font-size: 16px; color: white; flex-shrink: 0;
 }
 
-/* Step Tracker */
-.step-tracker {
-    display: flex; gap: 4px; margin-bottom: 28px;
-    background: var(--bg-card); border-radius: var(--radius-lg);
-    padding: 8px; border: 1px solid var(--border); overflow-x: auto;
+/* ── Learning Journey Map ──────────────────────────────────── */
+.journey-container {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 10px 0 40px; max-width: 650px; margin: 0 auto;
 }
-.step-item {
-    flex: 1; min-width: 80px; padding: 10px 8px;
-    border-radius: 20px; cursor: pointer;
-    text-align: center; font-size: 13px; font-weight: 800;
-    color: var(--text-muted); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex; align-items: center; justify-content: center; gap: 6px;
-    white-space: nowrap; border: 2px solid transparent;
+.guide-message {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 30px;
+    background: var(--bg-card); padding: 16px 24px;
+    border-radius: 100px; border: 2px dashed var(--primary);
 }
-.step-item:hover { transform: translateY(-2px); color: var(--text-secondary); background: var(--bg-elevated); border-color: var(--border); }
-.step-item.active { background: var(--gradient-primary); color: white; border-color: transparent; box-shadow: 0 6px 15px rgba(124, 58, 237, 0.4); transform: scale(1.05); z-index: 2; }
-.step-item.completed { color: var(--success); }
-.step-item.locked { opacity: 0.4; cursor: not-allowed; }
-.step-item i { font-size: 14px; margin-bottom: 0px; }
+.guide-avatar { width: 50px; height: 50px; font-size: 32px; display: flex; align-items: center; justify-content: center; }
+.guide-bubble { font-size: 16px; font-weight: 800; color: var(--text-primary); margin: 0; }
+
+.journey-node-container {
+    width: 100%; display: flex; flex-direction: column; align-items: center;
+}
+.journey-path-connector {
+    width: 8px; height: 40px; background: var(--bg-card);
+    border-radius: 4px; border: 2px dashed var(--border);
+    margin: 8px 0; transition: all 0.5s;
+}
+.journey-path-connector.active {
+    background: var(--gradient-primary); border: none; box-shadow: 0 0 10px var(--primary-light);
+}
+.journey-card {
+    width: 100%; border-radius: 20px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: var(--bg-card); border: 2px solid var(--border); border-bottom-width: 6px;
+    overflow: hidden; opacity: 0.6; filter: grayscale(100%);
+}
+.journey-card.state-active { opacity: 1; filter: none; border-color: var(--primary); transform: scale(1.02); box-shadow: 0 8px 30px rgba(124, 58, 237, 0.3); border-bottom-width: 6px; }
+.journey-card.state-completed { opacity: 1; filter: none; border-color: var(--success); }
+
+.journey-card-header {
+    padding: 20px; display: flex; align-items: center; gap: 16px;
+    cursor: pointer; position: relative; overflow: hidden;
+}
+.journey-card-header .icon-circle {
+    width: 56px; height: 56px; border-radius: 50%; background: rgba(0,0,0,0.25);
+    display: flex; align-items: center; justify-content: center; font-size: 24px; color: white;
+}
+.card-title-area { flex: 1; }
+.card-title-area .step-num { font-size: 12px; font-weight: 800; color: rgba(255,255,255,0.8); margin-bottom: 2px; }
+.card-title-area h3 { font-size: 20px; font-weight: 900; color: white; margin: 0; line-height: 1.2; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+
+.status-badge {
+    padding: 6px 14px; border-radius: 100px; font-size: 12px; font-weight: 800;
+    background: rgba(0,0,0,0.3); color: white; backdrop-filter: blur(4px);
+}
+.step-content-slot { background: var(--bg-card); display: none; }
 
 
 /* Video Section */
@@ -799,30 +829,11 @@ input:checked + .slider::before { transform: translateX(24px); }
     .grid-auto { grid-template-columns: 1fr !important; }
     .welcome-banner { flex-direction: column; text-align: center; padding: 20px; }
     .welcome-emoji { font-size: 36px; margin-top: 10px; }
-    .step-tracker { 
-        display: grid; 
-        grid-template-columns: repeat(2, 1fr); 
-        gap: 10px; 
-        overflow-x: hidden; 
-        padding: 10px; 
-        background: transparent; 
-        border: none; 
-    }
-    .step-item { 
-        width: 100%; 
-        padding: 10px 8px; 
-        border-radius: 20px;
-        white-space: normal; 
-        flex-direction: column; 
-        gap: 6px; 
-        text-align: center; 
-        background: var(--bg-card); 
-        border: 2px solid var(--border); 
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        font-size: 12px;
-        font-weight: 800;
-    }
-    .step-item i { font-size: 18px; margin-bottom: 2px; }
+    .guide-message { flex-direction: column; text-align: center; border-radius: 20px; }
+    .journey-card-header { padding: 16px 12px; gap: 10px; }
+    .journey-card-header .icon-circle { width: 44px; height: 44px; font-size: 18px; }
+    .card-title-area h3 { font-size: 16px; }
+    .status-badge { padding: 4px 10px; font-size: 10px; }
     .chat-container { max-width: 100%; height: 100vh; border-radius: 0; display: flex; flex-direction: column; }
     .chat-messages { padding: 15px; }
     .math-keyboard { max-height: 120px; }
