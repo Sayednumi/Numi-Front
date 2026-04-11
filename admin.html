@@ -3504,20 +3504,26 @@
                     const s = studentsGroups[uid];
                     const att1 = s.attempts[1];
                     const lastDate = att1 ? (att1.endTime ? new Date(att1.endTime).toLocaleString('ar-EG') : 'بدأ الحل الآن') : '---';
+                    const hasAttempt = !!att1;
                     body.innerHTML += `
                         <tr>
                             <td class="fw-700">${s.name}</td>
                             <td class="fs-sm opacity-70">${s.phone}</td>
                             <td>
-                                ${att1 ? `<span class="text-primary fw-800" style="font-size:16px;">${att1.score || 'تحت الحل'}</span>` : '<span class="opacity-30">---</span>'}
+                                ${hasAttempt ? `<span class="text-primary fw-800" style="font-size:16px;">${att1.score || 'تحت الحل'}</span>` : '<span class="opacity-30">---</span>'}
                             </td>
                             <td class="fs-sm opacity-70">${lastDate}</td>
-                            <td>
-                                ${att1 ? `
-                                    <button class="btn btn-sm btn-success" style="padding:6px 15px; font-size:12px;" onclick="reviewStudentQuiz('${att1._id}')">
-                                        <i class="fas fa-eye"></i> مراجعة الإجابات
+                            <td style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                                ${hasAttempt ? `
+                                    <button class="btn btn-sm btn-success" style="padding:6px 12px; font-size:12px;" onclick="reviewStudentQuiz('${att1._id}')">
+                                        <i class="fas fa-eye"></i> مراجعة
                                     </button>
-                                ` : '<span class="opacity-30">---</span>'}
+                                    <button class="btn btn-sm" style="padding:6px 12px; font-size:12px; background:linear-gradient(135deg,#f59e0b,#d97706); color:#0b1220; font-weight:700; border:none; border-radius:8px; cursor:pointer;" onclick="resetStudentQuiz('${att1.lessonId}', '${s.userId}', '${s.name}', this)" title="إعادة الاختبار">
+                                        <i class="fas fa-redo"></i> إعادة الاختبار
+                                    </button>
+                                ` : `<button class="btn btn-sm" style="padding:6px 12px; font-size:12px; background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3); border-radius:8px; cursor:pointer;" disabled>
+                                    <i class="fas fa-redo"></i> لم يبدأ بعد
+                                </button>`}
                             </td>
                         </tr>
                     `;
@@ -3529,7 +3535,29 @@
             }
         }
 
-
+        async function resetStudentQuiz(lessonId, userId, studentName, btn) {
+            if (!confirm(`هل تريد إعادة ضبط اختبار "${studentName}" بالكامل؟\n\nسيتم حذف إجاباته ونتيجته وسيرى الاختبار من جديد بدون إجابات.`)) return;
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ...';
+            try {
+                const res = await fetch(`${API_URL}/admin/reports/${lessonId}/user/${userId}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.success) {
+                    showNotif(`✅ تم إعادة ضبط اختبار ${studentName} — يمكنه حل الاختبار من جديد`, 'success');
+                    const lessonSel = document.getElementById('report-lesson-select');
+                    if (lessonSel?.value) fetchLessonReport(lessonSel.value);
+                } else {
+                    alert('فشل إعادة الضبط: ' + (data.error || 'خطأ غير معروف'));
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
+                }
+            } catch(e) {
+                alert('خطأ في الاتصال بالسيرفر');
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            }
+        }
 
         async function reviewStudentQuiz(attemptId) {
             const attempt = window.currentReportData.find(a => a._id === attemptId);
