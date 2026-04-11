@@ -671,6 +671,7 @@
             <li><a href="#" data-target="podcast-zone"><i class="fas fa-podcast"></i> Wood Podcast Zone</a></li>
             <li><a href="#" data-target="mindscape-zone"><i class="fas fa-project-diagram"></i> Mindscape</a></li>
             <li><a href="#" data-target="game-zone"><i class="fas fa-gamepad"></i> Game Zone</a></li>
+            <li><a href="#" data-target="game-bank-section" onclick="renderGameBankSection()"><i class="fas fa-archive" style="color:#f59e0b;"></i> <span style="color:#f59e0b; font-weight:700;">بنك الألعاب</span></a></li>
             <li><a href="#" data-target="quiz-zone"><i class="fas fa-question-circle"></i> Quiz Zone</a></li>
             <li><a href="#" data-target="ailesson-zone"><i class="fas fa-magic"></i> الدرس (/lesson)</a></li>
             <li><a href="#" data-target="students"><i class="fas fa-user-graduate"></i> إدارة الطلاب</a></li>
@@ -964,6 +965,61 @@
                         <button type="button" class="btn btn-danger" onclick="deleteZoneData('gameZone')"><i class="fas fa-trash"></i> حذف الألعاب</button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        <!-- ════════════ GAME BANK SECTION ════════════ -->
+        <div id="game-bank-section" class="section" style="display:none;">
+            <div style="margin-bottom:25px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px;">
+                <div>
+                    <h2 style="margin:0; color:#f59e0b;"><i class="fas fa-archive"></i> بنك الألعاب التفاعلية</h2>
+                    <p style="margin:4px 0 0; color:var(--text-muted); font-size:14px;">جميع ألعاب Kahoot المحفوظة — يمكنك إضافة أي لعبة لأي درس مباشرة</p>
+                </div>
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                    <input type="text" id="gbs-search" placeholder="🔍 ابحث باسم اللعبة..." oninput="renderGameBankSection()" style="padding:10px 15px; border-radius:10px; border:1px solid var(--border); background:var(--bg-card); color:white; font-size:14px; outline:none; min-width:240px;">
+                    <button class="btn" onclick="openKahootMakerStandalone()" style="background:linear-gradient(135deg,#f59e0b,#d97706); color:#0b1220; font-weight:bold; padding:10px 18px;"><i class="fas fa-plus-circle"></i> إنشاء لعبة جديدة</button>
+                </div>
+            </div>
+
+            <!-- Stats Bar -->
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:15px; margin-bottom:25px;">
+                <div class="card" style="text-align:center; padding:20px; background:linear-gradient(135deg,rgba(245,158,11,0.15),rgba(245,158,11,0.05)); border:1px solid rgba(245,158,11,0.3);">
+                    <div style="font-size:32px; font-weight:900; color:#f59e0b;" id="gbs-count">0</div>
+                    <div style="font-size:13px; color:var(--text-muted);">إجمالي الألعاب</div>
+                </div>
+                <div class="card" style="text-align:center; padding:20px; background:linear-gradient(135deg,rgba(109,58,238,0.15),rgba(109,58,238,0.05)); border:1px solid rgba(109,58,238,0.3);">
+                    <div style="font-size:32px; font-weight:900; color:var(--primary);" id="gbs-q-count">0</div>
+                    <div style="font-size:13px; color:var(--text-muted);">إجمالي الأسئلة</div>
+                </div>
+                <div class="card" style="text-align:center; padding:20px; background:linear-gradient(135deg,rgba(16,185,129,0.15),rgba(16,185,129,0.05)); border:1px solid rgba(16,185,129,0.3);">
+                    <div style="font-size:32px; font-weight:900; color:var(--success-color);" id="gbs-assign-btn-count">جاهز</div>
+                    <div style="font-size:13px; color:var(--text-muted);">يمكن الإضافة للدروس</div>
+                </div>
+            </div>
+
+            <!-- Games Grid -->
+            <div id="gbs-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px,1fr)); gap:20px;">
+                <div style="grid-column:1/-1; text-align:center; padding:60px; color:var(--text-muted);">
+                    <i class="fas fa-box-open" style="font-size:50px; opacity:0.3; margin-bottom:15px;"></i>
+                    <h3>لا توجد ألعاب محفوظة بعد</h3>
+                    <p>اضغط "إنشاء لعبة جديدة" لإضافة أول لعبة Kahoot في البنك</p>
+                </div>
+            </div>
+
+            <!-- Assign Modal inside -->
+            <div id="gbs-assign-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:20000; justify-content:center; align-items:center;">
+                <div style="background:var(--bg-card); border-radius:16px; padding:30px; width:480px; max-width:95%; border:1px solid var(--border); box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+                    <h3 style="margin:0 0 5px; color:var(--accent);"><i class="fas fa-plus-circle"></i> إضافة اللعبة لدرس</h3>
+                    <p id="gbs-assign-game-name" style="color:var(--text-muted); font-size:14px; margin-bottom:20px;"></p>
+                    <div class="form-group" style="margin-bottom:15px;">
+                        <label>اختر الدرس</label>
+                        <select class="form-control lesson-selector" id="gbs-lesson-select"></select>
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top:20px;">
+                        <button class="btn btn-success" onclick="assignGameToLesson()" style="flex:1; font-weight:bold;"><i class="fas fa-check"></i> إضافة اللعبة للدرس</button>
+                        <button class="btn btn-danger" onclick="document.getElementById('gbs-assign-modal').style.display='none'" style="padding:10px 20px;"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -5326,6 +5382,157 @@
             document.getElementById('kahoot-status-badge').style.display = 'block';
             document.getElementById('kahoot-status-badge').innerHTML = `<i class="fas fa-check-circle"></i> تم إرفاق اللعبة "${gameName || 'بدون اسم'}" بنجاح! (${kahootQuestions.length} سؤال)`;
             closeKahootMaker();
+        }
+
+        // ─── GAME BANK SECTION PAGE ───
+        let _gbsAssignBankIdx = -1;
+
+        function renderGameBankSection() {
+            const bank = getGameBank();
+            const q = (document.getElementById('gbs-search')?.value || '').toLowerCase();
+            const filtered = q ? bank.filter(g => g.name.toLowerCase().includes(q)) : bank;
+
+            // Update stats
+            const el = n => document.getElementById(n);
+            if(el('gbs-count')) el('gbs-count').innerText = bank.length;
+            if(el('gbs-q-count')) el('gbs-q-count').innerText = bank.reduce((s, g) => s + (g.questions?.length || 0), 0);
+
+            const grid = el('gbs-grid');
+            if (!grid) return;
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:60px; color:var(--text-muted);">
+                    <i class="fas fa-box-open" style="font-size:50px; opacity:0.3; margin-bottom:15px;"></i>
+                    <h3>${q ? 'لا توجد نتائج للبحث' : 'لا توجد ألعاب محفوظة بعد'}</h3>
+                    ${!q ? '<p>اضغط "إنشاء لعبة جديدة" لإضافة أول لعبة Kahoot في البنك</p>' : ''}
+                </div>`;
+                return;
+            }
+
+            const colors = ['#e21b3c','#1368ce','#d89e00','#26890c','#7c3aed','#db2777'];
+            grid.innerHTML = filtered.map((g) => {
+                const realIdx = bank.indexOf(g);
+                const color = colors[realIdx % colors.length];
+                const previewQs = (g.questions || []).slice(0, 3);
+                return `
+                <div class="card" style="border:1px solid var(--border); border-top:4px solid ${color}; padding:0; overflow:hidden; display:flex; flex-direction:column; transition:transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 12px 30px rgba(0,0,0,0.4)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+                    
+                    <!-- Card Header -->
+                    <div style="padding:18px 18px 12px; background:linear-gradient(135deg, rgba(${color.replace('#','').match(/.{2}/g).map(h=>parseInt(h,16)).join(',')},0.15), transparent);">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+                            <div style="flex:1; min-width:0;">
+                                <div style="font-size:18px; font-weight:900; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${g.name}">
+                                    <i class="fas fa-gamepad" style="color:${color};"></i> ${g.name}
+                                </div>
+                                <div style="font-size:12px; color:var(--text-muted); display:flex; gap:12px; flex-wrap:wrap;">
+                                    <span><i class="fas fa-question-circle"></i> ${g.questions?.length || 0} سؤال</span>
+                                    <span><i class="fas fa-calendar-alt"></i> ${g.date || ''}</span>
+                                </div>
+                            </div>
+                            <button onclick="deleteBankGame(${realIdx})" style="background:rgba(255,71,87,0.15); border:none; color:var(--danger); border-radius:8px; padding:6px 10px; cursor:pointer; flex-shrink:0; font-size:13px;" title="حذف اللعبة"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Preview Questions -->
+                    <div style="padding:0 18px 12px; flex:1;">
+                        ${previewQs.map((pq, pi) => `
+                            <div style="padding:8px 10px; margin-bottom:6px; background:rgba(255,255,255,0.04); border-radius:8px; font-size:13px; border-right:3px solid ${colors[pi % colors.length]};">
+                                <span style="color:var(--text-muted); font-size:11px;">س${pi+1}:</span> ${pq.q || '(بدون نص)'}
+                            </div>
+                        `).join('')}
+                        ${g.questions?.length > 3 ? `<div style="font-size:12px; color:var(--text-muted); text-align:center;">... و ${g.questions.length - 3} أسئلة أخرى</div>` : ''}
+                    </div>
+
+                    <!-- Actions -->
+                    <div style="padding:12px 18px; border-top:1px solid var(--border); display:flex; gap:8px;">
+                        <button onclick="showGBSAssignModal(${realIdx})" style="flex:1; padding:10px; background:var(--primary); border:none; border-radius:8px; color:white; font-weight:bold; cursor:pointer; font-size:14px; transition:0.2s;">
+                            <i class="fas fa-plus-circle"></i> إضافة للدرس
+                        </button>
+                        <button onclick="editBankGame(${realIdx})" style="padding:10px 14px; background:rgba(56,189,248,0.15); border:1px solid var(--accent); border-radius:8px; color:var(--accent); cursor:pointer; font-size:14px; transition:0.2s;" title="تعديل اللعبة">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function openKahootMakerStandalone() {
+            // open with no pre-existing data — standalone creation for bank
+            document.getElementById('game-kahoot-data').value = '';
+            openKahootMaker();
+        }
+
+        function editBankGame(idx) {
+            const bank = getGameBank();
+            if (!bank[idx]) return;
+            // inject bank game into hidden textarea so openKahootMaker loads it
+            document.getElementById('game-kahoot-data').value = JSON.stringify(bank[idx].questions);
+            openKahootMaker();
+            document.getElementById('kahoot-game-name').value = bank[idx].name;
+        }
+
+        async function deleteBankGame(idx) {
+            const bank = getGameBank();
+            if (!bank[idx]) return;
+            if (!confirm(`هل تريد حذف لعبة "${bank[idx].name}" من البنك نهائياً؟`)) return;
+            bank.splice(idx, 1);
+            await saveDB();
+            renderGameBankSection();
+            renderGameBankList(); // update panel inside Kahoot Studio too
+            showNotif('🗑️ تم حذف اللعبة من البنك', 'success');
+        }
+
+        function showGBSAssignModal(bankIdx) {
+            const bank = getGameBank();
+            if (!bank[bankIdx]) return;
+            _gbsAssignBankIdx = bankIdx;
+
+            document.getElementById('gbs-assign-game-name').innerHTML =
+                `<i class="fas fa-gamepad" style="color:#f59e0b;"></i> <strong>${bank[bankIdx].name}</strong> — ${bank[bankIdx].questions?.length || 0} سؤال`;
+
+            // Fill lesson selector
+            const sel = document.getElementById('gbs-lesson-select');
+            sel.innerHTML = '<option value="">— اختر الدرس —</option>';
+            if (db?.classes) {
+                for (const [cid, cls] of Object.entries(db.classes)) {
+                    for (const [gid, grp] of Object.entries(cls.groups || {})) {
+                        for (const [csid, cs] of Object.entries(grp.courses || {})) {
+                            for (const [term, termData] of Object.entries(cs)) {
+                                for (const [uid, unit] of Object.entries(termData?.units || {})) {
+                                    for (const [lid, lesson] of Object.entries(unit?.lessons || {})) {
+                                        const label = `${cls.name} › ${grp.name} › ${lesson.title || lid}`;
+                                        const val = `${cid},${gid},${csid},${term},${uid},${lid}`;
+                                        sel.innerHTML += `<option value="${val}">${label}</option>`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            document.getElementById('gbs-assign-modal').style.display = 'flex';
+        }
+
+        async function assignGameToLesson() {
+            const bank = getGameBank();
+            const game = bank[_gbsAssignBankIdx];
+            if (!game) return;
+
+            const val = document.getElementById('gbs-lesson-select').value;
+            if (!val) { alert('يرجى اختيار درس أولاً.'); return; }
+
+            const [cid, gid, csid, term, uid, lid] = val.split(',');
+            const lesson = db?.classes?.[cid]?.groups?.[gid]?.courses?.[csid]?.[term]?.units?.[uid]?.lessons?.[lid];
+            if (!lesson) { alert('لم يتم العثور على الدرس.'); return; }
+
+            if (!lesson.gameZone) lesson.gameZone = {};
+            lesson.gameZone.title = lesson.gameZone.title || game.name;
+            lesson.gameZone.kahootData = JSON.parse(JSON.stringify(game.questions));
+
+            await saveDB();
+            document.getElementById('gbs-assign-modal').style.display = 'none';
+            showNotif(`✅ تم إضافة لعبة "${game.name}" للدرس بنجاح!`, 'success');
         }
 
     </script>
