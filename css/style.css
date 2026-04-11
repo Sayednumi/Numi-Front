@@ -488,7 +488,7 @@ img { max-width: 100%; display: block; }
 .journey-card.state-completed { opacity: 1; filter: none; border-color: var(--success); }
 
 .journey-card-header {
-    padding: 20px; display: flex; align-items: center; gap: 16px;
+    padding: 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
     cursor: pointer; position: relative; overflow: hidden;
 }
 .journey-card-header .icon-circle {
@@ -832,7 +832,10 @@ input:checked + .slider::before { transform: translateX(24px); }
     .stats-grid .stat-card-info p { font-size: 11px; }
     .stats-grid .stat-card span { display: none; }
     .grid-auto { grid-template-columns: 1fr !important; }
-    .journey-card-header { padding: 16px 12px; gap: 10px; }
+    .welcome-banner { flex-direction: column; text-align: center; padding: 20px; }
+    .welcome-emoji { font-size: 36px; margin-top: 10px; }
+    .guide-message { flex-direction: column; text-align: center; border-radius: 20px; }
+    .journey-card-header { padding: 16px 12px; gap: 10px; flex-wrap: wrap; }
     .journey-card-header .icon-circle { width: 44px; height: 44px; font-size: 18px; }
     .card-title-area h3 { font-size: 16px; }
     .status-badge { padding: 4px 10px; font-size: 10px; }
@@ -886,6 +889,10 @@ input:checked + .slider::before { transform: translateX(24px); }
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
     border-radius: var(--radius-sm);
+}
+
+.game-btn-group {
+    display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; width: 100%;
 }
 
 .game-btn {
