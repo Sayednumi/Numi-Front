@@ -672,7 +672,7 @@
             <li><a href="#" data-target="mindscape-zone"><i class="fas fa-project-diagram"></i> Mindscape</a></li>
             <li><a href="#" data-target="game-zone"><i class="fas fa-gamepad"></i> Game Zone</a></li>
             <li><a href="#" data-target="quiz-zone"><i class="fas fa-question-circle"></i> Quiz Zone</a></li>
-            <li><a href="#" data-target="ailesson-zone"><i class="fas fa-magic"></i> الدرس الذكي (/lesson)</a></li>
+            <li><a href="#" data-target="ailesson-zone"><i class="fas fa-magic"></i> الدرس (/lesson)</a></li>
             <li><a href="#" data-target="students"><i class="fas fa-user-graduate"></i> إدارة الطلاب</a></li>
             <li><a href="#" data-target="reports" onclick="initReports()"><i class="fas fa-chart-bar"></i> التقارير والنتائج</a></li>
             <li><a href="#" data-target="question-bank" onclick="renderQuestionBank()"><i class="fas fa-database"></i> بنك الأسئلة</a></li>
@@ -1017,7 +1017,7 @@
         <!-- AI Lesson Zone Section -->
         <div id="ailesson-zone" class="section contents-section">
             <div class="card">
-                <div class="card-header"><h2>الدرس الذكي (توليد بالذكاء الاصطناعي)</h2></div>
+                <div class="card-header"><h2>الدرس (توليد بالذكاء الاصطناعي)</h2></div>
                 <div class="form-group"><label>اختر الدرس أولاً</label><select class="form-control lesson-selector" id="ailesson-lesson-select" onchange="loadZoneData('ailessonZone')"></select></div>
                 <form id="ailessonForm" onsubmit="saveZoneData(event, 'ailessonZone')">
                     <div style="border:1px solid var(--primary); padding:20px; border-radius:10px; background:rgba(109,58,238,0.05); margin-bottom:20px;">
@@ -1033,12 +1033,12 @@
                     <div style="border:1px solid var(--primary); padding:20px; border-radius:10px; background:rgba(109,58,238,0.05); margin-bottom:20px;">
                         <h4 class="mb-16"><i class="fab fa-google-drive"></i> رابط ملف جوجل درايف (اختياري)</h4>
                         <div class="form-group">
-                            <input type="url" class="form-control" id="ailesson-drive-link" placeholder="أدخل رابط جوجل درايف ليتم عرضه داخل الدرس الذكي..." style="background:#000; color:#fff;">
+                            <input type="url" class="form-control" id="ailesson-drive-link" placeholder="أدخل رابط جوجل درايف ليتم عرضه داخل الدرس..." style="background:#000; color:#fff;">
                         </div>
                     </div>
                     <input type="hidden" id="ailesson-html-data">
                     <div id="ailesson-preview" style="margin-top:20px; display:none;">
-                        <h4 style="margin-bottom:10px;"><i class="fas fa-eye"></i> معاينة الدرس التفاعلي:</h4>
+                        <h4 style="margin-bottom:10px;"><i class="fas fa-eye"></i> معاينة الدرس:</h4>
                         <div class="preview-container" style="height: 500px; display: flex; align-items: stretch;">
                             <iframe id="ailesson-preview-iframe" srcdoc="" style="width:100%; border:none; background:#fff;" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
                         </div>
