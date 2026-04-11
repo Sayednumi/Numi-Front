@@ -4249,7 +4249,10 @@
         let _currentPlatformName = '';
 
         function platformIsBlocked(url) {
-            return false;
+            try {
+                const host = new URL(url).hostname;
+                return IFRAME_BLOCKED_PATTERNS.some(p => host.includes(p));
+            } catch { return true; }
         }
 
         function getPlatformIcon(platform) {

@@ -757,8 +757,25 @@ input:checked + .slider::before { transform: translateX(24px); }
     .grid-auto { grid-template-columns: 1fr !important; }
     .welcome-banner { flex-direction: column; text-align: center; padding: 20px; }
     .welcome-emoji { font-size: 36px; margin-top: 10px; }
-    .step-tracker { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .step-item { flex-shrink: 0; }
+    .step-tracker { 
+        display: grid; 
+        grid-template-columns: repeat(2, 1fr); 
+        gap: 10px; 
+        overflow-x: hidden; 
+        padding: 10px; 
+        background: transparent; 
+        border: none; 
+    }
+    .step-item { 
+        width: 100%; 
+        padding: 12px; 
+        white-space: normal; 
+        flex-direction: column; 
+        gap: 8px; 
+        text-align: center; 
+        background: var(--bg-card); 
+        border: 1px solid var(--border); 
+    }
     .chat-container { max-width: 100%; height: 100vh; border-radius: 0; display: flex; flex-direction: column; }
     .chat-messages { padding: 15px; }
     .math-keyboard { max-height: 120px; }
