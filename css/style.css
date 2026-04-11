@@ -793,6 +793,12 @@ input:checked + .slider::before { transform: translateX(24px); }
     .mobile-close-btn:hover { color: var(--danger); border-color: var(--danger); transform: scale(1.1); }
     .main-content { padding: 16px; width: 100%; overflow-x: hidden; }
     .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr !important; }
+    .grid-4.stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .stats-grid .stat-card { padding: 10px 8px; gap: 4px; }
+    .stats-grid .stat-card-icon { width: 36px; height: 36px; font-size: 16px; margin-bottom: 2px; }
+    .stats-grid .stat-card-info h3 { font-size: 18px; }
+    .stats-grid .stat-card-info p { font-size: 11px; }
+    .stats-grid .stat-card span { display: none; }
     .grid-auto { grid-template-columns: 1fr !important; }
     .welcome-banner { flex-direction: column; text-align: center; padding: 20px; }
     .welcome-emoji { font-size: 36px; margin-top: 10px; }
