@@ -259,6 +259,7 @@ img { max-width: 100%; display: block; }
 }
 .page-title { font-size: 22px; font-weight: 800; }
 .mobile-toggle { display: none; font-size: 22px; cursor: pointer; color: var(--text-primary); padding: 8px; }
+.mobile-close-btn { display: none; }
 
 /* ── Login Page ────────────────────────────────────────────── */
 #login-page {
@@ -757,6 +758,14 @@ input:checked + .slider::before { transform: translateX(24px); }
     }
     .sidebar.open { right: 0; box-shadow: -5px 0 30px rgba(0,0,0,0.6); }
     .mobile-toggle { display: block; }
+    .mobile-close-btn { 
+        display: flex; position: absolute; left: 16px; top: 16px; 
+        font-size: 20px; color: var(--text-muted); cursor: pointer;
+        width: 32px; height: 32px; align-items: center; justify-content: center;
+        background: var(--bg-card); border-radius: 50%;
+        border: 1px solid var(--border); transition: all 0.3s;
+    }
+    .mobile-close-btn:hover { color: var(--danger); border-color: var(--danger); transform: scale(1.1); }
     .main-content { padding: 16px; width: 100%; overflow-x: hidden; }
     .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr !important; }
     .grid-auto { grid-template-columns: 1fr !important; }

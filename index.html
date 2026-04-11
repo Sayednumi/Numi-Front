@@ -7,7 +7,7 @@
     <meta name="description" content="Numi - منصة تعليمية ذكية مدعومة بالذكاء الاصطناعي لتعلم الرياضيات بطريقة تفاعلية وممتعة">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="css/style.css?v=2.0.5">
+    <link rel="stylesheet" href="css/style.css?v=2.0.6">
     <!-- KaTeX for Math Rendering -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
@@ -108,7 +108,8 @@
 
     <!-- ── Sidebar ──────────────────────────────────────────── -->
     <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header">
+        <div class="sidebar-header" style="position: relative;">
+            <i class="fas fa-times mobile-close-btn" onclick="document.getElementById('sidebar').classList.remove('open')"></i>
             <div class="student-avatar"><span id="display-avatar">ط</span></div>
             <div class="student-name" id="display-name">طالب Numi</div>
             <div class="student-grade" id="display-grade">منصة Numi</div>
