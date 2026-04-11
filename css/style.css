@@ -801,8 +801,6 @@ input:checked + .slider::before { transform: translateX(24px); }
 @media (max-width: 1024px) {
     .grid-4 { grid-template-columns: repeat(2, 1fr); }
     .grid-3 { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 768px) {
     .sidebar {
         position: fixed; right: -280px; height: 100%;
         width: 270px; z-index: 1000;
@@ -818,7 +816,14 @@ input:checked + .slider::before { transform: translateX(24px); }
         border: 1px solid var(--border); transition: all 0.3s;
     }
     .mobile-close-btn:hover { color: var(--danger); border-color: var(--danger); transform: scale(1.1); }
-    .main-content { padding: 16px; width: 100%; overflow-x: hidden; }
+    .main-content { padding: 20px; width: 100%; overflow-x: hidden; }
+    .welcome-banner { flex-direction: column; text-align: center; padding: 20px; }
+    .welcome-emoji { font-size: 36px; margin-top: 10px; }
+    .guide-message { flex-direction: column; text-align: center; border-radius: 20px; }
+    .page-header { flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+}
+@media (max-width: 768px) {
+    .main-content { padding: 16px; }
     .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr !important; }
     .grid-4.stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
     .stats-grid .stat-card { padding: 10px 8px; gap: 4px; }
@@ -827,9 +832,6 @@ input:checked + .slider::before { transform: translateX(24px); }
     .stats-grid .stat-card-info p { font-size: 11px; }
     .stats-grid .stat-card span { display: none; }
     .grid-auto { grid-template-columns: 1fr !important; }
-    .welcome-banner { flex-direction: column; text-align: center; padding: 20px; }
-    .welcome-emoji { font-size: 36px; margin-top: 10px; }
-    .guide-message { flex-direction: column; text-align: center; border-radius: 20px; }
     .journey-card-header { padding: 16px 12px; gap: 10px; }
     .journey-card-header .icon-circle { width: 44px; height: 44px; font-size: 18px; }
     .card-title-area h3 { font-size: 16px; }
@@ -838,7 +840,6 @@ input:checked + .slider::before { transform: translateX(24px); }
     .chat-messages { padding: 15px; }
     .math-keyboard { max-height: 120px; }
     .notif-panel { width: 100%; right: -100%; }
-    .page-header { flex-wrap: wrap; justify-content: space-between; gap: 12px; }
     .card { padding: 16px; }
     .card-header { flex-direction: column; text-align: center; gap: 10px; }
     .btn { font-size: 13px; }
