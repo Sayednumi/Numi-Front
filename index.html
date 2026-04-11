@@ -137,7 +137,6 @@
             <div id="dynamic-menu-units"></div>
             <div class="menu-section">📊 المزيد</div>
             <li id="nav-live-class" style="display:none;" onclick="navigateTo('live-class', this)"><i class="fas fa-video"></i> الحصص المباشرة</li>
-            <li onclick="navigateTo('games', this)" id="nav-games" style="color: #a855f7;"><i class="fas fa-gamepad"></i> الألعاب 🎮</li>
             <li onclick="navigateTo('progress', this)"><i class="fas fa-chart-line"></i> تقدمي</li>
             <li onclick="navigateTo('achievements', this)"><i class="fas fa-trophy"></i> الإنجازات</li>
             <li onclick="navigateTo('chat-human', this)" id="nav-chat-human" style="display:flex; align-items:center; justify-content:space-between;">
@@ -473,21 +472,6 @@
                     <iframe id="podcast-frame" class="content-frame" src=""></iframe>
                     <button class="complete-step-btn" onclick="completeCurrentStep()"><i class="fas fa-check-circle"></i> الخطوة التالية</button>
                 </div>
-            </div>
-        </div>
-
-        <!-- ════════════ GAMES VIEW ════════════ -->
-        <div id="view-games" class="view hidden">
-            <div style="background:linear-gradient(135deg,#7c3aed,#2563eb); border-radius:16px; padding:28px 32px; margin-bottom:24px; display:flex; align-items:center; gap:16px;">
-                <div style="font-size:36px; background:rgba(255,255,255,0.2); width:64px; height:64px; display:flex; align-items:center; justify-content:center; border-radius:16px;">🎮</div>
-                <div>
-                    <h2 style="color:white; font-size:26px; font-weight:900; margin:0;">منطقة الألعاب (Game Zone)</h2>
-                    <p style="color:rgba(255,255,255,0.8); margin:4px 0 0; font-size:14px;">استمتع بالتعلم من خلال الألعاب التفاعلية المصممة خصيصاً لمجموعتك.</p>
-                </div>
-            </div>
-            
-            <div id="student-games-container" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:20px;">
-                <!-- Games rendered by JS -->
             </div>
         </div>
 
