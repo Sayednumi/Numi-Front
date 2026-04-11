@@ -324,8 +324,38 @@
             .card-header { flex-direction: column; gap: 15px; text-align: center; }
             .card-header .btn { width: 100%; justify-content: center; }
             .form-group { width: 100%; }
-            table { display: block; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; width: 100%; }
-            th, td { padding: 10px; font-size: 14px; }
+            table, thead, tbody, th, td, tr { display: block; width: 100%; border: none; }
+            table thead tr { position: absolute; top: -9999px; left: -9999px; } /* Hide headers visually but keep for screen readers/JS */
+            table tr { 
+                margin-bottom: 15px; 
+                background: var(--card); 
+                border-radius: 12px; 
+                border: 1px solid rgba(255,255,255,0.05); 
+                box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            }
+            table td { 
+                display: flex; 
+                justify-content: space-between; 
+                align-items: center; 
+                border-bottom: 1px solid rgba(255,255,255,0.05); 
+                padding: 12px 15px; 
+                font-size: 14px; 
+                text-align: right; 
+                gap: 15px;
+            }
+            table td::before { 
+                content: attr(data-label); 
+                font-weight: bold; 
+                color: var(--primary); 
+                font-size: 13px;
+                text-align: right;
+            }
+            table td:last-child { 
+                border-bottom: 0; background: rgba(0,0,0,0.2); 
+                justify-content: center; padding: 15px;
+            }
+            table td:last-child::before { display: none; }
+            table td .btn { flex: 1; text-align: center; justify-content: center; margin: 0; }
             .chat-container { flex-direction: column; height: calc(100vh - 120px); border-radius: 12px; }
             .chat-sidebar { width: 100%; height: 200px; flex-shrink: 0; border-right: none; border-bottom: 1px solid rgba(255,255,255,0.05); }
             .chat-main { flex: 1; height: calc(100% - 200px); }
@@ -5805,6 +5835,33 @@
             document.getElementById('gbs-assign-modal').style.display = 'none';
             showNotif(`✅ تم إضافة لعبة "${game.name}" للدرس بنجاح!`, 'success');
         }
+
+        // Auto-inject data-label for mobile responsive tables
+        function bindTableLabels() {
+            if (window.innerWidth <= 768) {
+                document.querySelectorAll('table').forEach(table => {
+                    const headers = Array.from(table.querySelectorAll('th')).map(th => th.innerText.trim());
+                    if(headers.length === 0) return;
+                    table.querySelectorAll('tbody tr').forEach(tr => {
+                        Array.from(tr.querySelectorAll('td')).forEach((td, i) => {
+                            if (headers[i] && !td.hasAttribute('data-label')) {
+                                td.setAttribute('data-label', headers[i]);
+                            }
+                        });
+                    });
+                });
+            }
+        }
+        
+        const tableObserver = new MutationObserver((mutations) => {
+            let shouldUpdate = false;
+            for (let m of mutations) {
+                if (m.addedNodes.length) shouldUpdate = true;
+            }
+            if (shouldUpdate) bindTableLabels();
+        });
+        tableObserver.observe(document.body, { childList: true, subtree: true });
+        window.addEventListener('resize', bindTableLabels);
 
     </script>
 </body>
