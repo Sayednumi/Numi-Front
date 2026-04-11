@@ -945,7 +945,19 @@
                 <div class="form-group"><label>اختر الدرس</label><select class="form-control lesson-selector" id="game-lesson-select" onchange="loadZoneData('gameZone')"></select></div>
                 <form id="gameForm" onsubmit="saveZoneData(event, 'gameZone')">
                     <div class="form-group"><label>عنوان اللعبة</label><input type="text" class="form-control" id="game-title" required></div>
-                    <div class="form-group"><label>روابط الألعاب (لإضافة أكتر من لعبة افصل بين الروابط بسطر جديد)</label><textarea class="form-control" id="game-url" rows="3" oninput="updateGamePreview('game-preview', this.value)" required placeholder="مثال:\nhttps://game1.com\nhttps://game2.com"></textarea></div>
+                    
+                    <!-- Kahoot Native Game Builder -->
+                    <div class="form-group" style="background: rgba(56, 189, 248, 0.05); padding: 20px; border-radius: 12px; border: 1px dashed var(--accent); margin-bottom: 20px; text-align:center;">
+                        <h3 style="color: var(--accent); margin-bottom:10px;"><i class="fas fa-bolt"></i> Numi Interactive Game (Kahoot-style)</h3>
+                        <p style="color:var(--text-muted); font-size:13px; margin-bottom:15px;">قم بإنشاء لعبة تفاعلية للطلاب بأسلوب تنافسي مع النقاط والوقت.</p>
+                        <button type="button" class="btn" style="background:var(--accent); color:#0b1220; width:100%; font-weight:bold; font-size:16px; padding:12px;" onclick="openKahootMaker()">
+                            <i class="fas fa-magic"></i> إطلاق صانع الألعاب التفاعلية (Kahoot)
+                        </button>
+                        <textarea id="game-kahoot-data" style="display:none"></textarea>
+                        <div id="kahoot-status-badge" style="margin-top:10px; font-weight:bold; color:var(--success-color); display:none;"><i class="fas fa-check-circle"></i> تم إرفاق اللعبة بنجاح! سيتم حفظها مع القسم.</div>
+                    </div>
+
+                    <div class="form-group"><label>روابط الألعاب الخارجية (اختياري - لإضافة أكتر من لعبة افصل بين الروابط بسطر جديد)</label><textarea class="form-control" id="game-url" rows="3" oninput="updateGamePreview('game-preview', this.value)" placeholder="مثال:\nhttps://game1.com\nhttps://game2.com"></textarea></div>
                     <div class="preview-container" id="game-preview"></div>
                     <div style="display:flex; gap:10px; margin-top:20px;">
                         <button type="submit" class="btn">حفظ التغييرات</button>
@@ -1495,6 +1507,97 @@
     <!-- Modals -->
 
     <!-- Platform Add Modal -->
+    <!-- Kahoot Maker Modal -->
+    <div class="modal" id="kahootMakerModal" style="z-index: 10000;">
+        <div class="modal-content" style="max-width:98%; width:1200px; height:90vh; padding:0; display:flex; flex-direction:column; background:var(--bg); overflow:hidden;">
+            <!-- Header -->
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:15px 25px; background:var(--bg-card); border-bottom:1px solid var(--border);">
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <button class="btn btn-danger" onclick="closeKahootMaker()" style="padding:8px 15px;"><i class="fas fa-times"></i> إغلاق</button>
+                    <h2 style="margin:0; color:var(--accent);"><i class="fas fa-bolt"></i> Numi Kahoot Studio</h2>
+                </div>
+                <div>
+                    <button class="btn btn-success" onclick="saveKahootGame()" style="padding:10px 20px; font-weight:bold; font-size:16px;"><i class="fas fa-save"></i> حفظ اللعبة وإدراجها</button>
+                </div>
+            </div>
+
+            <!-- Body -->
+            <div style="display:flex; flex:1; overflow:hidden;">
+                <!-- Sidebar -->
+                <div style="width:250px; background:rgba(0,0,0,0.2); border-left:1px solid var(--border); display:flex; flex-direction:column; overflow-y:auto; padding:15px;">
+                    <button class="btn" onclick="addKahootQuestion()" style="width:100%; background:var(--primary); color:white; font-weight:bold; margin-bottom:15px;"><i class="fas fa-plus"></i> إضافة سؤال جديد</button>
+                    <div id="kahoot-sidebar-list" style="display:flex; flex-direction:column; gap:10px;">
+                        <!-- Question thumb elements will go here -->
+                    </div>
+                </div>
+
+                <!-- Main Editor Area -->
+                <div style="flex:1; padding:25px; overflow-y:auto; position:relative; background: radial-gradient(circle at center, var(--bg-card), var(--bg));">
+                    <div id="kahoot-editor-empty" style="text-align:center; padding-top:20vh; color:var(--text-muted);">
+                        <i class="fas fa-hand-pointer" style="font-size:40px; margin-bottom:15px; opacity:0.5;"></i>
+                        <h2>اختر أو أضف سؤالاً للبدء</h2>
+                    </div>
+
+                    <div id="kahoot-editor-active" style="display:none; max-width:800px; margin:0 auto;">
+                        <input type="text" id="kahoot-q-title" placeholder="اكتب سؤالك هنا..." style="width:100%; text-align:center; font-size:24px; font-weight:bold; padding:20px; border-radius:12px; border:1px solid var(--border); background:var(--surface); color:white; margin-bottom:20px; box-shadow:0 4px 15px rgba(0,0,0,0.2);">
+                        
+                        <div style="display:flex; justify-content:center; gap:20px; margin-bottom:30px;">
+                            <div style="background:var(--bg-card); padding:10px 15px; border-radius:8px; border:1px solid var(--border);">
+                                <label style="display:block; font-size:12px; color:var(--text-muted); margin-bottom:5px;">وقت الإجابة</label>
+                                <select id="kahoot-q-time" style="background:transparent; color:white; border:none; font-size:16px; font-weight:bold; outline:none; cursor:pointer;">
+                                    <option value="10" style="color:black;">10 ثواني</option>
+                                    <option value="20" style="color:black;" selected>20 ثانية</option>
+                                    <option value="30" style="color:black;">30 ثانية</option>
+                                    <option value="60" style="color:black;">1 دقيقة</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 4 Answers Grid -->
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                            <!-- Option 1: Red Triangle -->
+                            <div style="background:#e21b3c; border-radius:10px; display:flex; align-items:stretch; box-shadow:0 6px 0 #b0102b, 0 10px 10px rgba(0,0,0,0.3); transition:transform 0.1s; position:relative;">
+                                <div style="width:60px; display:flex; align-items:center; justify-content:center; font-size:24px; color:white;"><i class="fas fa-caret-up"></i></div>
+                                <input type="text" id="kahoot-ans-0" placeholder="الإجابة 1" style="flex:1; background:transparent; border:none; color:white; font-size:18px; font-weight:bold; padding:15px 10px; outline:none;">
+                                <button onclick="toggleKahootCorrect(0)" class="kahoot-check-btn" id="kahoot-chk-0" style="width:50px; background:rgba(0,0,0,0.2); border:none; border-top-left-radius:10px; border-bottom-left-radius:10px; color:white; cursor:pointer; font-size:20px; transition:0.3s;"><i class="far fa-circle"></i></button>
+                            </div>
+                            
+                            <!-- Option 2: Blue Diamond -->
+                            <div style="background:#1368ce; border-radius:10px; display:flex; align-items:stretch; box-shadow:0 6px 0 #0d4a97, 0 10px 10px rgba(0,0,0,0.3); position:relative;">
+                                <div style="width:60px; display:flex; align-items:center; justify-content:center; font-size:24px; color:white;"><i class="fas fa-square" style="transform: rotate(45deg); font-size:20px;"></i></div>
+                                <input type="text" id="kahoot-ans-1" placeholder="الإجابة 2" style="flex:1; background:transparent; border:none; color:white; font-size:18px; font-weight:bold; padding:15px 10px; outline:none;">
+                                <button onclick="toggleKahootCorrect(1)" class="kahoot-check-btn" id="kahoot-chk-1" style="width:50px; background:rgba(0,0,0,0.2); border:none; border-top-left-radius:10px; border-bottom-left-radius:10px; color:white; cursor:pointer; font-size:20px; transition:0.3s;"><i class="far fa-circle"></i></button>
+                            </div>
+
+                            <!-- Option 3: Yellow Circle -->
+                            <div style="background:#d89e00; border-radius:10px; display:flex; align-items:stretch; box-shadow:0 6px 0 #b38300, 0 10px 10px rgba(0,0,0,0.3); position:relative;">
+                                <div style="width:60px; display:flex; align-items:center; justify-content:center; font-size:24px; color:white;"><i class="fas fa-circle"></i></div>
+                                <input type="text" id="kahoot-ans-2" placeholder="الإجابة 3" style="flex:1; background:transparent; border:none; color:white; font-size:18px; font-weight:bold; padding:15px 10px; outline:none;">
+                                <button onclick="toggleKahootCorrect(2)" class="kahoot-check-btn" id="kahoot-chk-2" style="width:50px; background:rgba(0,0,0,0.2); border:none; border-top-left-radius:10px; border-bottom-left-radius:10px; color:white; cursor:pointer; font-size:20px; transition:0.3s;"><i class="far fa-circle"></i></button>
+                            </div>
+
+                            <!-- Option 4: Green Square -->
+                            <div style="background:#26890c; border-radius:10px; display:flex; align-items:stretch; box-shadow:0 6px 0 #1b6308, 0 10px 10px rgba(0,0,0,0.3); position:relative;">
+                                <div style="width:60px; display:flex; align-items:center; justify-content:center; font-size:24px; color:white;"><i class="fas fa-square"></i></div>
+                                <input type="text" id="kahoot-ans-3" placeholder="الإجابة 4" style="flex:1; background:transparent; border:none; color:white; font-size:18px; font-weight:bold; padding:15px 10px; outline:none;">
+                                <button onclick="toggleKahootCorrect(3)" class="kahoot-check-btn" id="kahoot-chk-3" style="width:50px; background:rgba(0,0,0,0.2); border:none; border-top-left-radius:10px; border-bottom-left-radius:10px; color:white; cursor:pointer; font-size:20px; transition:0.3s;"><i class="far fa-circle"></i></button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .kahoot-check-btn.correct { background: #66bf39 !important; color: white !important; }
+        .kahoot-check-btn.correct i::before { content: "\f058"; } /* fa-check-circle */
+        .kahoot-thumb { background: var(--bg-card); border: 2px solid var(--border); border-radius: 8px; padding: 10px; cursor: pointer; transition: 0.2s; position: relative; }
+        .kahoot-thumb.active { border-color: var(--accent); background: rgba(56, 189, 248, 0.1); }
+        .kahoot-thumb:hover { border-color: var(--primary); }
+    </style>
+
     <div class="modal" id="platformModal">
         <div class="modal-content" style="max-width:440px;">
             <h2 style="margin-bottom:20px;"><i class="fas fa-plus-circle" style="color:var(--primary);"></i> إضافة منصة جديدة</h2>
@@ -2951,7 +3054,6 @@
                 const urlEl = document.getElementById(`${prefix}-url`);
                 if (urlEl) urlEl.value = data.url || '';
             }
-
             if (zone === 'videoZone') {
                 const wm = document.getElementById('video-watermark');
                 if (wm) wm.value = data.watermark || '';
@@ -2961,6 +3063,17 @@
                 if (lrn) lrn.value = data.learnFile || '';
             }
 
+            if (zone === 'gameZone') {
+                const khEl = document.getElementById('game-kahoot-data');
+                const badge = document.getElementById('kahoot-status-badge');
+                if(data.kahootData) {
+                    khEl.value = JSON.stringify(data.kahootData);
+                    badge.style.display = 'block';
+                } else {
+                    khEl.value = '';
+                    badge.style.display = 'none';
+                }
+            }
             if (zone === 'ailessonZone') {
                 const htmlData = document.getElementById('ailesson-html-data');
                 const driveLinkEl = document.getElementById('ailesson-drive-link');
@@ -3023,6 +3136,15 @@
                         if (driveLinkVal) data.driveLink = driveLinkVal;
                     } else {
                         data = {}; // if no HTML and no link, save as empty
+                    }
+                }
+
+                if (zone === 'gameZone') {
+                    const kahootDataStr = document.getElementById('game-kahoot-data')?.value;
+                    if (kahootDataStr && kahootDataStr.length > 5) { // Ensure it's validish
+                        try {
+                            data.kahootData = JSON.parse(kahootDataStr);
+                        } catch(e) {}
                     }
                 }
 
@@ -4920,6 +5042,145 @@
             renderWeeklySchedule();
         }
         
+        // ─── KAHOOT MAKER LOGIC ───
+        let kahootQuestions = [];
+        let currentKahootIndex = -1;
+
+        function openKahootMaker() {
+            let existing = document.getElementById('game-kahoot-data').value;
+            kahootQuestions = [];
+            currentKahootIndex = -1;
+            if (existing && existing.length > 5) {
+                try { kahootQuestions = JSON.parse(existing); } catch(e){}
+            }
+            
+            document.getElementById('kahootMakerModal').style.display = 'flex';
+            renderKahootSidebar();
+            showKahootEditor(-1);
+            
+            if(kahootQuestions.length === 0) addKahootQuestion();
+        }
+
+        function closeKahootMaker() {
+            document.getElementById('kahootMakerModal').style.display = 'none';
+        }
+
+        function addKahootQuestion() {
+            syncCurrentKahootQuestion(); // save current before creating new
+            kahootQuestions.push({
+                q: '',
+                time: 20,
+                options: ['', '', '', ''],
+                correct: 0
+            });
+            renderKahootSidebar();
+            showKahootEditor(kahootQuestions.length - 1);
+        }
+
+        function renderKahootSidebar() {
+            const list = document.getElementById('kahoot-sidebar-list');
+            list.innerHTML = '';
+            kahootQuestions.forEach((q, i) => {
+                const title = (q.q && q.q.trim()) ? q.q : `سؤال ${i+1}`;
+                list.innerHTML += `
+                    <div class="kahoot-thumb ${i === currentKahootIndex ? 'active':''}" onclick="syncAndSwitchKahoot(${i})">
+                        <div style="font-weight:bold; font-size:12px; margin-bottom:5px; color:var(--text-muted);">سؤال ${i+1}</div>
+                        <div style="font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${title}</div>
+                        <button onclick="event.stopPropagation(); deleteKahootQuestion(${i})" style="position:absolute; top:8px; left:8px; background:rgba(255,0,0,0.2); border:none; color:var(--danger); border-radius:5px; cursor:pointer;"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+            });
+        }
+
+        function syncCurrentKahootQuestion() {
+            if (currentKahootIndex >= 0 && currentKahootIndex < kahootQuestions.length) {
+                let qObj = kahootQuestions[currentKahootIndex];
+                qObj.q = document.getElementById('kahoot-q-title').value;
+                qObj.time = parseInt(document.getElementById('kahoot-q-time').value) || 20;
+                qObj.options[0] = document.getElementById('kahoot-ans-0').value;
+                qObj.options[1] = document.getElementById('kahoot-ans-1').value;
+                qObj.options[2] = document.getElementById('kahoot-ans-2').value;
+                qObj.options[3] = document.getElementById('kahoot-ans-3').value;
+                // correct is set implicitly by toggleKahootCorrect
+            }
+        }
+
+        function syncAndSwitchKahoot(index) {
+            syncCurrentKahootQuestion();
+            showKahootEditor(index);
+            renderKahootSidebar();
+        }
+
+        function showKahootEditor(index) {
+            currentKahootIndex = index;
+            const activeEl = document.getElementById('kahoot-editor-active');
+            const emptyEl = document.getElementById('kahoot-editor-empty');
+            
+            if (index >= 0 && index < kahootQuestions.length) {
+                activeEl.style.display = 'block';
+                emptyEl.style.display = 'none';
+                
+                let q = kahootQuestions[index];
+                document.getElementById('kahoot-q-title').value = q.q || '';
+                document.getElementById('kahoot-q-time').value = q.time || 20;
+                document.getElementById('kahoot-ans-0').value = q.options[0] || '';
+                document.getElementById('kahoot-ans-1').value = q.options[1] || '';
+                document.getElementById('kahoot-ans-2').value = q.options[2] || '';
+                document.getElementById('kahoot-ans-3').value = q.options[3] || '';
+                
+                // set correct checks
+                updateKahootChecks(q.correct);
+            } else {
+                activeEl.style.display = 'none';
+                emptyEl.style.display = 'block';
+            }
+        }
+
+        function toggleKahootCorrect(ansIndex) {
+            if (currentKahootIndex >= 0 && currentKahootIndex < kahootQuestions.length) {
+                kahootQuestions[currentKahootIndex].correct = ansIndex;
+                updateKahootChecks(ansIndex);
+            }
+        }
+
+        function updateKahootChecks(correctIndex) {
+            for(let i=0; i<4; i++) {
+                let btn = document.getElementById('kahoot-chk-'+i);
+                if (i === correctIndex) btn.classList.add('correct');
+                else btn.classList.remove('correct');
+            }
+        }
+
+        function deleteKahootQuestion(index) {
+            kahootQuestions.splice(index, 1);
+            if (currentKahootIndex === index) {
+                currentKahootIndex = -1;
+            } else if (currentKahootIndex > index) {
+                currentKahootIndex--;
+            }
+            renderKahootSidebar();
+            showKahootEditor(currentKahootIndex);
+        }
+
+        function saveKahootGame() {
+            syncCurrentKahootQuestion();
+            if (kahootQuestions.length === 0) {
+                if(confirm('لم يتم إضافة أسئلة. هل تريد حذف اللعبة التفاعلية؟')) {
+                    document.getElementById('game-kahoot-data').value = '';
+                    document.getElementById('kahoot-status-badge').style.display = 'none';
+                    closeKahootMaker();
+                }
+                return;
+            }
+            // Validation
+            for(let i=0; i<kahootQuestions.length; i++) {
+                if (!kahootQuestions[i].q) return alert(`يرجى كتابة نص السؤال رقم ${i+1}`);
+            }
+            document.getElementById('game-kahoot-data').value = JSON.stringify(kahootQuestions);
+            document.getElementById('kahoot-status-badge').style.display = 'block';
+            closeKahootMaker();
+        }
+
     </script>
 </body>
 </html>

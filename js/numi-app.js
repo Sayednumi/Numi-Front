@@ -577,8 +577,8 @@ function showUnitView(unitId, menuItem) {
         if (l.ailessonZone?.html || l.ailessonZone?.driveLink) zones.push('<div class="zone-icon" title="Lesson"><i class="fas fa-magic"></i></div>');
         if (l.podcastZone?.url) zones.push('<div class="zone-icon" title="Podcast"><i class="fas fa-microphone"></i></div>');
         if (l.mindscapeZone?.url) zones.push('<div class="zone-icon" title="Mindscape"><i class="fas fa-brain"></i></div>');
-        if (l.gameZone?.url) zones.push('<div class="zone-icon" title="Games"><i class="fas fa-gamepad"></i></div>');
-        if (l.quizZone?.url) zones.push('<div class="zone-icon" title="Quiz"><i class="fas fa-clipboard-check"></i></div>');
+        if (l.gameZone?.url || l.gameZone?.kahootData) zones.push('<div class="zone-icon" title="Games"><i class="fas fa-gamepad"></i></div>');
+        if (l.quizZone?.url || l.quizZone?.nativeData) zones.push('<div class="zone-icon" title="Quiz"><i class="fas fa-clipboard-check"></i></div>');
 
         container.innerHTML += `
             <div class="lesson-card ${done ? 'completed' : ''}" onclick="openLesson('${l.id}')">
@@ -734,7 +734,7 @@ async function openLesson(id) {
     if (zones.video?.url) currentLessonSteps.push({ key: 'video', icon: 'fa-play-circle', label: 'Video' });
     if (zones.ailesson?.html || zones.ailesson?.driveLink) currentLessonSteps.push({ key: 'ailesson', icon: 'fa-magic', label: 'Lesson' });
     if (zones.mindscape?.url) currentLessonSteps.push({ key: 'mindscape', icon: 'fa-brain', label: 'Mindscape' });
-    if (zones.game?.url) currentLessonSteps.push({ key: 'game', icon: 'fa-gamepad', label: 'Games' });
+    if (zones.game?.url || zones.game?.kahootData) currentLessonSteps.push({ key: 'game', icon: 'fa-gamepad', label: 'Games' });
     if (zones.quiz?.url || zones.quiz?.nativeData) currentLessonSteps.push({ key: 'quiz', icon: 'fa-clipboard-check', label: 'Quiz' });
     if (zones.podcast?.url) currentLessonSteps.push({ key: 'podcast', icon: 'fa-podcast', label: 'Podcast' });
 
@@ -830,33 +830,173 @@ async function openLesson(id) {
         }
     }
 
-    if (zones.game?.url) {
+    if (zones.game?.url || zones.game?.kahootData) {
         const gameContainer = document.getElementById('games-container');
         if (gameContainer) {
             gameContainer.innerHTML = '';
-            const urls = (zones.game.url || '').split('\n').map(u => u.trim()).filter(Boolean);
-            if (urls.length > 0) {
-                const btnGroup = document.createElement('div');
-                btnGroup.className = 'game-btn-group mb-24';
-                const funIcons = ['fa-gamepad', 'fa-puzzle-piece', 'fa-dice', 'fa-ghost', 'fa-rocket'];
-                const funGradients = ['linear-gradient(135deg, #4facfe, #00f2fe)', 'linear-gradient(135deg, #43e97b, #38f9d7)', 'linear-gradient(135deg, #fa709a, #fee140)', 'linear-gradient(135deg, #b12a5b, #ff8177)'];
-                const iframe = document.createElement('iframe');
-                iframe.className = 'content-frame';
-                iframe.src = getEmbedUrl(urls[0]);
-                urls.forEach((u, i) => {
-                    const btn = document.createElement('button');
-                    btn.className = i === 0 ? 'game-btn active' : 'game-btn inactive';
-                    btn.style.background = funGradients[i % funGradients.length];
-                    btn.innerHTML = `<i class="fas ${funIcons[i % funIcons.length]}"></i> <span>اللعبة ${i + 1}</span>`;
-                    btn.onclick = () => {
-                        iframe.src = getEmbedUrl(u);
-                        Array.from(btnGroup.children).forEach(b => { b.classList.remove('active'); b.classList.add('inactive'); });
-                        btn.classList.add('active'); btn.classList.remove('inactive');
-                    };
-                    btnGroup.appendChild(btn);
-                });
-                if (urls.length > 1) gameContainer.appendChild(btnGroup);
-                gameContainer.appendChild(iframe);
+            
+            if (zones.game?.kahootData && zones.game.kahootData.length > 0) {
+                // RENDER NATIVE KAHOOT PLAYER!
+                window._kahootData = zones.game.kahootData;
+                window._kahootScore = 0;
+                window._kahootIndex = 0;
+                
+                const root = document.createElement('div');
+                root.id = 'kahoot-player-root';
+                root.style.width = '100%';
+                root.style.minHeight = '500px';
+                root.style.background = '#0b1220';
+                root.style.borderRadius = '20px';
+                root.style.overflow = 'hidden';
+                root.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
+                root.style.position = 'relative';
+                
+                gameContainer.appendChild(root);
+                
+                // Inject the Kahoot CSS and start screen
+                if (!document.getElementById('kahoot-styles-x')) {
+                    const st = document.createElement('style');
+                    st.id = 'kahoot-styles-x';
+                    st.innerHTML = `
+                        .kahoot-btn { font-weight:900; font-size:24px; color:white; border:none; border-radius:12px; cursor:pointer; transition:transform 0.1s, box-shadow 0.1s; height: 120px; display:flex; align-items:center; padding: 15px; position:relative; overflow:hidden; }
+                        .kahoot-btn:active { transform:translateY(8px); box-shadow:none !important; }
+                        .kahoot-opt-0 { background:#e21b3c; box-shadow:0 8px 0 #b0102b; }
+                        .kahoot-opt-1 { background:#1368ce; box-shadow:0 8px 0 #0d4a97; }
+                        .kahoot-opt-2 { background:#d89e00; box-shadow:0 8px 0 #b38300; }
+                        .kahoot-opt-3 { background:#26890c; box-shadow:0 8px 0 #1b6308; }
+                        .kahoot-icon { width:40px; text-align:center; flex-shrink:0; }
+                        .kahoot-text { flex:1; text-align:center; font-size:18px; word-wrap:break-word; text-shadow:0 2px 4px rgba(0,0,0,0.3); }
+                        .kahoot-header { background:white; color:black; padding:20px; text-align:center; font-size:26px; font-weight:900; box-shadow:0 4px 10px rgba(0,0,0,0.2); }
+                        .kahoot-bar { height:10px; background:#ccc; width:100%; display:block; }
+                        .kahoot-bar-inner { height:100%; background:var(--accent); width:100%; transition:width 1s linear; display:block; }
+                    `;
+                    document.head.appendChild(st);
+                }
+                
+                window.renderNumiKahoot = function() {
+                    const root = document.getElementById('kahoot-player-root');
+                    if (window._kahootIndex >= window._kahootData.length) {
+                        // Game Over
+                        root.innerHTML = `
+                            <div style="height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; background:linear-gradient(135deg, #7c3aed, #4f46e5); color:white; padding:40px; min-height:500px;">
+                                <i class="fas fa-trophy" style="font-size:80px; color:#fbbf24; margin-bottom:20px; text-shadow:0 0 20px rgba(251,191,36,0.5);"></i>
+                                <h1 style="font-size:40px; margin-bottom:10px; font-weight:900;">بطل مذهل!</h1>
+                                <p style="font-size:20px; margin-bottom:30px;">لقد أنهيت اللعبة وحصدت النقاط ببراعة!</p>
+                                <div style="background:rgba(0,0,0,0.3); padding:20px 40px; border-radius:20px; font-size:30px; font-weight:bold;">النقاط: ${window._kahootScore}</div>
+                            </div>
+                        `;
+                        try { confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } }); } catch(e){}
+                        return;
+                    }
+                    
+                    const qObj = window._kahootData[window._kahootIndex];
+                    let timeLeft = qObj.time || 20;
+                    
+                    root.innerHTML = `
+                        <div style="display:flex; flex-direction:column; min-height:500px; width:100%;">
+                            <div class="kahoot-bar"><div class="kahoot-bar-inner" id="k-timer-bar"></div></div>
+                            <div style="padding:15px; display:flex; justify-content:space-between; align-items:center; background:#46178f; color:white; font-weight:bold;">
+                                <div style="font-size:24px; background:white; color:black; width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center;" id="k-timer-text">${timeLeft}</div>
+                                <div style="font-size:20px;">النقاط: <span id="k-score">${window._kahootScore}</span></div>
+                            </div>
+                            <div class="kahoot-header">${qObj.q}</div>
+                            
+                            <div style="flex:1; display:flex; align-items:center; justify-content:center; padding:20px; background:radial-gradient(circle, #f2f2f2 0%, #e6e6e6 100%); position:relative;">
+                                <i class="fas fa-gamepad" style="font-size:100px; color:rgba(0,0,0,0.05);"></i>
+                            </div>
+                            
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:15px; background:var(--bg-card);">
+                                <button class="kahoot-btn kahoot-opt-0" onclick="answerNumiKahoot(0)"><div class="kahoot-icon"><i class="fas fa-caret-up"></i></div><div class="kahoot-text">${qObj.options[0]}</div></button>
+                                <button class="kahoot-btn kahoot-opt-1" onclick="answerNumiKahoot(1)"><div class="kahoot-icon"><i class="fas fa-square" style="transform:rotate(45deg);"></i></div><div class="kahoot-text">${qObj.options[1]}</div></button>
+                                <button class="kahoot-btn kahoot-opt-2" onclick="answerNumiKahoot(2)"><div class="kahoot-icon"><i class="fas fa-circle"></i></div><div class="kahoot-text">${qObj.options[2]}</div></button>
+                                <button class="kahoot-btn kahoot-opt-3" onclick="answerNumiKahoot(3)"><div class="kahoot-icon"><i class="fas fa-square"></i></div><div class="kahoot-text">${qObj.options[3]}</div></button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    clearInterval(window._kahootInterval);
+                    const bar = document.getElementById('k-timer-bar');
+                    const txt = document.getElementById('k-timer-text');
+                    
+                    window._kahootInterval = setInterval(() => {
+                        timeLeft--;
+                        let perc = (timeLeft / (qObj.time || 20)) * 100;
+                        if(bar) bar.style.width = perc + '%';
+                        if(txt) txt.innerText = Math.max(0, Math.ceil(timeLeft));
+                        
+                        if (timeLeft <= 0) {
+                            clearInterval(window._kahootInterval);
+                            window.answerNumiKahoot(-1); // Time out
+                        }
+                    }, 1000);
+                };
+                
+                window.answerNumiKahoot = function(ans) {
+                    clearInterval(window._kahootInterval);
+                    const root = document.getElementById('kahoot-player-root');
+                    const qObj = window._kahootData[window._kahootIndex];
+                    const isCorrect = (ans === qObj.correct);
+                    
+                    let bg = isCorrect ? '#66bf39' : '#e21b3c';
+                    let icon = isCorrect ? '<i class="fas fa-check" style="color:white; font-size:60px;"></i>' : '<i class="fas fa-times" style="color:white; font-size:60px;"></i>';
+                    let title = isCorrect ? 'إجابة صحيحة!' : (ans === -1 ? 'انتهى الوقت!' : 'إجابة خاطئة!');
+                    
+                    if (isCorrect) window._kahootScore += 1000;
+                    
+                    root.innerHTML = `
+                        <div style="min-height:500px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; background:${bg}; color:white; width:100%;">
+                            <div style="font-size:36px; font-weight:bold; margin-bottom:20px;">${title}</div>
+                            <div style="margin-bottom:30px; background:rgba(0,0,0,0.1); width:120px; height:120px; border-radius:50%; display:flex; justify-content:center; align-items:center;">
+                                ${icon}
+                            </div>
+                            <div style="font-size:24px; background:rgba(0,0,0,0.2); padding:10px 20px; border-radius:10px;">النقاط: ${window._kahootScore}</div>
+                        </div>
+                    `;
+                    
+                    if (isCorrect) {
+                        try { confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } }); } catch(e){}
+                    }
+                    
+                    window._kahootIndex++;
+                    setTimeout(() => {
+                        window.renderNumiKahoot();
+                    }, 2500);
+                };
+                
+                // Start game screen
+                root.innerHTML = `
+                    <div style="min-height:500px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#46178f; color:white; text-align:center; padding:40px; width:100%;">
+                        <h1 style="font-size:50px; font-weight:900; margin-bottom:20px; text-shadow:2px 2px 0 rgba(0,0,0,0.5);">Numi Kahoot!</h1>
+                        <p style="font-size:20px; margin-bottom:40px; opacity:0.9;">جاهز للتحدي واختبار سرعتك؟</p>
+                        <button onclick="window.renderNumiKahoot()" style="background:#333; color:white; font-size:24px; font-weight:bold; padding:15px 40px; border:none; border-radius:8px; cursor:pointer; box-shadow:0 6px 0 #111; transition:0.1s;">ابدأ اللعب الآن!</button>
+                    </div>
+                `;
+                
+            } else if (zones.game?.url) {
+                const urls = (zones.game.url || '').split('\n').map(u => u.trim()).filter(Boolean);
+                if (urls.length > 0) {
+                    const btnGroup = document.createElement('div');
+                    btnGroup.className = 'game-btn-group mb-24';
+                    const funIcons = ['fa-gamepad', 'fa-puzzle-piece', 'fa-dice', 'fa-ghost', 'fa-rocket'];
+                    const funGradients = ['linear-gradient(135deg, #4facfe, #00f2fe)', 'linear-gradient(135deg, #43e97b, #38f9d7)', 'linear-gradient(135deg, #fa709a, #fee140)', 'linear-gradient(135deg, #b12a5b, #ff8177)'];
+                    const iframe = document.createElement('iframe');
+                    iframe.className = 'content-frame';
+                    iframe.src = getEmbedUrl(urls[0]);
+                    urls.forEach((u, i) => {
+                        const btn = document.createElement('button');
+                        btn.className = i === 0 ? 'game-btn active' : 'game-btn inactive';
+                        btn.style.background = funGradients[i % funGradients.length];
+                        btn.innerHTML = `<i class="fas ${funIcons[i % funIcons.length]}"></i> <span>اللعبة ${i + 1}</span>`;
+                        btn.onclick = () => {
+                            iframe.src = getEmbedUrl(u);
+                            Array.from(btnGroup.children).forEach(b => { b.classList.remove('active'); b.classList.add('inactive'); });
+                            btn.classList.add('active'); btn.classList.remove('inactive');
+                        };
+                        btnGroup.appendChild(btn);
+                    });
+                    if (urls.length > 1) gameContainer.appendChild(btnGroup);
+                    gameContainer.appendChild(iframe);
+                }
             }
         }
     }
