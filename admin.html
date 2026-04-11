@@ -3536,15 +3536,28 @@
         }
 
         async function resetStudentQuiz(lessonId, userId, studentName, btn) {
-            if (!confirm(`هل تريد إعادة ضبط اختبار "${studentName}" بالكامل؟\n\nسيتم حذف إجاباته ونتيجته وسيرى الاختبار من جديد بدون إجابات.`)) return;
+            // Let teacher choose number of days (default 2)
+            const daysInput = prompt(
+                `إعادة ضبط اختبار "${studentName}"\n\nعدد الأيام المسموح فيها بإعادة الحل؟ (افتراضي: يومان)`,
+                '2'
+            );
+            if (daysInput === null) return; // cancelled
+            const days = Math.max(1, parseInt(daysInput) || 2);
+
+            const deadline = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+            const deadlineStr = deadline.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+            if (!confirm(`سيتم إعادة ضبط اختبار "${studentName}" ومنحه ${days} يوم/أيام لإعادة الحل.\n\nالمهلة حتى: ${deadlineStr}\n\nهل تريد المتابعة؟`)) return;
+
             const originalHTML = btn.innerHTML;
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ...';
             try {
-                const res = await fetch(`${API_URL}/admin/reports/${lessonId}/user/${userId}`, { method: 'DELETE' });
+                const res = await fetch(`${API_URL}/admin/reports/${lessonId}/user/${userId}?days=${days}`, { method: 'DELETE' });
                 const data = await res.json();
                 if (data.success) {
-                    showNotif(`✅ تم إعادة ضبط اختبار ${studentName} — يمكنه حل الاختبار من جديد`, 'success');
+                    const dl = data.deadline ? new Date(data.deadline).toLocaleDateString('ar-EG', { weekday:'long', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' }) : deadlineStr;
+                    showNotif(`✅ تم إعادة ضبط اختبار ${studentName} — مسموح له بالحل حتى ${dl}`, 'success');
                     const lessonSel = document.getElementById('report-lesson-select');
                     if (lessonSel?.value) fetchLessonReport(lessonSel.value);
                 } else {

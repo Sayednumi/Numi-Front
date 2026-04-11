@@ -1623,7 +1623,7 @@ function renderNativeQuiz(quiz, container) {
 
     fetch(`${API_URL}/quiz/attempts/${userId}/${lessonId}`)
         .then(res => res.json())
-        .then(attempt => {
+        .then(async attempt => {
             currentQuizAttempt = attempt;
             if (attempt && attempt.status === 'completed') {
                 renderCompletedQuiz(attempt, container, quiz);
@@ -1652,7 +1652,13 @@ function renderNativeQuiz(quiz, container) {
                 });
 
             } else {
-                renderStartQuizScreen(container, quiz);
+                let userDeadline = null;
+                try {
+                    const rCheck = await fetch(`${API_URL}/quiz-reset-check/${userId}/${lessonId}`);
+                    const rData = await rCheck.json();
+                    if (rData.hasReset) userDeadline = new Date(rData.allowedUntil);
+                } catch(e) {}
+                renderStartQuizScreen(container, quiz, userDeadline);
             }
         })
         .catch(err => {
@@ -1661,10 +1667,10 @@ function renderNativeQuiz(quiz, container) {
         });
 }
 
-function renderStartQuizScreen(container, quiz) {
+function renderStartQuizScreen(container, quiz, userDeadline = null) {
     const quizData = currentLessonObj.quizZone || {};
     const duration = quizData.duration || currentLessonObj.duration || 30;
-    const deadline = quizData.deadline ? new Date(quizData.deadline) : null;
+    const deadline = userDeadline || (quizData.deadline ? new Date(quizData.deadline) : null);
     const now = new Date();
 
     if (deadline && now > deadline) {
@@ -1674,7 +1680,7 @@ function renderStartQuizScreen(container, quiz) {
                 <h2 class="fw-800 mb-16 text-danger">عفواً، انتهى موعد الاختبار</h2>
                 <p class="text-muted mb-24">
                     لقد كان آخر موعد لدخول هذا الاختبار هو:<br>
-                    <strong class="text-white">${deadline.toLocaleString('ar-EG')}</strong>
+                    <strong class="text-white">${deadline.toLocaleString('ar-EG', { weekday:'long', year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' })}</strong>
                 </p>
                 <button class="btn btn-primary" onclick="navigateTo('dashboard')">العودة للرئيسية</button>
             </div>
@@ -1689,7 +1695,12 @@ function renderStartQuizScreen(container, quiz) {
             <p class="text-muted mb-24" style="max-width:400px; margin-left:auto; margin-right:auto; line-height:1.8;">
                 هذا الاختبار يحتوي على <strong>${quiz.questions.length}</strong> سؤال.<br>
                 لديك محاولة واحدة فقط، والوقت المتاح هو <strong>${duration}</strong> دقيقة.<br>
-                ${deadline ? `<span class="text-warning">آخر موعد للدخول: ${deadline.toLocaleString('ar-EG')}</span><br>` : ''}
+                ${userDeadline ? `
+                    <div style="background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); border-radius:8px; padding:10px; margin:15px 0;">
+                        <i class="fas fa-history text-warning"></i> <strong class="text-warning">تمت الموافقة على إعادة الاختبار لك</strong><br>
+                        المهلة مُتاحة حتى: ${deadline.toLocaleString('ar-EG', { month:'long', day:'numeric', hour:'2-digit', minute:'2-digit'})}
+                    </div>
+                ` : (deadline ? `<span class="text-warning">آخر موعد للدخول: ${deadline.toLocaleString('ar-EG', { month:'long', day:'numeric', hour:'2-digit', minute:'2-digit'})}</span><br>` : '')}
                 <span class="text-danger">⚠️ لا تخرج من الصفحة أو تغلق التبويب أثناء الحل.</span>
             </p>
             <div class="flex flex-col gap-12" style="max-width:300px; margin:0 auto;">
