@@ -1232,7 +1232,7 @@
                     <div class="grid">
                         <div class="form-group">
                             <label>تاريخ الحصة</label>
-                            <input type="date" id="live-date" class="form-control" required>
+                            <input type="date" id="live-date" class="form-control" required oninput="previewRecurringDates()">
                         </div>
                         <div class="form-group">
                             <label>وقت الحصة</label>
@@ -1243,20 +1243,28 @@
                             <input type="number" id="live-duration" class="form-control" value="60" min="15" required>
                         </div>
                     </div>
-                    <div style="background:rgba(109,58,238,0.12); border:1px solid rgba(109,58,238,0.3); border-radius:10px; padding:15px; margin-bottom:10px;">
-                        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-weight:700; margin-bottom:0;">
-                            <input type="checkbox" id="live-recurring" style="width:18px;height:18px;accent-color:var(--primary);" onchange="toggleRecurringOptions()">
-                            <span><i class="fas fa-redo" style="color:var(--primary);"></i> تكرار أسبوعي (حفظ نفس الموعد كل أسبوع)</span>
-                        </label>
-                        <div id="recurring-options" style="display:none; margin-top:12px;">
-                            <div class="grid" style="grid-template-columns:1fr 1fr; gap:12px;">
-                                <div class="form-group" style="margin:0;">
-                                    <label style="font-size:12px;">عدد الأسابيع الإجمالية (شاملاً التاريخ الأول)</label>
-                                    <input type="number" id="live-weeks" class="form-control" value="4" min="2" max="52" oninput="previewRecurringDates()">
-                                </div>
-                                <div style="display:flex; align-items:flex-end;">
-                                    <div id="recurring-preview" style="font-size:12px; color:var(--text-muted); line-height:1.8;"></div>
-                                </div>
+                    <!-- Auto-recurring weekly (always ON) -->
+                    <div style="background:linear-gradient(135deg, rgba(109,58,238,0.15), rgba(56,189,248,0.08)); border:1px solid rgba(109,58,238,0.4); border-radius:12px; padding:18px; margin-bottom:10px;">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
+                            <div style="width:36px; height:36px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                                <i class="fas fa-redo" style="color:white; font-size:16px;"></i>
+                            </div>
+                            <div>
+                                <div style="font-weight:700; font-size:15px;"><i class="fas fa-magic" style="color:#f59e0b;"></i> تكرار أسبوعي تلقائي</div>
+                                <div style="font-size:12px; color:var(--text-muted);">سيتم حجز نفس الموعد كل أسبوع في نفس اليوم والساعة تلقائياً</div>
+                            </div>
+                        </div>
+                        <!-- Hidden checkbox always checked -->
+                        <input type="checkbox" id="live-recurring" checked style="display:none;">
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px; align-items:start;">
+                            <div class="form-group" style="margin:0;">
+                                <label style="font-size:13px; font-weight:600; margin-bottom:6px; display:block;"><i class="fas fa-calendar-week" style="color:var(--accent);"></i> عدد الأسابيع</label>
+                                <input type="number" id="live-weeks" class="form-control" value="12" min="1" max="52" oninput="previewRecurringDates()" style="font-size:18px; font-weight:700; text-align:center;">
+                                <div style="font-size:11px; color:var(--text-muted); margin-top:4px; text-align:center;">أسبوع (حوالي فصل دراسي)</div>
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:6px;">
+                                <label style="font-size:13px; font-weight:600;"><i class="fas fa-list-ol" style="color:var(--accent);"></i> المواعيد المقررة</label>
+                                <div id="recurring-preview" style="font-size:12px; color:var(--text-muted); line-height:2; max-height:140px; overflow-y:auto; background:rgba(0,0,0,0.2); padding:8px 10px; border-radius:8px;"></div>
                             </div>
                         </div>
                     </div>
@@ -4944,19 +4952,26 @@
 
         function previewRecurringDates() {
             const dateVal = document.getElementById('live-date').value;
-            const weeks   = parseInt(document.getElementById('live-weeks').value) || 1;
-            if (!dateVal || !weeks) return;
+            const timeVal = document.getElementById('live-time')?.value || '';
+            const weeks   = Math.max(1, parseInt(document.getElementById('live-weeks').value) || 12);
+            if (!dateVal) return;
 
             const preview = document.getElementById('recurring-preview');
-            let html = '<strong style="color:var(--primary);">المواعيد التي ستُنشأ:</strong><br>';
             const base = new Date(dateVal);
+            const dayName = base.toLocaleDateString('ar-EG', { weekday: 'long' });
+
+            let html = `<div style="color:var(--primary); font-weight:700; margin-bottom:4px;">كل ${dayName}${timeVal ? ' الساعة ' + timeVal : ''} — ${weeks} حصص</div>`;
             for (let i = 0; i < weeks; i++) {
                 const d = new Date(base);
                 d.setDate(base.getDate() + i * 7);
-                const ds = d.toISOString().slice(0, 10);
+                const ds = d.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
                 html += `<span style="color:var(--accent);">📅 ${ds}</span><br>`;
             }
             preview.innerHTML = html;
+
+            // Update submit button
+            const btn = document.getElementById('live-submit-btn');
+            if (btn) btn.innerHTML = `<i class="fas fa-calendar-plus"></i> حفظ ${weeks} حصة أسبوعية`;
         }
 
         async function handleLiveClassSubmit(e) {
@@ -4976,8 +4991,9 @@
                 duration: parseInt(document.getElementById('live-duration').value)
             };
 
-            const isRecurring = document.getElementById('live-recurring').checked;
-            const weeks = isRecurring ? (parseInt(document.getElementById('live-weeks').value) || 1) : 1;
+            // Always recurring - weeks count from input
+            const isRecurring = true;
+            const weeks = Math.max(1, parseInt(document.getElementById('live-weeks').value) || 12);
 
             const btn = document.getElementById('live-submit-btn');
             btn.disabled = true;
@@ -5003,15 +5019,12 @@
                 }
 
                 document.getElementById('liveClassForm').reset();
-                document.getElementById('recurring-options').style.display = 'none';
                 document.getElementById('recurring-preview').innerHTML = '';
                 loadLiveClasses();
 
-                if (isRecurring) {
-                    alert(`✅ تم جدولة ${savedCount} حصة (${weeks} أسابيع) بنجاح!`);
-                } else {
-                    alert('✅ تم جدولة الحصة بنجاح!');
-                }
+                // Show success notification
+                const day = new Date(basePayload.date).toLocaleDateString('ar-EG', { weekday: 'long' });
+                showNotif(`✅ تم جدولة ${savedCount} حصة بنجاح! كل ${day} الساعة ${basePayload.time} لمدة ${weeks} أسابيع`, 'success');
             } catch(err) {
                 alert('خطأ في الحفظ!');
             } finally {
