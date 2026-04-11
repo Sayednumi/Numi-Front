@@ -4858,8 +4858,13 @@
             return 'scheduled';
         }
 
+        let _selectedLiveIds = new Set();
+
         function renderLiveClassesGrouped(classes) {
             const container = document.getElementById('live-classes-by-group');
+            _selectedLiveIds.clear();
+            updateBulkBar();
+
             if (!classes || classes.length === 0) {
                 container.innerHTML = '<div style="text-align:center;padding:50px;color:var(--text-muted);"><i class="fas fa-calendar-times fa-3x" style="opacity:0.3;"></i><p style="margin-top:15px;">لا توجد حصص مطابقة للفلتر الحالي.</p></div>';
                 return;
@@ -4887,14 +4892,19 @@
                     const groupName = db?.classes?.[cid]?.groups?.[gid]?.name || gid;
                     const groupClasses = grouped[cid][gid].sort((a,b) => (a.date+a.time).localeCompare(b.date+b.time));
 
+                    const groupKey = `${cid}_${gid}`;
                     html += `
                     <div style="margin-bottom:20px; margin-right:20px;">
-                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px; padding:8px 12px; background:rgba(109,58,238,0.1); border-radius:8px;">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px; padding:8px 12px; background:rgba(109,58,238,0.1); border-radius:8px; flex-wrap:wrap;">
                             <i class="fas fa-users" style="color:var(--accent);"></i>
                             <span style="font-weight:700; color:var(--accent);"><b>المجموعة:</b> ${groupName}</span>
-                            <span style="margin-right:auto; font-size:12px; color:var(--text-muted);">${groupClasses.length} حصص</span>
+                            <span style="font-size:12px; color:var(--text-muted);">${groupClasses.length} حصص</span>
+                            <div style="margin-right:auto; display:flex; gap:8px;">
+                                <button onclick="selectAllGroup('${groupKey}')" style="font-size:12px; padding:4px 10px; background:rgba(56,189,248,0.15); border:1px solid var(--accent); border-radius:6px; color:var(--accent); cursor:pointer;"><i class="fas fa-check-double"></i> تحديد الكل</button>
+                                <button onclick="deselectAllGroup('${groupKey}')" style="font-size:12px; padding:4px 10px; background:rgba(255,255,255,0.05); border:1px solid var(--border); border-radius:6px; color:var(--text-muted); cursor:pointer;"><i class="fas fa-times"></i> إلغاء الكل</button>
+                            </div>
                         </div>
-                        <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:15px;">`;
+                        <div class="grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:12px;">`;
 
                     groupClasses.forEach(c => {
                         const status = computeStatus(c);
@@ -4910,20 +4920,28 @@
                             borderColor = 'var(--success)';
                         }
 
+                        const dayName = (() => { try { return new Date(c.date).toLocaleDateString('ar-EG', { weekday: 'long' }); } catch(e){ return ''; } })();
                         html += `
-                        <div class="card" style="border-right:4px solid ${borderColor}; padding:16px; display:flex; flex-direction:column; gap:10px; ${status==='finished'?'opacity:0.65;':''}">
-                            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                                <h4 style="margin:0; font-weight:800; font-size:14px; flex:1;">${c.title}</h4>
+                        <div class="card live-card" id="lcard-${c._id}" style="border-right:4px solid ${borderColor}; padding:0; display:flex; flex-direction:column; overflow:hidden; transition:box-shadow 0.2s, transform 0.2s; ${status==='finished'?'opacity:0.7;':''}">
+                            <div style="display:flex; align-items:center; gap:10px; padding:10px 14px; background:rgba(0,0,0,0.15); border-bottom:1px solid var(--border);">
+                                <input type="checkbox" id="chk-${c._id}" data-id="${c._id}" data-group="${groupKey}" style="width:17px;height:17px;accent-color:var(--primary);cursor:pointer;flex-shrink:0;" onchange="toggleLiveSelect('${c._id}')">
+                                <label for="chk-${c._id}" style="flex:1;font-weight:800;font-size:13px;cursor:pointer;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${c.title}">${c.title}</label>
                                 ${badge}
                             </div>
-                            <div style="font-size:12px; color:var(--text-muted); display:flex; gap:15px; flex-wrap:wrap;">
-                                <span><i class="fas fa-calendar-alt"></i> ${c.date}</span>
-                                <span><i class="fas fa-clock"></i> ${c.time}</span>
-                                <span><i class="fas fa-hourglass-half"></i> ${c.duration} دقيقة</span>
-                            </div>
-                            <div style="display:flex; gap:8px; margin-top:auto; padding-top:8px;">
-                                ${status !== 'finished' ? `<button class="btn btn-sm" onclick="window.open('${c.link}','_blank'); startLiveClass('${c._id}')" style="flex:1; background:${status==='live'?'var(--danger)':'var(--primary)'};"><i class="fas fa-play"></i> ${status==='live'?'انضم الآن':'بدء الحصة'}</button>` : `<span style="flex:1;font-size:12px;color:var(--text-muted);التقطيع;"><i class="fas fa-check-circle" style="color:var(--success);"></i> تم تنفيذها</span>`}
-                                <button class="btn btn-sm btn-danger" onclick="deleteLiveClass('${c._id}')" title="حذف"><i class="fas fa-trash"></i></button>
+                            <div style="padding:12px 14px; flex:1; display:flex; flex-direction:column; gap:8px;">
+                                <div style="font-size:12px; color:var(--text-muted); display:flex; gap:12px; flex-wrap:wrap;">
+                                    <span><i class="fas fa-calendar-alt" style="color:var(--accent);"></i> ${c.date}</span>
+                                    <span style="color:#f59e0b;font-weight:600;"><i class="fas fa-star"></i> ${dayName}</span>
+                                </div>
+                                <div style="font-size:12px; color:var(--text-muted); display:flex; gap:12px;">
+                                    <span><i class="fas fa-clock"></i> ${c.time}</span>
+                                    <span><i class="fas fa-hourglass-half"></i> ${c.duration} د</span>
+                                </div>
+                                <div style="display:flex; gap:6px; margin-top:auto; padding-top:8px;">
+                                    ${status !== 'finished' ? `<button class="btn btn-sm" onclick="window.open('${c.link}','_blank'); startLiveClass('${c._id}')" style="flex:1;background:${status==='live'?'var(--danger)':'var(--primary)'};padding:7px;"><i class="fas fa-play"></i> ${status==='live'?'انضم':'بدء'}</button>` : `<span style="flex:1;font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:4px;"><i class="fas fa-check-circle" style="color:#10b981;"></i>تم</span>`}
+                                    <button class="btn btn-sm" onclick="openEditLiveModal('${c._id}')" title="تعديل" style="background:rgba(56,189,248,0.15);border:1px solid var(--accent);color:var(--accent);padding:7px 9px;"><i class="fas fa-edit"></i></button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteLiveClass('${c._id}')" title="حذف" style="padding:7px 9px;"><i class="fas fa-trash"></i></button>
+                                </div>
                             </div>
                         </div>`;
                     });
@@ -4935,6 +4953,92 @@
             }
 
             container.innerHTML = html;
+        }
+
+        // ── Multi-select helpers ──
+        function toggleLiveSelect(id) {
+            const chk = document.getElementById(`chk-${id}`);
+            const card = document.getElementById(`lcard-${id}`);
+            if (chk.checked) {
+                _selectedLiveIds.add(id);
+                if(card) { card.style.boxShadow='0 0 0 2px var(--primary),0 4px 15px rgba(109,58,238,0.4)'; card.style.transform='scale(1.01)'; }
+            } else {
+                _selectedLiveIds.delete(id);
+                if(card) { card.style.boxShadow=''; card.style.transform=''; }
+            }
+            updateBulkBar();
+        }
+        function selectAllGroup(groupKey) {
+            document.querySelectorAll(`[data-group="${groupKey}"]`).forEach(chk => {
+                chk.checked=true; _selectedLiveIds.add(chk.dataset.id);
+                const card=document.getElementById(`lcard-${chk.dataset.id}`);
+                if(card){card.style.boxShadow='0 0 0 2px var(--primary),0 4px 15px rgba(109,58,238,0.4)';card.style.transform='scale(1.01)';}
+            }); updateBulkBar();
+        }
+        function deselectAllGroup(groupKey) {
+            document.querySelectorAll(`[data-group="${groupKey}"]`).forEach(chk => {
+                chk.checked=false; _selectedLiveIds.delete(chk.dataset.id);
+                const card=document.getElementById(`lcard-${chk.dataset.id}`);
+                if(card){card.style.boxShadow='';card.style.transform='';}
+            }); updateBulkBar();
+        }
+        function clearLiveSelection() {
+            _selectedLiveIds.forEach(id => {
+                const chk=document.getElementById(`chk-${id}`); const card=document.getElementById(`lcard-${id}`);
+                if(chk) chk.checked=false; if(card){card.style.boxShadow='';card.style.transform='';}
+            }); _selectedLiveIds.clear(); updateBulkBar();
+        }
+        function updateBulkBar() {
+            let bar=document.getElementById('live-bulk-bar');
+            if(!bar) {
+                bar=document.createElement('div'); bar.id='live-bulk-bar';
+                bar.style.cssText='position:fixed;bottom:0;left:0;right:0;background:linear-gradient(135deg,#1e1b4b,#312e81);border-top:2px solid var(--primary);padding:14px 30px;display:none;align-items:center;gap:15px;z-index:9000;box-shadow:0 -4px 20px rgba(0,0,0,0.5);flex-wrap:wrap;';
+                bar.innerHTML=`<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:200px;"><div style="width:38px;height:38px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;"><i class="fas fa-check" style="color:white;"></i></div><div><div style="font-weight:800;font-size:16px;" id="bulk-count-text">0 حصص</div><div style="font-size:12px;color:rgba(255,255,255,0.6);">اختر إجراءً للتطبيق على المحددة</div></div></div><div style="display:flex;gap:10px;flex-wrap:wrap;"><button onclick="openBulkEditModal()" style="padding:10px 20px;background:linear-gradient(135deg,#6d3aee,#38bdf8);border:none;border-radius:10px;color:white;font-weight:700;cursor:pointer;"><i class="fas fa-edit"></i> تعديل المحددة</button><button onclick="bulkDeleteLive()" style="padding:10px 20px;background:linear-gradient(135deg,#ef4444,#dc2626);border:none;border-radius:10px;color:white;font-weight:700;cursor:pointer;"><i class="fas fa-trash"></i> حذف المحددة</button><button onclick="clearLiveSelection()" style="padding:10px 20px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:white;cursor:pointer;"><i class="fas fa-times"></i> إلغاء</button></div>`;
+                document.body.appendChild(bar);
+            }
+            const count=_selectedLiveIds.size;
+            bar.style.display=count>0?'flex':'none';
+            const txt=bar.querySelector('#bulk-count-text'); if(txt) txt.innerText=`${count} حصة محددة`;
+        }
+        async function bulkDeleteLive() {
+            if(!_selectedLiveIds.size) return;
+            if(!confirm(`هل تريد حذف ${_selectedLiveIds.size} حصة؟ لا يمكن التراجع.`)) return;
+            let del=0; for(const id of _selectedLiveIds){ try{ const r=await fetch(`${API_URL}/live-classes/${id}`,{method:'DELETE'}); const d=await r.json(); if(d.success) del++;}catch(e){}}
+            _selectedLiveIds.clear(); updateBulkBar(); loadLiveClasses(); showNotif(`🗑️ تم حذف ${del} حصة بنجاح`,'success');
+        }
+        function openBulkEditModal() {
+            if(!_selectedLiveIds.size) return;
+            let modal=document.getElementById('live-bulk-edit-modal');
+            if(!modal){
+                modal=document.createElement('div'); modal.id='live-bulk-edit-modal';
+                modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:20000;display:flex;align-items:center;justify-content:center;';
+                modal.innerHTML=`<div style="background:var(--bg-card);border-radius:16px;padding:30px;width:480px;max-width:95%;border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,0.6);"><h3 style="margin:0 0 5px;color:var(--accent);"><i class="fas fa-edit"></i> تعديل الحصص المحددة</h3><p id="bulk-modal-desc" style="color:var(--text-muted);font-size:13px;margin-bottom:15px;"></p><p style="font-size:12px;color:var(--text-muted);margin-bottom:15px;background:rgba(245,158,11,0.1);padding:10px;border-radius:8px;border:1px solid rgba(245,158,11,0.3);">⚠️ اترك الحقل فارغاً إذا لم تريد تغييره</p><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:15px;"><div class="form-group" style="margin:0;"><label style="font-size:13px;">العنوان الجديد</label><input type="text" id="bulk-edit-title" class="form-control" placeholder="اترك فارغاً للإبقاء"></div><div class="form-group" style="margin:0;"><label style="font-size:13px;">الوقت الجديد</label><input type="time" id="bulk-edit-time" class="form-control"></div><div class="form-group" style="margin:0;"><label style="font-size:13px;">المدة (دقيقة)</label><input type="number" id="bulk-edit-duration" class="form-control" placeholder="اترك فارغاً" min="15"></div><div class="form-group" style="margin:0;"><label style="font-size:13px;">رابط الحصة</label><input type="text" id="bulk-edit-link" class="form-control" placeholder="اترك فارغاً للإبقاء"></div></div><div style="display:flex;gap:10px;"><button onclick="applyBulkEdit()" style="flex:1;padding:12px;background:var(--primary);border:none;border-radius:10px;color:white;font-weight:bold;cursor:pointer;"><i class="fas fa-check"></i> تطبيق التعديل</button><button onclick="document.getElementById('live-bulk-edit-modal').style.display='none'" style="padding:12px 18px;background:rgba(255,255,255,0.08);border:1px solid var(--border);border-radius:10px;color:white;cursor:pointer;"><i class="fas fa-times"></i></button></div></div>`;
+                document.body.appendChild(modal);
+            }
+            document.getElementById('bulk-modal-desc').innerText=`سيتم تعديل ${_selectedLiveIds.size} حصة`;
+            ['bulk-edit-title','bulk-edit-time','bulk-edit-duration','bulk-edit-link'].forEach(id=>{ document.getElementById(id).value=''; });
+            modal.style.display='flex';
+        }
+        async function applyBulkEdit() {
+            const title=document.getElementById('bulk-edit-title').value.trim();
+            const time=document.getElementById('bulk-edit-time').value;
+            const duration=document.getElementById('bulk-edit-duration').value;
+            const link=document.getElementById('bulk-edit-link').value.trim();
+            if(!title&&!time&&!duration&&!link){alert('يرجى تعبئة حقل واحد على الأقل.');return;}
+            const updates={}; if(title) updates.title=title; if(time) updates.time=time; if(duration) updates.duration=parseInt(duration); if(link) updates.link=link;
+            let upd=0; for(const id of _selectedLiveIds){try{const r=await fetch(`${API_URL}/live-classes/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(updates)});const d=await r.json();if(d.success)upd++;}catch(e){}}
+            document.getElementById('live-bulk-edit-modal').style.display='none'; clearLiveSelection(); loadLiveClasses(); showNotif(`✅ تم تعديل ${upd} حصة بنجاح`,'success');
+        }
+        function openEditLiveModal(id) {
+            const session=_allLiveClasses?.find(c=>c._id===id); if(!session) return;
+            let modal=document.getElementById('live-single-edit-modal');
+            if(!modal){modal=document.createElement('div');modal.id='live-single-edit-modal';modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:20000;display:flex;align-items:center;justify-content:center;';document.body.appendChild(modal);}
+            modal.innerHTML=`<div style="background:var(--bg-card);border-radius:16px;padding:30px;width:480px;max-width:95%;border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,0.6);"><h3 style="margin:0 0 20px;color:var(--accent);"><i class="fas fa-edit"></i> تعديل الحصة</h3><div style="display:flex;flex-direction:column;gap:12px;"><div class="form-group" style="margin:0;"><label>العنوان</label><input type="text" id="sedit-title" class="form-control" value="${session.title||''}"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="form-group" style="margin:0;"><label>التاريخ</label><input type="date" id="sedit-date" class="form-control" value="${session.date||''}"></div><div class="form-group" style="margin:0;"><label>الوقت</label><input type="time" id="sedit-time" class="form-control" value="${session.time||''}"></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"><div class="form-group" style="margin:0;"><label>المدة (دقيقة)</label><input type="number" id="sedit-duration" class="form-control" value="${session.duration||60}" min="15"></div><div class="form-group" style="margin:0;"><label>رابط الحصة</label><input type="text" id="sedit-link" class="form-control" value="${session.link||''}"></div></div></div><div style="display:flex;gap:10px;margin-top:20px;"><button onclick="saveSingleLiveEdit('${id}')" style="flex:1;padding:12px;background:var(--primary);border:none;border-radius:10px;color:white;font-weight:bold;cursor:pointer;"><i class="fas fa-save"></i> حفظ التعديل</button><button onclick="document.getElementById('live-single-edit-modal').style.display='none'" style="padding:12px 18px;background:rgba(255,255,255,0.08);border:1px solid var(--border);border-radius:10px;color:white;cursor:pointer;"><i class="fas fa-times"></i></button></div></div>`;
+            modal.style.display='flex';
+        }
+        async function saveSingleLiveEdit(id) {
+            const updates={title:document.getElementById('sedit-title').value.trim(),date:document.getElementById('sedit-date').value,time:document.getElementById('sedit-time').value,duration:parseInt(document.getElementById('sedit-duration').value),link:document.getElementById('sedit-link').value.trim()};
+            try{const r=await fetch(`${API_URL}/live-classes/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(updates)});const d=await r.json();if(d.success){document.getElementById('live-single-edit-modal').style.display='none';loadLiveClasses();showNotif('✅ تم تعديل الحصة بنجاح','success');}else{alert('فشل التعديل');}}catch(e){alert('خطأ في الاتصال');}
         }
 
         function toggleRecurringOptions() {
