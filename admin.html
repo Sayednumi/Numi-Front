@@ -873,7 +873,7 @@
         <div id="video-zone" class="section contents-section">
             <div class="card">
                 <div class="card-header"><h2>إدارة فيديو الدرس</h2></div>
-                <div class="form-group"><label>اختر الدرس أولاً</label><select class="form-control lesson-selector" id="video-lesson-select" onchange="loadZoneData('videoZone')"></select></div>
+                <div id="video-cascade-selector"></div>
                 <form id="videoForm" onsubmit="saveZoneData(event, 'videoZone')">
                     <div class="form-group"><label>عنوان الفيديو</label><input type="text" class="form-control" id="video-title" required></div>
                     <div class="form-group"><label>رابط يوتيوب (Embed)</label><input type="text" class="form-control" id="video-url" oninput="updatePreview('video-preview', this.value)" required></div>
@@ -910,7 +910,7 @@
         <div id="podcast-zone" class="section contents-section">
             <div class="card">
                 <div class="card-header"><h2>Wood Podcast Zone</h2></div>
-                <div class="form-group"><label>اختر الدرس</label><select class="form-control lesson-selector" id="podcast-lesson-select" onchange="loadZoneData('podcastZone')"></select></div>
+                <div id="podcast-cascade-selector"></div>
                 <form id="podcastForm" onsubmit="saveZoneData(event, 'podcastZone')">
                     <div class="form-group"><label>عنوان البودكاست</label><input type="text" class="form-control" id="podcast-title" required></div>
                     <div class="form-group"><label>رابط البودكاست (Embed)</label><input type="text" class="form-control" id="podcast-url" oninput="updatePreview('podcast-preview', this.value)" required></div>
@@ -927,7 +927,7 @@
         <div id="mindscape-zone" class="section contents-section">
             <div class="card">
                 <div class="card-header"><h2>Mindscape (الخرائط الذهنية)</h2></div>
-                <div class="form-group"><label>اختر الدرس</label><select class="form-control lesson-selector" id="mindscape-lesson-select" onchange="loadZoneData('mindscapeZone')"></select></div>
+                <div id="mindscape-cascade-selector"></div>
                 <form id="mindscapeForm" onsubmit="saveZoneData(event, 'mindscapeZone')">
                     <div class="form-group"><label>عنوان الخريطة</label><input type="text" class="form-control" id="mindscape-title" required></div>
                     <div class="form-group"><label>رابط الصورة / PDF</label><input type="text" class="form-control" id="mindscape-url" required></div>
@@ -943,7 +943,7 @@
         <div id="game-zone" class="section contents-section">
             <div class="card">
                 <div class="card-header"><h2>Game Zone</h2></div>
-                <div class="form-group"><label>اختر الدرس</label><select class="form-control lesson-selector" id="game-lesson-select" onchange="loadZoneData('gameZone')"></select></div>
+                <div id="game-cascade-selector"></div>
                 <form id="gameForm" onsubmit="saveZoneData(event, 'gameZone')">
                     <div class="form-group"><label>عنوان اللعبة</label><input type="text" class="form-control" id="game-title" required></div>
                     
@@ -1027,10 +1027,7 @@
         <div id="quiz-zone" class="section contents-section">
             <div class="card">
                 <div class="card-header"><h2>Quiz Zone (إدارة الاختبارات)</h2></div>
-                <div class="form-group">
-                    <label>اختر الدرس أولاً</label>
-                    <select class="form-control lesson-selector" id="quiz-lesson-select" onchange="loadZoneData('quizZone')"></select>
-                </div>
+                <div id="quiz-cascade-selector"></div>
 
                 <div style="display:flex; gap:10px; margin-bottom:20px;">
                     <button class="btn btn-sm" id="btn-quiz-link" onclick="toggleQuizMode('link')" style="background:var(--primary);">روابط خارجية (Google Forms)</button>
@@ -1086,7 +1083,7 @@
         <div id="ailesson-zone" class="section contents-section">
             <div class="card">
                 <div class="card-header"><h2>الدرس (توليد بالذكاء أو روابط)</h2></div>
-                <div class="form-group"><label>اختر الدرس أولاً</label><select class="form-control lesson-selector" id="ailesson-lesson-select" onchange="loadZoneData('ailessonZone')"></select></div>
+                <div id="ailesson-cascade-selector"></div>
                 <form id="ailessonForm" onsubmit="saveZoneData(event, 'ailessonZone')">
                     <div style="border:1px solid var(--primary); padding:20px; border-radius:10px; background:rgba(109,58,238,0.05); margin-bottom:20px;">
                         <h4 class="mb-16"><i class="fas fa-magic"></i> الكلمات المفتاحية لموضوع الدرس (/lesson)</h4>
@@ -2973,26 +2970,105 @@
         function deleteLesson(cid, gid, csid, tF, uid, lid) { if(confirm('هل أنت متأكد؟')) { delete db.classes[cid].groups[gid].courses[csid][tF].units[uid].lessons[lid]; saveDB(); renderLessons(); } }
 
         // --- Content Zones ---
+        // ── Cascading Class → Group → Lesson selector builder ──
         function buildNavLessonSelectors() {
-            const selects = document.querySelectorAll('.lesson-selector');
-            selects.forEach(sel => {
-                sel.innerHTML = '<option value="">اختر الدرس...</option>';
-                for(let cid in db.classes) {
-                    for(let gid in db.classes[cid].groups) {
-                        for(let csid in db.classes[cid].groups[gid].courses) {
-                            for(let t of ['term1', 'term2']) {
-                                let u = db.classes[cid].groups[gid].courses[csid][t]?.units || {};
-                                for(let uid in u) {
-                                    let l = u[uid].lessons || {};
-                                    for(let lid in l) {
-                                        sel.innerHTML += `<option value="${cid},${gid},${csid},${t},${uid},${lid}">${l[lid].title} (${db.classes[cid].name})</option>`;
-                                    }
-                                }
-                            }
+            // For each zone, we now replace the single lesson-selector with 3 cascading selects
+            // But we keep the hidden lesson-selector in sync for backward compatibility
+            const zones = [
+                { prefix: 'video',     zone: 'videoZone' },
+                { prefix: 'podcast',   zone: 'podcastZone' },
+                { prefix: 'mindscape', zone: 'mindscapeZone' },
+                { prefix: 'game',      zone: 'gameZone' },
+                { prefix: 'quiz',      zone: 'quizZone' },
+                { prefix: 'ailesson',  zone: 'ailessonZone' },
+            ];
+            zones.forEach(({ prefix, zone }) => {
+                const container = document.getElementById(`${prefix}-cascade-selector`);
+                if (!container) return;
+                buildCascadeInContainer(container, prefix, zone);
+            });
+        }
+
+        function buildCascadeInContainer(container, prefix, zone) {
+            if (!db?.classes) return;
+
+            // Build class options
+            const classOpts = Object.entries(db.classes).map(([cid, cls]) =>
+                `<option value="${cid}">${cls.name}</option>`
+            ).join('');
+
+            container.innerHTML = `
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:15px; align-items:end;">
+                    <div>
+                        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:5px;"><i class="fas fa-school"></i> الصف</label>
+                        <select class="form-control" id="${prefix}-sel-class" onchange="onCascadeClassChange('${prefix}','${zone}')">
+                            <option value="">— اختر الصف —</option>
+                            ${classOpts}
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:5px;"><i class="fas fa-users"></i> المجموعة</label>
+                        <select class="form-control" id="${prefix}-sel-group" onchange="onCascadeGroupChange('${prefix}','${zone}')" disabled>
+                            <option value="">— اختر المجموعة —</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:12px; color:var(--text-muted); display:block; margin-bottom:5px;"><i class="fas fa-book"></i> الدرس</label>
+                        <select class="form-control" id="${prefix}-lesson-select" onchange="loadZoneData('${zone}')" disabled>
+                            <option value="">— اختر الدرس —</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+        }
+
+        function onCascadeClassChange(prefix, zone) {
+            const cid = document.getElementById(`${prefix}-sel-class`).value;
+            const grpSel = document.getElementById(`${prefix}-sel-group`);
+            const lessSel = document.getElementById(`${prefix}-lesson-select`);
+            
+            grpSel.innerHTML = '<option value="">— اختر المجموعة —</option>';
+            lessSel.innerHTML = '<option value="">— اختر الدرس —</option>';
+            grpSel.disabled = true;
+            lessSel.disabled = true;
+            document.getElementById(`${prefix}Form`)?.reset();
+
+            if (!cid || !db.classes[cid]) return;
+            const groups = db.classes[cid].groups || {};
+            Object.entries(groups).forEach(([gid, grp]) => {
+                grpSel.innerHTML += `<option value="${gid}">${grp.name}</option>`;
+            });
+            grpSel.disabled = false;
+        }
+
+        function onCascadeGroupChange(prefix, zone) {
+            const cid = document.getElementById(`${prefix}-sel-class`).value;
+            const gid = document.getElementById(`${prefix}-sel-group`).value;
+            const lessSel = document.getElementById(`${prefix}-lesson-select`);
+            
+            lessSel.innerHTML = '<option value="">— اختر الدرس —</option>';
+            lessSel.disabled = true;
+            document.getElementById(`${prefix}Form`)?.reset();
+
+            if (!cid || !gid) return;
+            const courses = db.classes[cid]?.groups[gid]?.courses || {};
+            let hasAny = false;
+            for (const csid in courses) {
+                for (const t of ['term1', 'term2']) {
+                    const units = courses[csid]?.[t]?.units || {};
+                    for (const uid in units) {
+                        const lessons = units[uid].lessons || {};
+                        for (const lid in lessons) {
+                            const l = lessons[lid];
+                            const termLabel = t === 'term1' ? 'ترم 1' : 'ترم 2';
+                            lessSel.innerHTML += `<option value="${cid},${gid},${csid},${t},${uid},${lid}">${l.title} (${termLabel})</option>`;
+                            hasAny = true;
                         }
                     }
                 }
-            });
+            }
+            if (hasAny) lessSel.disabled = false;
+            else lessSel.innerHTML = '<option value="">لا توجد دروس في هذه المجموعة</option>';
         }
 
         function getLessonRef(pathStr) {
