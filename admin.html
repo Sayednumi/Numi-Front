@@ -3030,6 +3030,23 @@
 
                 await saveDB();
 
+                try {
+                    const parts = lPath.split(',');
+                    const groupId = parts[1];
+                    let contentTitle = l.title || document.getElementById(`${prefix}-title`)?.value || 'محتوى جديد للدرس';
+                    
+                    fetch(`${API_URL}/notifications/notify-group`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            group_id: groupId,
+                            title: contentTitle,
+                            type: prefix,
+                            link: ''
+                        })
+                    }).catch(console.error);
+                } catch(e) { console.error('Notify Error:', e); }
+
                 // Re-select the option because saveDB rebuilt the dropdowns!
                 setTimeout(() => {
                     const freshSel = document.getElementById(`${prefix}-lesson-select`);
