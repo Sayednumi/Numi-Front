@@ -938,20 +938,156 @@
             </div>
         </div>
 
-        <!-- Game Zone Section -->
-        <div id="game-zone" class="section contents-section">
-            <div class="card">
-                <div class="card-header"><h2>Game Zone</h2></div>
-                <div class="form-group"><label>اختر الدرس</label><select class="form-control lesson-selector" id="game-lesson-select" onchange="loadZoneData('gameZone')"></select></div>
-                <form id="gameForm" onsubmit="saveZoneData(event, 'gameZone')">
-                    <div class="form-group"><label>عنوان اللعبة</label><input type="text" class="form-control" id="game-title" required></div>
-                    <div class="form-group"><label>روابط الألعاب (لإضافة أكتر من لعبة افصل بين الروابط بسطر جديد)</label><textarea class="form-control" id="game-url" rows="3" oninput="updateGamePreview('game-preview', this.value)" required placeholder="مثال:\nhttps://game1.com\nhttps://game2.com"></textarea></div>
-                    <div class="preview-container" id="game-preview"></div>
-                    <div style="display:flex; gap:10px; margin-top:20px;">
-                        <button type="submit" class="btn">حفظ التغييرات</button>
-                        <button type="button" class="btn btn-danger" onclick="deleteZoneData('gameZone')"><i class="fas fa-trash"></i> حذف الألعاب</button>
+        <!-- Game Zone Section - Full System -->
+        <div id="game-zone" class="section">
+
+            <!-- Header Banner -->
+            <div style="background:linear-gradient(135deg,#7c3aed,#2563eb); border-radius:16px; padding:28px 32px; margin-bottom:24px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
+                <div>
+                    <h2 style="color:white; font-size:26px; font-weight:900; margin:0;">🎮 Game Zone</h2>
+                    <p style="color:rgba(255,255,255,0.75); margin:6px 0 0; font-size:14px;">المركز الرئيسي لإدارة جميع ألعاب المنصة التعليمية</p>
+                </div>
+                <button class="btn" onclick="openGameModal()" style="background:white; color:#7c3aed; font-weight:800; padding:12px 24px; font-size:15px;">
+                    <i class="fas fa-plus"></i> إضافة لعبة جديدة
+                </button>
+            </div>
+
+            <!-- Stats Dashboard -->
+            <div class="grid" style="grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px;">
+                <div style="background:var(--bg-card); border-radius:14px; padding:20px; border:1px solid var(--border); border-bottom:4px solid #7c3aed; text-align:center;">
+                    <div style="font-size:28px; font-weight:900; color:#7c3aed;" id="gz-stat-total">0</div>
+                    <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">إجمالي الألعاب</div>
+                    <i class="fas fa-gamepad" style="font-size:22px; color:#7c3aed; margin-top:8px; opacity:0.5;"></i>
+                </div>
+                <div style="background:var(--bg-card); border-radius:14px; padding:20px; border:1px solid var(--border); border-bottom:4px solid #2563eb; text-align:center;">
+                    <div style="font-size:28px; font-weight:900; color:#2563eb;" id="gz-stat-external">0</div>
+                    <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">ألعاب خارجية</div>
+                    <i class="fas fa-external-link-alt" style="font-size:22px; color:#2563eb; margin-top:8px; opacity:0.5;"></i>
+                </div>
+                <div style="background:var(--bg-card); border-radius:14px; padding:20px; border:1px solid var(--border); border-bottom:4px solid #059669; text-align:center;">
+                    <div style="font-size:28px; font-weight:900; color:#059669;" id="gz-stat-internal">0</div>
+                    <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">ألعاب داخلية</div>
+                    <i class="fas fa-puzzle-piece" style="font-size:22px; color:#059669; margin-top:8px; opacity:0.5;"></i>
+                </div>
+                <div style="background:var(--bg-card); border-radius:14px; padding:20px; border:1px solid var(--border); border-bottom:4px solid #d97706; text-align:center;">
+                    <div style="font-size:28px; font-weight:900; color:#d97706;" id="gz-stat-plays">0</div>
+                    <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">مرات التشغيل</div>
+                    <i class="fas fa-play-circle" style="font-size:22px; color:#d97706; margin-top:8px; opacity:0.5;"></i>
+                </div>
+            </div>
+
+            <!-- Filter & Search Bar -->
+            <div class="card" style="margin-bottom:20px; padding:16px;">
+                <div class="grid" style="grid-template-columns:1fr 1fr 1fr auto; gap:12px; align-items:flex-end;">
+                    <div class="form-group" style="margin:0;">
+                        <label style="font-size:12px;"><i class="fas fa-search"></i> بحث</label>
+                        <input type="text" class="form-control" id="gz-search" placeholder="ابحث باسم اللعبة..." oninput="renderGames()">
                     </div>
-                </form>
+                    <div class="form-group" style="margin:0;">
+                        <label style="font-size:12px;"><i class="fas fa-filter"></i> نوع اللعبة</label>
+                        <select class="form-control" id="gz-filter-type" onchange="renderGames()">
+                            <option value="">الكل</option>
+                            <option value="external">خارجية</option>
+                            <option value="internal">داخلية</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label style="font-size:12px;"><i class="fas fa-users"></i> المجموعة</label>
+                        <select class="form-control" id="gz-filter-group" onchange="renderGames()">
+                            <option value="">كل المجموعات</option>
+                        </select>
+                    </div>
+                    <button class="btn" onclick="document.getElementById('gz-search').value=''; document.getElementById('gz-filter-type').value=''; document.getElementById('gz-filter-group').value=''; renderGames();" style="height:42px; padding:0 16px; background:var(--bg-elevated);">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Games Grid -->
+            <div id="gz-games-grid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(310px,1fr)); gap:20px;">
+                <div style="grid-column:1/-1; text-align:center; padding:60px; color:var(--text-muted);">
+                    <i class="fas fa-gamepad fa-3x" style="opacity:0.3;"></i>
+                    <p style="margin-top:16px; font-size:16px;">لا توجد ألعاب بعد. ابدأ بإضافة أول لعبة!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ GAME ZONE ADD/EDIT MODAL ═══ -->
+        <div id="gameZoneModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9999; overflow-y:auto; padding:24px;">
+            <div style="background:var(--bg-card); border-radius:20px; max-width:680px; margin:0 auto; padding:32px; border:1px solid var(--border); position:relative;">
+                <button onclick="closeGameModal()" style="position:absolute; top:16px; left:16px; background:rgba(255,255,255,0.1); border:none; border-radius:50%; width:36px; height:36px; color:white; font-size:20px; cursor:pointer; line-height:1;">×</button>
+                <h3 style="margin:0 0 24px; font-size:20px; font-weight:900;" id="game-modal-title">🎮 إضافة لعبة جديدة</h3>
+
+                <!-- Type Picker -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:24px;" id="gz-type-picker">
+                    <div onclick="selectGameType('external')" id="gz-pick-ext" style="padding:20px; border-radius:14px; border:2px solid var(--border); cursor:pointer; text-align:center; transition:all 0.2s;">
+                        <i class="fas fa-external-link-alt" style="font-size:32px; color:#2563eb; margin-bottom:10px; display:block;"></i>
+                        <div style="font-weight:800; font-size:15px;">لعبة خارجية</div>
+                        <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Kahoot / Quizizz / أي منصة</div>
+                    </div>
+                    <div onclick="selectGameType('internal')" id="gz-pick-int" style="padding:20px; border-radius:14px; border:2px solid var(--border); cursor:pointer; text-align:center; transition:all 0.2s;">
+                        <i class="fas fa-puzzle-piece" style="font-size:32px; color:#059669; margin-bottom:10px; display:block;"></i>
+                        <div style="font-weight:800; font-size:15px;">لعبة داخلية</div>
+                        <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Game Builder داخل المنصة</div>
+                    </div>
+                </div>
+
+                <!-- Common + Type Fields -->
+                <div id="gz-common-fields" style="display:none;">
+                    <input type="hidden" id="gz-edit-id">
+                    <div class="form-group">
+                        <label>عنوان اللعبة *</label>
+                        <input type="text" class="form-control" id="gz-title" placeholder="مثال: تحدي المعادلات - الأسبوع الثالث">
+                    </div>
+                    <div class="form-group">
+                        <label>المجموعة المستهدفة *</label>
+                        <select class="form-control" id="gz-group-select">
+                            <option value="">-- اختر المجموعة --</option>
+                        </select>
+                    </div>
+
+                    <!-- External -->
+                    <div id="gz-ext-fields">
+                        <div class="form-group">
+                            <label><i class="fas fa-link"></i> روابط الألعاب (كل رابط في سطر منفصل)</label>
+                            <textarea class="form-control" id="gz-ext-url" rows="3" placeholder="https://kahoot.it/challenge/xxxxx&#10;https://quizizz.com/join/xxxxxx"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Internal Builder -->
+                    <div id="gz-int-fields" style="display:none;">
+                        <div style="background:rgba(5,150,105,0.08); border:1px dashed rgba(5,150,105,0.5); border-radius:12px; padding:20px; margin-bottom:16px;">
+                            <h4 style="color:#059669; margin:0 0 16px; font-weight:800;"><i class="fas fa-hammer"></i> منشئ الأسئلة (Game Builder)</h4>
+                            <div id="gz-questions-list" style="display:flex; flex-direction:column; gap:12px;"></div>
+                            <button type="button" onclick="addGameQuestion()" class="btn" style="width:100%; background:rgba(5,150,105,0.15); border:1px dashed #059669; margin-top:12px; color:#059669;">
+                                <i class="fas fa-plus"></i> إضافة سؤال
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>الحالة</label>
+                        <select class="form-control" id="gz-status">
+                            <option value="active">مرئية للطلاب ✅</option>
+                            <option value="hidden">مخفية 🔒</option>
+                        </select>
+                    </div>
+
+                    <div style="display:flex; gap:12px; margin-top:24px;">
+                        <button onclick="saveGame()" class="btn" style="flex:1; padding:14px; font-size:15px; font-weight:800;"><i class="fas fa-save"></i> حفظ اللعبة</button>
+                        <button onclick="closeGameModal()" class="btn btn-danger" style="padding:14px 20px;">إلغاء</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ GAME PLAY MODAL ═══ -->
+        <div id="gamePlayModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:9999; padding:24px; overflow-y:auto;">
+            <div style="background:var(--bg-card); border-radius:20px; max-width:820px; margin:0 auto; padding:32px; border:1px solid var(--border); position:relative; max-height:90vh; overflow-y:auto;">
+                <button onclick="closeGamePlay()" style="position:absolute; top:16px; left:16px; background:var(--danger); border:none; border-radius:50%; width:36px; height:36px; color:white; font-size:20px; cursor:pointer; line-height:1;">×</button>
+                <h3 style="margin:0 0 4px; font-weight:900; font-size:22px;" id="gplay-title">🚀 تشغيل اللعبة</h3>
+                <p style="color:var(--text-muted); font-size:13px; margin-bottom:24px;" id="gplay-group"></p>
+                <div id="gplay-content"></div>
             </div>
         </div>
 
@@ -1973,6 +2109,7 @@
             }
             if (targetId === 'dashboard') updateStats();
             if (targetId === 'students') loadStudents();
+            if (targetId === 'game-zone') initGameZone();
             if (targetId === 'chat') renderChatHierarchy();
         }
 
@@ -4288,6 +4425,412 @@
             if (name.includes('padlet'))   return '📌';
             return '🌐';
         }
+
+
+        // ══════════════════════════════════════════════════════
+        // 🎮 GAME ZONE - Complete Management System
+        // ══════════════════════════════════════════════════════
+
+        let gamesDB = JSON.parse(localStorage.getItem('numi_games') || '[]');
+        let currentGameType = '';
+        let gzQuestionCount = 0;
+
+        function saveGamesDB() {
+            localStorage.setItem('numi_games', JSON.stringify(gamesDB));
+        }
+
+        function initGameZone() {
+            populateGzGroupFilter();
+            renderGames();
+            updateGzStats();
+        }
+
+        function populateGzGroupFilter() {
+            const sel = document.getElementById('gz-filter-group');
+            const groupSel = document.getElementById('gz-group-select');
+            if (!sel || !groupSel) return;
+
+            const groups = [];
+            if (db?.classes) {
+                for (const cid in db.classes) {
+                    const cls = db.classes[cid];
+                    for (const gid in (cls.groups || {})) {
+                        groups.push({ id: gid, name: `${cls.name} - ${cls.groups[gid].name}` });
+                    }
+                }
+            }
+
+            sel.innerHTML = '<option value="">كل المجموعات</option>';
+            groupSel.innerHTML = '<option value="">-- اختر المجموعة --</option>';
+            groups.forEach(g => {
+                sel.innerHTML += `<option value="${g.id}">${g.name}</option>`;
+                groupSel.innerHTML += `<option value="${g.id}">${g.name}</option>`;
+            });
+        }
+
+        function updateGzStats() {
+            const total = gamesDB.length;
+            const external = gamesDB.filter(g => g.type === 'external').length;
+            const internal = gamesDB.filter(g => g.type === 'internal').length;
+            const plays = gamesDB.reduce((s, g) => s + (g.plays || 0), 0);
+            document.getElementById('gz-stat-total').textContent = total;
+            document.getElementById('gz-stat-external').textContent = external;
+            document.getElementById('gz-stat-internal').textContent = internal;
+            document.getElementById('gz-stat-plays').textContent = plays;
+        }
+
+        function renderGames() {
+            const grid = document.getElementById('gz-games-grid');
+            const search = (document.getElementById('gz-search')?.value || '').toLowerCase();
+            const typeF = document.getElementById('gz-filter-type')?.value || '';
+            const groupF = document.getElementById('gz-filter-group')?.value || '';
+
+            let filtered = gamesDB.filter(g => {
+                const matchSearch = !search || g.title.toLowerCase().includes(search);
+                const matchType = !typeF || g.type === typeF;
+                const matchGroup = !groupF || g.groupId === groupF;
+                return matchSearch && matchType && matchGroup;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:60px; color:var(--text-muted);">
+                    <i class="fas fa-gamepad fa-3x" style="opacity:0.3;"></i>
+                    <p style="margin-top:16px; font-size:16px;">لا توجد ألعاب تطابق البحث.</p>
+                </div>`;
+                return;
+            }
+
+            const typeColors = { external: '#2563eb', internal: '#059669' };
+            const typeIcons = { external: 'fa-external-link-alt', internal: 'fa-puzzle-piece' };
+            const typeLabels = { external: 'خارجية', internal: 'داخلية' };
+            const gradients = {
+                external: 'linear-gradient(135deg,#2563eb,#7c3aed)',
+                internal: 'linear-gradient(135deg,#059669,#0891b2)'
+            };
+
+            grid.innerHTML = filtered.map((g, i) => {
+                const color = typeColors[g.type] || '#7c3aed';
+                const icon = typeIcons[g.type] || 'fa-gamepad';
+                const label = typeLabels[g.type] || g.type;
+                const gradient = gradients[g.type] || 'linear-gradient(135deg,#7c3aed,#2563eb)';
+                const groupName = getGroupName(g.groupId);
+                const statusBadge = g.status === 'hidden'
+                    ? `<span style="background:rgba(239,68,68,0.2); color:#ef4444; padding:3px 8px; border-radius:20px; font-size:10px;">🔒 مخفية</span>`
+                    : `<span style="background:rgba(5,150,105,0.2); color:#059669; padding:3px 8px; border-radius:20px; font-size:10px;">✅ مرئية</span>`;
+
+                return `
+                <div style="background:var(--bg-card); border-radius:16px; border:1px solid var(--border); overflow:hidden; transition:transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 30px rgba(0,0,0,0.3)';" onmouseout="this.style.transform=''; this.style.boxShadow='';">
+                    <div style="background:${gradient}; padding:20px; position:relative;">
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                            <span style="background:rgba(255,255,255,0.2); color:white; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700;">
+                                <i class="fas ${icon}"></i> ${label}
+                            </span>
+                            ${statusBadge.replace('rgba(239,68,68,0.2); color:#ef4444','rgba(255,255,255,0.25); color:white').replace('rgba(5,150,105,0.2); color:#059669','rgba(255,255,255,0.25); color:white')}
+                        </div>
+                        <h3 style="color:white; font-size:17px; font-weight:900; margin:0 0 4px;">${g.title}</h3>
+                        <div style="color:rgba(255,255,255,0.75); font-size:12px;"><i class="fas fa-users"></i> ${groupName}</div>
+                    </div>
+                    <div style="padding:16px;">
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; font-size:12px; color:var(--text-muted);">
+                            <span><i class="fas fa-play-circle"></i> ${g.plays || 0} تشغيل</span>
+                            <span>${g.type === 'internal' ? `<i class="fas fa-question-circle"></i> ${(g.questions || []).length} سؤال` : `<i class="fas fa-link"></i> ${(g.links || []).length} رابط`}</span>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button onclick="startGame('${g.id}')" class="btn" style="flex:1; padding:10px; font-size:13px; font-weight:800; background:${gradient};">
+                                <i class="fas fa-play"></i> تشغيل
+                            </button>
+                            <button onclick="editGame('${g.id}')" class="btn" style="padding:10px 14px; background:rgba(255,255,255,0.08); font-size:13px;" title="تعديل">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteGame('${g.id}')" class="btn btn-danger" style="padding:10px 14px; font-size:13px;" title="حذف">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function getGroupName(groupId) {
+            if (!groupId || !db?.classes) return 'غير محدد';
+            for (const cid in db.classes) {
+                const cls = db.classes[cid];
+                if (cls.groups?.[groupId]) return `${cls.name} / ${cls.groups[groupId].name}`;
+            }
+            return groupId;
+        }
+
+        function openGameModal(editId = null) {
+            document.getElementById('gameZoneModal').style.display = 'block';
+            document.getElementById('gz-type-picker').style.display = 'grid';
+            document.getElementById('gz-common-fields').style.display = 'none';
+            document.getElementById('game-modal-title').textContent = editId ? '✏️ تعديل اللعبة' : '🎮 إضافة لعبة جديدة';
+            document.getElementById('gz-edit-id').value = editId || '';
+            document.getElementById('gz-title').value = '';
+            document.getElementById('gz-ext-url').value = '';
+            document.getElementById('gz-questions-list').innerHTML = '';
+            document.getElementById('gz-status').value = 'active';
+            gzQuestionCount = 0;
+            currentGameType = '';
+            populateGzGroupFilter();
+
+            if (editId) {
+                const game = gamesDB.find(g => g.id === editId);
+                if (game) {
+                    selectGameType(game.type, true);
+                    document.getElementById('gz-title').value = game.title;
+                    document.getElementById('gz-group-select').value = game.groupId;
+                    document.getElementById('gz-status').value = game.status || 'active';
+                    if (game.type === 'external') {
+                        document.getElementById('gz-ext-url').value = (game.links || []).join('\n');
+                    } else if (game.type === 'internal') {
+                        (game.questions || []).forEach(q => addGameQuestion(q));
+                    }
+                }
+            }
+        }
+
+        function closeGameModal() {
+            document.getElementById('gameZoneModal').style.display = 'none';
+        }
+
+        function selectGameType(type, skipPicker = false) {
+            currentGameType = type;
+            if (!skipPicker) {
+                document.getElementById('gz-type-picker').style.display = 'none';
+            }
+            document.getElementById('gz-common-fields').style.display = 'block';
+            document.getElementById('gz-ext-fields').style.display = type === 'external' ? 'block' : 'none';
+            document.getElementById('gz-int-fields').style.display = type === 'internal' ? 'block' : 'none';
+
+            document.getElementById('gz-pick-ext').style.borderColor = type === 'external' ? '#2563eb' : 'var(--border)';
+            document.getElementById('gz-pick-ext').style.background = type === 'external' ? 'rgba(37,99,235,0.1)' : '';
+            document.getElementById('gz-pick-int').style.borderColor = type === 'internal' ? '#059669' : 'var(--border)';
+            document.getElementById('gz-pick-int').style.background = type === 'internal' ? 'rgba(5,150,105,0.1)' : '';
+        }
+
+        function addGameQuestion(prefill = null) {
+            gzQuestionCount++;
+            const qn = gzQuestionCount;
+            const types = ['mcq', 'truefalse', 'short'];
+            const typeLabels = { mcq: 'اختيار متعدد', truefalse: 'صح / خطأ', short: 'إجابة قصيرة' };
+            const list = document.getElementById('gz-questions-list');
+
+            const div = document.createElement('div');
+            div.id = `gz-q-${qn}`;
+            div.style.cssText = 'background:var(--bg-elevated); border-radius:12px; padding:16px; border:1px solid var(--border); position:relative;';
+            div.innerHTML = `
+                <button type="button" onclick="this.parentElement.remove(); gzQuestionCount--;" style="position:absolute; top:10px; left:10px; background:rgba(239,68,68,0.2); border:none; border-radius:50%; width:28px; height:28px; color:#ef4444; cursor:pointer; font-size:14px;">×</button>
+                <div style="font-weight:800; margin-bottom:12px; color:var(--primary);">سؤال #${qn}</div>
+                <div class="form-group" style="margin-bottom:10px;">
+                    <label style="font-size:12px;">نوع السؤال</label>
+                    <select class="form-control" id="gz-q-type-${qn}" onchange="updateQFields(${qn})" style="height:36px; font-size:13px;">
+                        <option value="mcq">اختيار متعدد (MCQ)</option>
+                        <option value="truefalse">صح / خطأ</option>
+                        <option value="short">إجابة قصيرة</option>
+                    </select>
+                </div>
+                <input class="form-control" id="gz-q-text-${qn}" placeholder="نص السؤال..." style="margin-bottom:10px; font-size:13px;" value="${prefill?.text || ''}">
+                <div id="gz-q-opts-${qn}">
+                    <input class="form-control" placeholder="الخيار أ (الصحيح)" id="gz-q-opt0-${qn}" style="margin-bottom:6px; font-size:12px; border-right:3px solid #059669;" value="${prefill?.options?.[0] || ''}">
+                    <input class="form-control" placeholder="الخيار ب" id="gz-q-opt1-${qn}" style="margin-bottom:6px; font-size:12px;" value="${prefill?.options?.[1] || ''}">
+                    <input class="form-control" placeholder="الخيار ج" id="gz-q-opt2-${qn}" style="margin-bottom:6px; font-size:12px;" value="${prefill?.options?.[2] || ''}">
+                    <input class="form-control" placeholder="الخيار د" id="gz-q-opt3-${qn}" style="font-size:12px;" value="${prefill?.options?.[3] || ''}">
+                </div>
+            `;
+            list.appendChild(div);
+            if (prefill?.type) {
+                document.getElementById(`gz-q-type-${qn}`).value = prefill.type;
+                updateQFields(qn);
+            }
+        }
+
+        function updateQFields(qn) {
+            const type = document.getElementById(`gz-q-type-${qn}`).value;
+            const opts = document.getElementById(`gz-q-opts-${qn}`);
+            if (type === 'truefalse') {
+                opts.innerHTML = `
+                    <select class="form-control" id="gz-q-opt0-${qn}" style="height:36px;">
+                        <option value="صح">✅ صح</option>
+                        <option value="خطأ">❌ خطأ</option>
+                    </select>`;
+            } else if (type === 'short') {
+                opts.innerHTML = `<input class="form-control" placeholder="الإجابة الصحيحة" id="gz-q-opt0-${qn}" style="font-size:13px;">`;
+            } else {
+                opts.innerHTML = `
+                    <input class="form-control" placeholder="الخيار أ (الصحيح)" id="gz-q-opt0-${qn}" style="margin-bottom:6px; font-size:12px; border-right:3px solid #059669;">
+                    <input class="form-control" placeholder="الخيار ب" id="gz-q-opt1-${qn}" style="margin-bottom:6px; font-size:12px;">
+                    <input class="form-control" placeholder="الخيار ج" id="gz-q-opt2-${qn}" style="margin-bottom:6px; font-size:12px;">
+                    <input class="form-control" placeholder="الخيار د" id="gz-q-opt3-${qn}" style="font-size:12px;">`;
+            }
+        }
+
+        function saveGame() {
+            const title = document.getElementById('gz-title').value.trim();
+            const groupId = document.getElementById('gz-group-select').value;
+            const status = document.getElementById('gz-status').value;
+            const editId = document.getElementById('gz-edit-id').value;
+
+            if (!title) return alert('يرجى إدخال عنوان اللعبة.');
+            if (!groupId) return alert('يرجى اختيار المجموعة المستهدفة.');
+            if (!currentGameType) return alert('يرجى اختيار نوع اللعبة.');
+
+            let gameData = { title, groupId, status, type: currentGameType, id: editId || `game_${Date.now()}`, plays: 0, createdAt: new Date().toISOString() };
+
+            if (currentGameType === 'external') {
+                const linksRaw = document.getElementById('gz-ext-url').value.trim();
+                const links = linksRaw.split('\n').map(l => l.trim()).filter(Boolean);
+                if (!links.length) return alert('يرجى إدخال رابط واحد على الأقل.');
+                gameData.links = links;
+            } else {
+                const questions = [];
+                document.querySelectorAll('[id^="gz-q-text-"]').forEach(input => {
+                    const qn = input.id.replace('gz-q-text-', '');
+                    const text = input.value.trim();
+                    if (!text) return;
+                    const type = document.getElementById(`gz-q-type-${qn}`)?.value || 'mcq';
+                    const opt0 = document.getElementById(`gz-q-opt0-${qn}`)?.value || '';
+                    const opt1 = document.getElementById(`gz-q-opt1-${qn}`)?.value || '';
+                    const opt2 = document.getElementById(`gz-q-opt2-${qn}`)?.value || '';
+                    const opt3 = document.getElementById(`gz-q-opt3-${qn}`)?.value || '';
+                    const options = [opt0, opt1, opt2, opt3].filter(Boolean);
+                    questions.push({ text, type, options, answer: opt0 });
+                });
+                if (!questions.length) return alert('يرجى إضافة سؤال واحد على الأقل.');
+                gameData.questions = questions;
+            }
+
+            if (editId) {
+                const idx = gamesDB.findIndex(g => g.id === editId);
+                if (idx > -1) { gameData.plays = gamesDB[idx].plays || 0; gamesDB[idx] = gameData; }
+            } else {
+                gamesDB.unshift(gameData);
+            }
+
+            saveGamesDB();
+            updateGzStats();
+            renderGames();
+            closeGameModal();
+            alert(`✅ تم حفظ اللعبة "${title}" بنجاح!`);
+        }
+
+        function editGame(id) {
+            openGameModal(id);
+        }
+
+        function deleteGame(id) {
+            const game = gamesDB.find(g => g.id === id);
+            if (!game) return;
+            if (!confirm(`هل أنت متأكد من حذف لعبة "${game.title}"؟`)) return;
+            gamesDB = gamesDB.filter(g => g.id !== id);
+            saveGamesDB();
+            updateGzStats();
+            renderGames();
+        }
+
+        function startGame(id) {
+            const game = gamesDB.find(g => g.id === id);
+            if (!game) return;
+            game.plays = (game.plays || 0) + 1;
+            saveGamesDB();
+            updateGzStats();
+            renderGames();
+
+            document.getElementById('gamePlayModal').style.display = 'block';
+            document.getElementById('gplay-title').textContent = `🚀 ${game.title}`;
+            document.getElementById('gplay-group').textContent = `المجموعة: ${getGroupName(game.groupId)}`;
+
+            const content = document.getElementById('gplay-content');
+            if (game.type === 'external') {
+                content.innerHTML = `
+                    <div style="margin-bottom:16px; padding:16px; background:rgba(37,99,235,0.1); border-radius:12px; border:1px solid rgba(37,99,235,0.3);">
+                        <p style="color:var(--text-muted); font-size:13px; margin-bottom:12px;"><i class="fas fa-info-circle"></i> شارك هذا الرابط مع الطلاب أو افتح اللعبة مباشرة:</p>
+                        ${(game.links || []).map((l, i) => `
+                            <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                                <input class="form-control" value="${l}" readonly style="flex:1; font-size:12px;">
+                                <button onclick="window.open('${l}','_blank')" class="btn" style="white-space:nowrap; font-size:13px;"><i class="fas fa-external-link-alt"></i> فتح اللعبة ${i+1}</button>
+                            </div>`).join('')}
+                    </div>
+                    <iframe src="${game.links?.[0] || ''}" style="width:100%; height:500px; border-radius:12px; border:1px solid var(--border);" allow="fullscreen"></iframe>`;
+            } else {
+                renderInternalGame(game, content);
+            }
+        }
+
+        function renderInternalGame(game, container) {
+            const questions = game.questions || [];
+            let current = 0;
+            let score = 0;
+            let answered = false;
+
+            function showQ() {
+                if (current >= questions.length) {
+                    container.innerHTML = `
+                        <div style="text-align:center; padding:40px;">
+                            <div style="font-size:64px; margin-bottom:16px;">${score === questions.length ? '🏆' : score > questions.length/2 ? '🎉' : '💪'}</div>
+                            <h2 style="font-size:28px; font-weight:900; color:var(--primary); margin-bottom:8px;">انتهت اللعبة!</h2>
+                            <p style="font-size:20px;">نتيجتك: <strong style="color:#059669;">${score} / ${questions.length}</strong></p>
+                            <button onclick="current=0; score=0; answered=false; showQ();" class="btn" style="margin-top:24px; padding:14px 32px; font-size:16px;">🔄 العب مرة أخرى</button>
+                        </div>`;
+                    return;
+                }
+                answered = false;
+                const q = questions[current];
+                const opts = q.options || [];
+                container.innerHTML = `
+                    <div style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+                        <div style="font-size:13px; color:var(--text-muted);">السؤال ${current+1} من ${questions.length}</div>
+                        <div style="font-size:13px; color:#059669; font-weight:800;">النقاط: ${score}</div>
+                    </div>
+                    <div style="width:100%; height:8px; background:var(--bg-elevated); border-radius:4px; margin-bottom:24px; overflow:hidden;">
+                        <div style="width:${((current)/questions.length)*100}%; height:100%; background:var(--gradient-primary); transition:width 0.5s;"></div>
+                    </div>
+                    <div style="background:var(--bg-elevated); border-radius:16px; padding:24px; margin-bottom:24px;">
+                        <h3 style="font-size:20px; font-weight:800; line-height:1.4;">${q.text}</h3>
+                    </div>
+                    <div id="gz-opts" style="display:flex; flex-direction:column; gap:12px;">
+                        ${opts.map((o, i) => `
+                            <button onclick="checkAnswer(this,'${o.replace(/'/g,"\\'")}','${(q.answer||opts[0]).replace(/'/g,"\\'")}',${i})"
+                                style="padding:14px 20px; border-radius:12px; border:2px solid var(--border); background:var(--bg-card); color:var(--text-primary); font-size:15px; font-weight:700; cursor:pointer; text-align:right; transition:all 0.2s;"
+                                onmouseover="if(!this.disabled) this.style.borderColor='var(--primary)'; this.style.background='rgba(109,58,238,0.1)';"
+                                onmouseout="if(!this.disabled) this.style.borderColor='var(--border)'; this.style.background='var(--bg-card)';">
+                                ${['أ','ب','ج','د'][i]}. ${o}
+                            </button>`).join('')}
+                    </div>
+                    <div id="gz-feedback" style="margin-top:16px; min-height:40px;"></div>
+                    <div id="gz-next-btn" style="display:none; margin-top:16px;">
+                        <button onclick="current++; showQ();" class="btn" style="width:100%; padding:14px; font-size:16px; font-weight:800;">
+                            ${current === questions.length-1 ? '🏁 إنهاء اللعبة' : 'التالي →'}
+                        </button>
+                    </div>`;
+            }
+
+            window.checkAnswer = function(btn, selected, correct, idx) {
+                if (answered) return;
+                answered = true;
+                const btns = document.querySelectorAll('#gz-opts button');
+                btns.forEach(b => b.disabled = true);
+                if (selected === correct) {
+                    score++;
+                    btn.style.background = 'rgba(5,150,105,0.2)'; btn.style.borderColor = '#059669'; btn.style.color = '#059669';
+                    document.getElementById('gz-feedback').innerHTML = '<div style="color:#059669; font-size:16px; font-weight:800;">✅ إجابة صحيحة! 🎉</div>';
+                } else {
+                    btn.style.background = 'rgba(239,68,68,0.2)'; btn.style.borderColor = '#ef4444'; btn.style.color = '#ef4444';
+                    btns.forEach(b => { if (b.textContent.includes(correct)) { b.style.background='rgba(5,150,105,0.2)'; b.style.borderColor='#059669'; b.style.color='#059669'; }});
+                    document.getElementById('gz-feedback').innerHTML = `<div style="color:#ef4444; font-size:16px; font-weight:800;">❌ خطأ! الإجابة الصحيحة: ${correct}</div>`;
+                }
+                document.getElementById('gz-next-btn').style.display = 'block';
+            };
+
+            showQ();
+        }
+
+        function closeGamePlay() {
+            document.getElementById('gamePlayModal').style.display = 'none';
+        }
+
+        // Init when game-zone section is shown
+        document.querySelector('.menu a[data-target="game-zone"]')?.addEventListener('click', () => setTimeout(initGameZone, 100));
 
         async function loadTeacherPlatforms() {
             const grid = document.getElementById('platforms-grid');

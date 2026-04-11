@@ -1150,10 +1150,78 @@ function navigateTo(viewId, menuItem) {
     if (viewId === 'progress') renderProgressPage();
     if (viewId === 'achievements') renderAchievements();
     if (viewId === 'dashboard') renderDashboard();
+    if (viewId === 'games') renderStudentGames();
     if (viewId === 'chat-human') {
         switchHumanChat('group');
         const badge = document.getElementById('unread-human-total');
         if (badge) { badge.textContent = '0'; badge.style.display = 'none'; }
+    }
+}
+
+function renderStudentGames() {
+    const container = document.getElementById('student-games-container');
+    if (!container) return;
+    
+    // Fetch games from localStorage (simulating DB query for student's group)
+    const gamesDB = JSON.parse(localStorage.getItem('numi_games') || '[]');
+    let studentGames = gamesDB.filter(g => g.groupId === currentUser.groupId && g.status !== 'hidden');
+    
+    if (studentGames.length === 0) {
+        container.innerHTML = `
+        <div style="grid-column:1/-1; text-align:center; padding:60px; color:var(--text-muted); background:var(--bg-card); border-radius:18px; border:1px dashed var(--border);">
+            <i class="fas fa-ghost fa-4x mb-16" style="opacity:0.2;"></i>
+            <h3 style="font-size:20px; font-weight:800; margin-bottom:8px;">لا توجد ألعاب حالياً</h3>
+            <p>مجرد أن يضيف المعلم لعبة لمجموعتك، ستظهر هنا تلقائياً!</p>
+        </div>`;
+        return;
+    }
+    
+    container.innerHTML = studentGames.map((g, i) => {
+        const isExt = g.type === 'external';
+        const iconClasses = ['fa-gamepad', 'fa-puzzle-piece', 'fa-dice', 'fa-chess-knight', 'fa-rocket'];
+        const icon = iconClasses[i % iconClasses.length];
+        const colorClass = isExt ? 'var(--info)' : 'var(--success-color)';
+        const gradient = isExt ? 'linear-gradient(135deg, #3b82f6, #8b5cf6)' : 'linear-gradient(135deg, #10b981, #0ea5e9)';
+        
+        return `
+        <div class="card clickable" style="overflow:hidden; display:flex; flex-direction:column; border:1px solid rgba(255,255,255,0.05); transition:all 0.3s;" onmouseover="this.style.transform='translateY(-5px)'; this.style.borderColor='${isExt?'#3b82f6':'#10b981'}';" onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='rgba(255,255,255,0.05)';">
+            <div style="height:120px; background:${gradient}; display:flex; align-items:center; justify-content:center; color:white;">
+                <i class="fas ${icon} fa-4x" style="opacity:0.8;"></i>
+            </div>
+            <div style="padding:20px; flex:1; display:flex; flex-direction:column;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+                    <h3 style="font-size:18px; font-weight:800; line-height:1.4; margin:0;">${g.title}</h3>
+                    <span style="font-size:11px; padding:4px 8px; border-radius:12px; font-weight:800; background:rgba(255,255,255,0.1); color:${colorClass}; white-space:nowrap;">
+                        ${isExt ? '<i class="fas fa-link"></i> خارجية' : '<i class="fas fa-mobile-alt"></i> مدمجة'}
+                    </span>
+                </div>
+                
+                <div style="margin-top:auto; padding-top:16px;">
+                    <button class="btn w-full btn-lg" onclick="playStudentGame('${g.id}')" style="background:${gradient}; border:none;">
+                        <i class="fas fa-play"></i> ابدأ اللعب
+                    </button>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+window.playStudentGame = function(gameId) {
+    const gamesDB = JSON.parse(localStorage.getItem('numi_games') || '[]');
+    const g = gamesDB.find(x => x.id === gameId);
+    if (!g) return;
+    
+    // Increment plays logic
+    g.plays = (g.plays || 0) + 1;
+    localStorage.setItem('numi_games', JSON.stringify(gamesDB));
+    renderStudentGames(); // Refresh
+    
+    if (g.type === 'external' && g.links && g.links.length > 0) {
+        window.open(g.links[0], '_blank');
+        awardXP(10, "فتح لعبة خارجية 🎮");
+    } else if (g.type === 'internal') {
+        alert("فتح لعبة مدمجة: " + g.title + "\\nسيتم عرض نافذة اللعبة قريباً ليتفاعل معها الطالب.");
+        awardXP(20, "تشغيل لعبة تفاعلية 🎮");
     }
 }
 
