@@ -634,8 +634,11 @@ function getEmbedUrl(url) {
         } else if (finalUrl.includes('open?id=')) {
             driveUrl = finalUrl.replace('open?id=', 'file/d/') + '/preview';
         }
-        const separator = driveUrl.includes('?') ? '&' : '?';
-        return driveUrl + separator + 'rm=minimal';
+        // Append rm=minimal to minimize toolbars
+        if (!driveUrl.includes('rm=minimal')) {
+            driveUrl += driveUrl.includes('?') ? '&rm=minimal' : '?rm=minimal';
+        }
+        return driveUrl;
     }
 
     // OneDrive & SharePoint Detection
