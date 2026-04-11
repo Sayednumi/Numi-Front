@@ -435,18 +435,19 @@ img { max-width: 100%; display: block; }
     padding: 8px; border: 1px solid var(--border); overflow-x: auto;
 }
 .step-item {
-    flex: 1; min-width: 100px; padding: 10px 14px;
-    border-radius: var(--radius-md); cursor: pointer;
-    text-align: center; font-size: 13px; font-weight: 600;
-    color: var(--text-muted); transition: var(--transition-base);
-    display: flex; align-items: center; justify-content: center; gap: 6px;
-    white-space: nowrap;
+    flex: 1; min-width: 100px; padding: 12px 14px;
+    border-radius: 20px; cursor: pointer;
+    text-align: center; font-size: 14px; font-weight: 700;
+    color: var(--text-muted); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    white-space: nowrap; border: 2px solid transparent;
 }
-.step-item:hover { color: var(--text-secondary); background: var(--bg-elevated); }
-.step-item.active { background: var(--gradient-primary); color: white; }
+.step-item:hover { transform: translateY(-2px); color: var(--text-secondary); background: var(--bg-elevated); border-color: var(--border); }
+.step-item.active { background: var(--gradient-primary); color: white; border-color: transparent; box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4); transform: scale(1.05); z-index: 2; }
 .step-item.completed { color: var(--success); }
 .step-item.locked { opacity: 0.4; cursor: not-allowed; }
-.step-item i { font-size: 14px; }
+.step-item i { font-size: 16px; margin-bottom: 0px; }
+
 
 /* Video Section */
 .video-section {
@@ -768,14 +769,17 @@ input:checked + .slider::before { transform: translateX(24px); }
     }
     .step-item { 
         width: 100%; 
-        padding: 12px; 
+        padding: 16px 12px; 
+        border-radius: 24px;
         white-space: normal; 
         flex-direction: column; 
         gap: 8px; 
         text-align: center; 
         background: var(--bg-card); 
-        border: 1px solid var(--border); 
+        border: 2px solid var(--border); 
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
     }
+    .step-item i { font-size: 24px; margin-bottom: 4px; }
     .chat-container { max-width: 100%; height: 100vh; border-radius: 0; display: flex; flex-direction: column; }
     .chat-messages { padding: 15px; }
     .math-keyboard { max-height: 120px; }
