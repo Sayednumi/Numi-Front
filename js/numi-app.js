@@ -778,6 +778,7 @@ async function openLesson(id) {
     if (zones.ailesson?.html || zones.ailesson?.driveLink) {
         const studentFrame = document.getElementById('ailesson-student-frame');
         const driveFrame = document.getElementById('ailesson-drive-frame');
+        const driveExternalLink = document.getElementById('ailesson-drive-external-link');
         const studentContainer = document.getElementById('ailesson-student-container');
         const driveContainer = document.getElementById('ailesson-drive-container');
 
@@ -791,9 +792,11 @@ async function openLesson(id) {
 
         if (zones.ailesson?.driveLink) {
             driveFrame.src = getEmbedUrl(zones.ailesson.driveLink);
+            if (driveExternalLink) driveExternalLink.href = zones.ailesson.driveLink;
             driveContainer.style.display = 'block';
         } else {
             driveFrame.src = '';
+            if (driveExternalLink) driveExternalLink.href = '#';
             driveContainer.style.display = 'none';
         }
     }
