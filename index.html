@@ -7,7 +7,7 @@
     <meta name="description" content="Numi - منصة تعليمية ذكية مدعومة بالذكاء الاصطناعي لتعلم الرياضيات بطريقة تفاعلية وممتعة">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="css/style.css?v=2.0.6">
+    <link rel="stylesheet" href="css/style.css?v=2.0.7">
     <!-- KaTeX for Math Rendering -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
@@ -205,21 +205,37 @@
 
             <!-- Stats Row -->
             <div class="grid grid-4 mb-24">
-                <div class="stat-card">
-                    <div class="stat-card-icon" style="background:var(--gradient-primary);"><i class="fas fa-book-open"></i></div>
-                    <div class="stat-card-info"><h3 id="dash-completed">0</h3><p>دروس مكتملة</p></div>
+                <div class="stat-card stat-streak">
+                    <div class="stat-card-icon"><i class="fas fa-fire"></i></div>
+                    <div class="stat-card-info">
+                        <h3 id="dash-streak">0</h3>
+                        <p>أيام متتالية</p>
+                        <span style="font-size: 11px; opacity: 0.7;">استمر يومياً دون انقطاع!</span>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-card-icon" style="background:linear-gradient(135deg,#f59e0b,#f97316);"><i class="fas fa-star"></i></div>
-                    <div class="stat-card-info"><h3 id="dash-xp">0</h3><p>نقاط الخبرة XP</p></div>
+                <div class="stat-card stat-xp">
+                    <div class="stat-card-icon"><i class="fas fa-star"></i></div>
+                    <div class="stat-card-info">
+                        <h3 id="dash-xp">0</h3>
+                        <p>نقاط الخبرة (XP)</p>
+                        <span style="font-size: 11px; opacity: 0.7;">مجموع نقاطك لتتصدر لوحة الشرف.</span>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-card-icon" style="background:linear-gradient(135deg,#ef4444,#f97316);"><i class="fas fa-fire"></i></div>
-                    <div class="stat-card-info"><h3 id="dash-streak">0</h3><p>أيام متتالية</p></div>
+                <div class="stat-card stat-lessons">
+                    <div class="stat-card-icon"><i class="fas fa-book-open"></i></div>
+                    <div class="stat-card-info">
+                        <h3 id="dash-completed">0</h3>
+                        <p>دروس مكتملة</p>
+                        <span style="font-size: 11px; opacity: 0.7;">عدد الدروس التي أنهيتها بنجاح.</span>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-card-icon" style="background:var(--gradient-cool);"><i class="fas fa-trophy"></i></div>
-                    <div class="stat-card-info"><h3 id="dash-badges">0</h3><p>إنجازات</p></div>
+                <div class="stat-card stat-badges">
+                    <div class="stat-card-icon"><i class="fas fa-trophy"></i></div>
+                    <div class="stat-card-info">
+                        <h3 id="dash-badges">0</h3>
+                        <p>إنجازات</p>
+                        <span style="font-size: 11px; opacity: 0.7;">أوسمتك ونياشينك لتميزك الرائع.</span>
+                    </div>
                 </div>
             </div>
 

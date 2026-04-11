@@ -330,19 +330,44 @@ img { max-width: 100%; display: block; }
 
 /* Dashboard Stat Cards */
 .stat-card {
-    background: var(--gradient-surface); border: 1px solid var(--border);
-    border-radius: var(--radius-lg); padding: 20px;
-    display: flex; align-items: center; gap: 16px;
-    transition: var(--transition-base);
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    border-bottom-width: 6px;
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+    gap: 8px;
+    transition: transform 0.1s, border-width 0.1s;
+    cursor: pointer;
 }
-.stat-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+.stat-card:hover { box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+.stat-card:active { transform: translateY(4px); border-bottom-width: 2px; }
 .stat-card-icon {
-    width: 48px; height: 48px; border-radius: var(--radius-md);
+    width: 56px; height: 56px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 20px; color: white; flex-shrink: 0;
+    font-size: 24px; color: white;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    margin-bottom: 4px;
 }
-.stat-card-info h3 { font-size: 22px; font-weight: 800; }
-.stat-card-info p { font-size: 12px; color: var(--text-secondary); }
+.stat-card-info h3 { font-size: 24px; font-weight: 900; line-height: 1; margin-bottom: 2px; }
+.stat-card-info p { font-size: 13px; color: var(--text-primary); font-weight: 800; margin-bottom: 2px; }
+
+/* Custom Colors for Kids */
+.stat-card.stat-streak { border-color: rgba(239, 71, 111, 0.4); background: rgba(239, 71, 111, 0.05); }
+.stat-card.stat-streak .stat-card-icon { background: linear-gradient(135deg, #ef476f, #d90429); }
+.stat-card.stat-streak h3 { color: #ef476f; }
+
+.stat-card.stat-xp { border-color: rgba(255, 183, 3, 0.4); background: rgba(255, 183, 3, 0.05); }
+.stat-card.stat-xp .stat-card-icon { background: linear-gradient(135deg, #ffb703, #fb8500); }
+.stat-card.stat-xp h3 { color: #ffb703; }
+
+.stat-card.stat-lessons { border-color: rgba(72, 202, 228, 0.4); background: rgba(72, 202, 228, 0.05); }
+.stat-card.stat-lessons .stat-card-icon { background: linear-gradient(135deg, #48cae4, #0077b6); }
+.stat-card.stat-lessons h3 { color: #48cae4; }
+
+.stat-card.stat-badges { border-color: rgba(6, 214, 160, 0.4); background: rgba(6, 214, 160, 0.05); }
+.stat-card.stat-badges .stat-card-icon { background: linear-gradient(135deg, #06d6a0, #0096c7); }
+.stat-card.stat-badges h3 { color: #06d6a0; }
 
 /* Continue Learning Card */
 .continue-card {
