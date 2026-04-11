@@ -574,7 +574,7 @@ function showUnitView(unitId, menuItem) {
         const done = completed.includes(l.id);
         const zones = [];
         if (l.videoZone?.url) zones.push('<div class="zone-icon" title="فيديو"><i class="fas fa-video"></i></div>');
-        if (l.ailessonZone?.html) zones.push('<div class="zone-icon" title="الدرس التفاعلي (AI)"><i class="fas fa-magic"></i></div>');
+        if (l.ailessonZone?.html || l.ailessonZone?.driveLink) zones.push('<div class="zone-icon" title="الدرس الذكي"><i class="fas fa-magic"></i></div>');
         if (l.podcastZone?.url) zones.push('<div class="zone-icon" title="بودكاست"><i class="fas fa-microphone"></i></div>');
         if (l.mindscapeZone?.url) zones.push('<div class="zone-icon" title="خريطة"><i class="fas fa-brain"></i></div>');
         if (l.gameZone?.url) zones.push('<div class="zone-icon" title="لعبة"><i class="fas fa-gamepad"></i></div>');
@@ -726,13 +726,13 @@ async function openLesson(id) {
     const zones = { video: lesson.videoZone, podcast: lesson.podcastZone, mindscape: lesson.mindscapeZone, game: lesson.gameZone, quiz: lesson.quizZone, ailesson: lesson.ailessonZone };
 
     if (zones.video?.url) currentLessonSteps.push({ key: 'video', icon: 'fa-play-circle', label: 'الفيديو' });
-    if (zones.ailesson?.html) currentLessonSteps.push({ key: 'ailesson', icon: 'fa-magic', label: 'الدرس التفاعلي' });
+    if (zones.ailesson?.html || zones.ailesson?.driveLink) currentLessonSteps.push({ key: 'ailesson', icon: 'fa-magic', label: 'الدرس الذكي' });
     if (zones.mindscape?.url) currentLessonSteps.push({ key: 'mindscape', icon: 'fa-brain', label: 'الخريطة الذهنية' });
     if (zones.game?.url) currentLessonSteps.push({ key: 'game', icon: 'fa-gamepad', label: 'الألعاب التعليمية' });
     if (zones.quiz?.url || zones.quiz?.nativeData) currentLessonSteps.push({ key: 'quiz', icon: 'fa-clipboard-check', label: 'الاختبار' });
     if (zones.podcast?.url) currentLessonSteps.push({ key: 'podcast', icon: 'fa-podcast', label: 'بودكاست' });
 
-    if (currentLessonSteps.length < 2 && !zones.video?.url && !zones.quiz?.url && !zones.quiz?.nativeData && !zones.ailesson?.html) {
+    if (currentLessonSteps.length < 2 && !zones.video?.url && !zones.quiz?.url && !zones.quiz?.nativeData && (!zones.ailesson?.html && !zones.ailesson?.driveLink)) {
         currentLessonSteps = [
             { key: 'video', icon: 'fa-play-circle', label: 'الفيديو' },
             { key: 'quiz', icon: 'fa-clipboard-check', label: 'الاختبار' },
@@ -775,8 +775,27 @@ async function openLesson(id) {
         if (btnWrap) { btnWrap.style.display = 'none'; btnWrap.dataset.learnFile = ''; }
     }
 
-    if (zones.ailesson?.html) {
-        document.getElementById('ailesson-student-frame').srcdoc = zones.ailesson.html;
+    if (zones.ailesson?.html || zones.ailesson?.driveLink) {
+        const studentFrame = document.getElementById('ailesson-student-frame');
+        const driveFrame = document.getElementById('ailesson-drive-frame');
+        const studentContainer = document.getElementById('ailesson-student-container');
+        const driveContainer = document.getElementById('ailesson-drive-container');
+
+        if (zones.ailesson?.html) {
+            studentFrame.srcdoc = zones.ailesson.html;
+            studentContainer.style.display = 'block';
+        } else {
+            studentFrame.srcdoc = '';
+            studentContainer.style.display = 'none';
+        }
+
+        if (zones.ailesson?.driveLink) {
+            driveFrame.src = getEmbedUrl(zones.ailesson.driveLink);
+            driveContainer.style.display = 'block';
+        } else {
+            driveFrame.src = '';
+            driveContainer.style.display = 'none';
+        }
     }
 
     if (zones.mindscape?.url) {
