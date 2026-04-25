@@ -1632,9 +1632,12 @@
                 <div style="display:flex; align-items:center; gap:10px;">
                     <div style="display:flex; flex-direction:column; gap:4px;">
                         <input type="text" id="kahoot-game-name" placeholder="اسم اللعبة (للحفظ في البنك)..." style="padding:7px 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:white; font-size:14px; width:280px; outline:none;">
+                        <select id="kahoot-game-group-id" style="padding:4px 8px; border-radius:6px; border:1px solid var(--border); background:var(--bg); color:white; font-size:12px; outline:none;" title="اربط اللعبة بمجموعة معينة لتظهر للمعلمين المصرح لهم">
+                            <option value="">-- لعبة عامة (خاصة بك فقط) --</option>
+                        </select>
                     </div>
-                    <button class="btn" onclick="saveToGameBank()" style="background:linear-gradient(135deg,#f59e0b,#d97706); color:#0b1220; font-weight:bold; padding:8px 16px;"><i class="fas fa-archive"></i> حفظ في البنك</button>
-                    <button class="btn btn-success" onclick="saveKahootGame()" style="padding:8px 18px; font-weight:bold; font-size:15px;"><i class="fas fa-save"></i> إدراج في الدرس</button>
+                    <button class="btn" onclick="saveToGameBank()" style="background:linear-gradient(135deg,#f59e0b,#d97706); color:#0b1220; font-weight:bold; padding:8px 16px; align-self:flex-start;"><i class="fas fa-archive"></i> حفظ في البنك</button>
+                    <button class="btn btn-success" onclick="saveKahootGame()" style="padding:8px 18px; font-weight:bold; font-size:15px; align-self:flex-start;"><i class="fas fa-save"></i> إدراج في الدرس</button>
                 </div>
             </div>
 
@@ -2024,6 +2027,7 @@
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px;">
                             <label><input type="checkbox" class="perm-chk" value="view_structure" checked> رؤية الصفوف والمقررات</label>
                             <label><input type="checkbox" class="perm-chk" value="manage_structure" checked> إنشاء/حذف صفوف ومقررات</label>
+                            <label><input type="checkbox" class="perm-chk" value="manage_all_groups"> التحكم بجميع المجموعات</label>
                             <label><input type="checkbox" class="perm-chk" value="manage_lessons" checked> بناء وإدارة وتعديل الدروس</label>
                         </div>
                     </div>
@@ -2060,11 +2064,18 @@
                     <div style="padding:15px; background:rgba(255,255,255,0.03); border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
                         <strong style="color:var(--danger); display:block; margin-bottom:8px;"><i class="fas fa-shield-alt"></i> الإدارة العامة والتقارير</strong>
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px;">
+                            <label><input type="checkbox" class="perm-chk" id="manage-all-groups-chk" value="manage_all_groups" onchange="document.getElementById('admin-group-assignment').style.display=this.checked?'none':'block'"> التحكم بجميع المجموعات</label>
                             <label><input type="checkbox" class="perm-chk" value="view_dashboard" checked> استعراض إحصائيات المنصة</label>
                             <label><input type="checkbox" class="perm-chk" value="view_reports" checked> رؤية درجات وتقارير الاختبارات</label>
                             <label><input type="checkbox" class="perm-chk" value="reset_quiz" checked> التحكم في إعادة اختبار الطلاب</label>
                             <label><input type="checkbox" class="perm-chk" value="manage_admins"> إدارة المشرفين (خطورة عالية)</label>
                         </div>
+                    </div>
+                    
+                    <div style="padding:15px; background:rgba(255,255,255,0.03); border-radius:8px; border:1px solid rgba(255,255,255,0.05); margin-top:10px; display:block;" id="admin-group-assignment">
+                        <strong style="color:var(--primary); display:block; margin-bottom:8px;"><i class="fas fa-layer-group"></i> تخصيص الوصول للمجموعات</strong>
+                        <p style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">اختر المجموعات التي يمكن لهذا المسؤول إدارتها (اضغط Ctrl لتحديد أكثر من مجموعة). إذا تم تفعيل "التحكم بجميع المجموعات"، فسيتم تجاهل هذا الاختيار.</p>
+                        <select id="admin-allowed-groups" class="form-control" multiple style="height:120px; font-size:13px;"></select>
                     </div>
                 </div>
                 <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top:20px;">
@@ -2582,10 +2593,27 @@
             }
         }
 
+        function populateAdminAllowedGroups(selected = []) {
+            const select = document.getElementById('admin-allowed-groups');
+            select.innerHTML = '';
+            for (let cid in db.classes) {
+                const groups = db.classes[cid].groups || {};
+                for (let gid in groups) {
+                    const option = document.createElement('option');
+                    option.value = gid;
+                    option.text = `${db.classes[cid].name} - ${groups[gid].name}`;
+                    if (selected.includes(gid)) option.selected = true;
+                    select.appendChild(option);
+                }
+            }
+        }
+
         function openAddAdminModal() {
             document.getElementById('adminAccountForm').reset();
             document.getElementById('admin-id').value = '';
             document.getElementById('adminModalTitle').innerText = 'إضافة مدير جديد للمنصة';
+            document.getElementById('admin-group-assignment').style.display = 'block';
+            populateAdminAllowedGroups();
             openModal('adminAccountModal');
         }
 
@@ -2611,6 +2639,9 @@
             });
             
             document.getElementById('adminModalTitle').innerText = 'تعديل بيانات وصلاحيات المدير تفصيلياً';
+            const manageAllChk = document.getElementById('manage-all-groups-chk');
+            if(manageAllChk) document.getElementById('admin-group-assignment').style.display = manageAllChk.checked ? 'none' : 'block';
+            populateAdminAllowedGroups(permsObj.allowed_groups || []);
             openModal('adminAccountModal');
         }
 
@@ -2625,6 +2656,9 @@
             document.querySelectorAll('.perm-chk').forEach(chk => {
                 permissions[chk.value] = chk.checked;
             });
+            
+            const allowedSelect = document.getElementById('admin-allowed-groups');
+            permissions.allowed_groups = Array.from(allowedSelect.selectedOptions).map(opt => opt.value);
 
             const payload = { id: editId || phone, name, phone, password, role: 'admin', status: 'active', permissions };
             const method = editId ? 'PUT' : 'POST';
@@ -2724,10 +2758,18 @@
         function updateFilterDrop(targetId, classId, type = 'group') {
             const target = document.getElementById(targetId);
             target.innerHTML = '<option value="">الكل</option>';
+            
+            const currentUser = JSON.parse(localStorage.getItem('numi_session_user') || '{}');
+            const canManageAll = currentUser.permissions && (currentUser.permissions.manage_all_groups || currentUser.permissions.manage_admins || Object.keys(currentUser.permissions).length === 0);
+
             if(type === 'group') {
                 if(!classId || !db.classes[classId] || !db.classes[classId].groups) return;
                 const groups = db.classes[classId].groups;
-                for(let id in groups) target.innerHTML += `<option value="${id}">${groups[id].name}</option>`;
+                for(let id in groups) {
+                    const g = groups[id];
+                    if (!canManageAll && g.createdBy !== currentUser.id && !(currentUser.permissions?.allowed_groups || []).includes(id)) continue;
+                    target.innerHTML += `<option value="${id}">${g.name}</option>`;
+                }
             } else if(type === 'unit') {
                 // Here classId is the courseId from previous drop. If empty, get units for all courses in group.
                 const cid = document.getElementById('report-filter-class').value;
@@ -2802,7 +2844,15 @@
             target.innerHTML = '<option value="" disabled selected>اختر المجموعة...</option>';
             if(!classId || !db.classes[classId] || !db.classes[classId].groups) return;
             const groups = db.classes[classId].groups;
-            for(let id in groups) target.innerHTML += `<option value="${id}">${groups[id].name}</option>`;
+            
+            const currentUser = JSON.parse(localStorage.getItem('numi_session_user') || '{}');
+            const canManageAll = currentUser.permissions && (currentUser.permissions.manage_all_groups || currentUser.permissions.manage_admins || Object.keys(currentUser.permissions).length === 0);
+
+            for(let id in groups) {
+                const g = groups[id];
+                if (!canManageAll && g.createdBy !== currentUser.id && !(currentUser.permissions?.allowed_groups || []).includes(id)) continue;
+                target.innerHTML += `<option value="${id}">${g.name}</option>`;
+            }
         }
         function updateModalDropCourse(targetId, classId, groupId) {
             const target = document.getElementById(targetId);
@@ -2851,8 +2901,11 @@
             const classId = document.getElementById('group-class-id').value;
             const name = document.getElementById('group-name').value;
             const liveEnabled = document.getElementById('group-live-enabled').checked;
+            
+            const currentUser = JSON.parse(localStorage.getItem('numi_session_user') || '{}');
+
             if(!db.classes[classId].groups) db.classes[classId].groups = {};
-            if(!db.classes[classId].groups[id]) db.classes[classId].groups[id] = { courses: {} };
+            if(!db.classes[classId].groups[id]) db.classes[classId].groups[id] = { courses: {}, createdBy: currentUser.id };
             db.classes[classId].groups[id].name = name;
             db.classes[classId].groups[id].liveEnabled = liveEnabled;
             saveDB(); renderGroups(); closeModal('groupModal');
@@ -2861,12 +2914,19 @@
             const list = document.getElementById('groups-list');
             const classFilter = document.getElementById('group-filter-class').value;
             list.innerHTML = '';
+            
+            const currentUser = JSON.parse(localStorage.getItem('numi_session_user') || '{}');
+            const canManageAll = currentUser.permissions && (currentUser.permissions.manage_all_groups || currentUser.permissions.manage_admins || Object.keys(currentUser.permissions).length === 0);
+
             for(let cid in db.classes) {
                 if(classFilter && classFilter !== cid) continue;
                 let groups = db.classes[cid].groups || {};
                 for(let gid in groups) {
+                    const g = groups[gid];
+                    if (!canManageAll && g.createdBy !== currentUser.id && !(currentUser.permissions?.allowed_groups || []).includes(gid)) continue;
+                    
                     list.innerHTML += `<div class="item-row">
-                        <div><strong>${groups[gid].name}</strong> <small style="color:var(--text-muted);">(${db.classes[cid].name})</small></div>
+                        <div><strong>${g.name}</strong> <small style="color:var(--text-muted);">(${db.classes[cid].name})</small></div>
                         <div class="item-actions">
                             <button class="btn btn-sm" onclick="editGroup('${cid}','${gid}')"><i class="fas fa-edit"></i></button>
                             <button class="btn btn-sm btn-danger" onclick="deleteGroup('${cid}','${gid}')"><i class="fas fa-trash"></i></button>
@@ -3849,6 +3909,9 @@
             const container = document.getElementById('question-bank-content');
             container.innerHTML = '<div class="text-center" style="padding:20px;"><i class="fas fa-spinner fa-spin"></i> جارٍ تحميل بنك الأسئلة...</div>';
 
+            const currentUser = JSON.parse(localStorage.getItem('numi_session_user') || '{}');
+            const canManageAll = currentUser.permissions && (currentUser.permissions.manage_all_groups || currentUser.permissions.manage_admins || Object.keys(currentUser.permissions).length === 0);
+
             const letters = ['أ','ب','ج','د','هـ','و'];
             let html = '';
             let clsIdx = 0;
@@ -3865,7 +3928,9 @@
                 let gi = 0;
 
                 for(let gid in db.classes[cid].groups) {
-                    for(let crid in db.classes[cid].groups[gid].courses) {
+                    const g = db.classes[cid].groups[gid];
+                    if (!canManageAll && g.createdBy !== currentUser.id && !(currentUser.permissions?.allowed_groups || []).includes(gid)) continue;
+                    for(let crid in g.courses) {
                         for(let t of ['term1','term2']) {
                             const units = db.classes[cid].groups[gid].courses[crid][t]?.units || {};
                             for(let uid in units) {
@@ -5479,16 +5544,20 @@
         async function saveToGameBank() {
             syncCurrentKahootQuestion();
             const name = document.getElementById('kahoot-game-name')?.value?.trim();
+            const groupId = document.getElementById('kahoot-game-group-id')?.value || '';
             if (!name) { alert('يرجى كتابة اسم اللعبة أولاً في الحقل بالأعلى.'); return; }
             if (kahootQuestions.length === 0) { alert('لا توجد أسئلة لحفظها في البنك.'); return; }
             for(let i=0; i<kahootQuestions.length; i++) {
                 if (!kahootQuestions[i].q) { alert(`يرجى كتابة نص السؤال رقم ${i+1}`); return; }
             }
             const bank = getGameBank();
+            const currentUser = JSON.parse(localStorage.getItem('numi_session_user') || '{}');
             bank.push({
                 id: 'game_' + Date.now(),
                 name,
+                groupId,
                 date: new Date().toLocaleDateString('ar-EG'),
+                createdBy: currentUser.id,
                 questions: JSON.parse(JSON.stringify(kahootQuestions))
             });
             await saveDB();
@@ -5501,9 +5570,15 @@
             const container = document.getElementById('game-bank-list');
             if (!container) return;
             const bank = getGameBank();
-            const filtered = filter
-                ? bank.filter(g => g.name.toLowerCase().includes(filter.toLowerCase()))
-                : bank;
+            
+            const currentUser = JSON.parse(localStorage.getItem('numi_session_user') || '{}');
+            const canManageAll = currentUser.permissions && (currentUser.permissions.manage_all_groups || currentUser.permissions.manage_admins || Object.keys(currentUser.permissions).length === 0);
+
+            const filtered = bank.filter(g => {
+                if (!canManageAll && g.createdBy !== currentUser.id && !(currentUser.permissions?.allowed_groups || []).includes(g.groupId)) return false;
+                if (filter && !g.name.toLowerCase().includes(filter.toLowerCase())) return false;
+                return true;
+            });
 
             if (filtered.length === 0) {
                 container.innerHTML = `<div style="text-align:center; padding:30px 10px; color:var(--text-muted); font-size:13px;">
@@ -5581,6 +5656,23 @@
                 try { kahootQuestions = JSON.parse(existing); } catch(e){}
             }
             
+            // Populate groups dropdown
+            const groupSelect = document.getElementById('kahoot-game-group-id');
+            if (groupSelect) {
+                groupSelect.innerHTML = '<option value="">-- لعبة عامة (خاصة بك فقط) --</option>';
+                const currentUser = JSON.parse(localStorage.getItem('numi_session_user') || '{}');
+                const canManageAll = currentUser.permissions && (currentUser.permissions.manage_all_groups || currentUser.permissions.manage_admins || Object.keys(currentUser.permissions).length === 0);
+                
+                for(let cid in db.classes) {
+                    const groups = db.classes[cid].groups || {};
+                    for(let gid in groups) {
+                        const g = groups[gid];
+                        if (!canManageAll && g.createdBy !== currentUser.id && !(currentUser.permissions?.allowed_groups || []).includes(gid)) continue;
+                        groupSelect.innerHTML += `<option value="${gid}">${db.classes[cid].name} - ${g.name}</option>`;
+                    }
+                }
+            }
+
             document.getElementById('kahootMakerModal').style.display = 'flex';
             document.getElementById('bank-search').value = '';
             renderGameBankList(); // load the bank panel
@@ -5738,12 +5830,19 @@
         function renderGameBankSection() {
             const bank = getGameBank();
             const q = (document.getElementById('gbs-search')?.value || '').toLowerCase();
-            const filtered = q ? bank.filter(g => g.name.toLowerCase().includes(q)) : bank;
+            const currentUser = JSON.parse(localStorage.getItem('numi_session_user') || '{}');
+            const canManageAll = currentUser.permissions && (currentUser.permissions.manage_all_groups || currentUser.permissions.manage_admins || Object.keys(currentUser.permissions).length === 0);
+
+            const filtered = bank.filter(g => {
+                if (!canManageAll && g.createdBy !== currentUser.id && !(currentUser.permissions?.allowed_groups || []).includes(g.groupId)) return false;
+                if (q && !g.name.toLowerCase().includes(q)) return false;
+                return true;
+            });
 
             // Update stats
             const el = n => document.getElementById(n);
-            if(el('gbs-count')) el('gbs-count').innerText = bank.length;
-            if(el('gbs-q-count')) el('gbs-q-count').innerText = bank.reduce((s, g) => s + (g.questions?.length || 0), 0);
+            if(el('gbs-count')) el('gbs-count').innerText = filtered.length;
+            if(el('gbs-q-count')) el('gbs-q-count').innerText = filtered.reduce((s, g) => s + (g.questions?.length || 0), 0);
 
             const grid = el('gbs-grid');
             if (!grid) return;
@@ -5817,6 +5916,9 @@
             document.getElementById('game-kahoot-data').value = JSON.stringify(bank[idx].questions);
             openKahootMaker();
             document.getElementById('kahoot-game-name').value = bank[idx].name;
+            if (document.getElementById('kahoot-game-group-id')) {
+                document.getElementById('kahoot-game-group-id').value = bank[idx].groupId || '';
+            }
         }
 
         async function deleteBankGame(idx) {
