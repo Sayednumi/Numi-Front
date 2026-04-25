@@ -1921,7 +1921,10 @@
                 </div>
                 <div class="form-group">
                     <label>إخفاء الدرس (لا يظهر للطلاب)</label>
-                    <label class="switch"><input type="checkbox" id="lesson-hidden"><span class="slider" style="background-color: var(--danger);"></span></label>
+                    <style>
+                        #lesson-hidden:checked + .slider { background-color: var(--danger) !important; }
+                    </style>
+                    <label class="switch"><input type="checkbox" id="lesson-hidden"><span class="slider"></span></label>
                 </div>
                 <div style="display: flex; gap: 10px; justify-content: flex-end;">
                     <button type="button" class="btn btn-danger" onclick="closeModal('lessonModal')">إلغاء</button>
