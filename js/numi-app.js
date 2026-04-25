@@ -353,6 +353,7 @@ async function loadLessonsFromBackend() {
                             const unitObj = { id: uId, title: unit.title, term, lessons: [], desc: unit.desc || '' };
                             for (const lId in (unit.lessons || {})) {
                                 const lesson = { ...unit.lessons[lId], _term: term, _unitId: uId, _unit: unit.title || '', _class: cls.name || '' };
+                                if (lesson.isHidden) continue;
                                 if (!lesson.id) lesson.id = lId;
                                 lessonsList.push(lesson);
                                 unitObj.lessons.push(lesson);
@@ -693,6 +694,7 @@ async function openLesson(id) {
                                     const unitObj = { id: uId, title: unit.title, term, lessons: [], desc: unit.desc || '' };
                                     for (const lId in (unit.lessons || {})) {
                                         const lesson = { ...unit.lessons[lId], _term: term, _unitId: uId, _unit: unit.title || '', _class: cls.name || '' };
+                                        if (lesson.isHidden) continue;
                                         if (!lesson.id) lesson.id = lId;
                                         lessonsList.push(lesson);
                                         unitObj.lessons.push(lesson);

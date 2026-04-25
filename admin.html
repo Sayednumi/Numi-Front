@@ -1919,6 +1919,10 @@
                     <label>مغلق (لغير المشتركين)</label>
                     <label class="switch"><input type="checkbox" id="lesson-locked"><span class="slider"></span></label>
                 </div>
+                <div class="form-group">
+                    <label>إخفاء الدرس (لا يظهر للطلاب)</label>
+                    <label class="switch"><input type="checkbox" id="lesson-hidden"><span class="slider" style="background-color: var(--danger);"></span></label>
+                </div>
                 <div style="display: flex; gap: 10px; justify-content: flex-end;">
                     <button type="button" class="btn btn-danger" onclick="closeModal('lessonModal')">إلغاء</button>
                     <button type="submit" class="btn">حفظ</button>
@@ -3072,12 +3076,13 @@
             const desc = document.getElementById('lesson-desc').value;
             const order = document.getElementById('lesson-order').value;
             const locked = document.getElementById('lesson-locked').checked;
+            const isHidden = document.getElementById('lesson-hidden').checked;
             
             let uObj = db.classes[cid].groups[gid].courses[csid][term].units[uid];
             if(!uObj.lessons) uObj.lessons = {};
             if(!uObj.lessons[id]) uObj.lessons[id] = { videoZone:{}, podcastZone:{}, mindscapeZone:{}, gameZone:{}, quizZone:{} };
             
-            uObj.lessons[id] = { ...uObj.lessons[id], title, desc, order, locked };
+            uObj.lessons[id] = { ...uObj.lessons[id], title, desc, order, locked, isHidden };
             saveDB(); renderLessons(); closeModal('lessonModal');
         }
         function renderLessons() {
@@ -3103,7 +3108,7 @@
                             for(let lid in lessons) {
                                 let l = lessons[lid];
                                 list.innerHTML += `<div class="item-row">
-                                    <div><strong>${l.title}</strong> <small style="color:var(--text-muted);">(ترتيب: ${l.order} | قفل: ${l.locked ? 'نعم' : 'لا'})</small></div>
+                                    <div><strong>${l.title}</strong> <small style="color:var(--text-muted);">(ترتيب: ${l.order} | قفل: ${l.locked ? 'نعم' : 'لا'} | إخفاء: <span style="color:${l.isHidden?'var(--danger)':'var(--success)'}">${l.isHidden ? 'مخفي' : 'ظاهر'}</span>)</small></div>
                                     <div class="item-actions">
                                         <button class="btn btn-sm" onclick="editLesson('${cid}','${gid}','${csid}','${tF}','${uid}','${lid}')"><i class="fas fa-edit"></i></button>
                                         <button class="btn btn-sm btn-danger" onclick="deleteLesson('${cid}','${gid}','${csid}','${tF}','${uid}','${lid}')"><i class="fas fa-trash"></i></button>
@@ -3128,6 +3133,7 @@
             document.getElementById('lesson-desc').value = l.desc;
             document.getElementById('lesson-order').value = l.order;
             document.getElementById('lesson-locked').checked = l.locked;
+            document.getElementById('lesson-hidden').checked = l.isHidden || false;
             document.getElementById('lessonModalTitle').innerText = "تعديل الدرس";
             openModal('lessonModal');
         }
