@@ -3575,26 +3575,44 @@
                 if (!Array.isArray(data)) throw new Error("تنسيق البيانات غير مدعوم.");
 
                 body.innerHTML = '';
-                if(data.length === 0) {
-                    body.innerHTML = '<tr><td colspan="6" class="text-center text-danger">لا توجد نتائج لهذا الدرس بعد.</td></tr>';
-                    return;
-                }
+                // We should get classId and groupId from the dropdowns
+                const classId = document.getElementById('report-filter-class').value;
+                const groupId = document.getElementById('report-filter-group').value;
 
                 // Group attempts by student userId
                 const studentsGroups = {};
+                
+                // Add all students from the selected group first
+                if (classId && groupId && typeof allStudents !== 'undefined') {
+                    const groupStudents = allStudents.filter(u => u.role === 'student' && u.classId === classId && u.groupId === groupId);
+                    groupStudents.forEach(stu => {
+                        studentsGroups[stu.id] = {
+                            name: stu.name,
+                            phone: stu.phone || '---',
+                            userId: stu.id,
+                            attempts: {}
+                        };
+                    });
+                }
+
                 data.forEach(att => {
                     const key = att.userId;
                     const aNum = att.attemptNum || 1; // Default to 1 for old records
                     if(!studentsGroups[key]) {
                         studentsGroups[key] = {
                             name: att.studentName,
-                            phone: att.studentPhone,
+                            phone: att.studentPhone || '---',
                             userId: att.userId,
                             attempts: {}
                         };
                     }
                     studentsGroups[key].attempts[aNum] = att;
                 });
+
+                if(Object.keys(studentsGroups).length === 0) {
+                    body.innerHTML = '<tr><td colspan="6" class="text-center text-danger">لا يوجد طلاب في هذه المجموعة أو لا توجد نتائج.</td></tr>';
+                    return;
+                }
 
                 for(let uid in studentsGroups) {
                     const s = studentsGroups[uid];
@@ -3606,7 +3624,7 @@
                             <td class="fw-700">${s.name}</td>
                             <td class="fs-sm opacity-70">${s.phone}</td>
                             <td>
-                                ${hasAttempt ? `<span class="text-primary fw-800" style="font-size:16px;">${att1.score || 'تحت الحل'}</span>` : '<span class="opacity-30">---</span>'}
+                                ${hasAttempt ? `<span class="text-primary fw-800" style="font-size:16px;">${att1.score || 'تحت الحل'}</span>` : '<span class="text-danger fw-800 opacity-80" style="font-size:14px;">لم يحل</span>'}
                             </td>
                             <td class="fs-sm opacity-70">${lastDate}</td>
                             <td style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
@@ -3617,8 +3635,8 @@
                                     <button class="btn btn-sm" style="padding:6px 12px; font-size:12px; background:linear-gradient(135deg,#f59e0b,#d97706); color:#0b1220; font-weight:700; border:none; border-radius:8px; cursor:pointer;" onclick="resetStudentQuiz('${att1.lessonId}', '${s.userId}', '${s.name}', this)" title="إعادة الاختبار">
                                         <i class="fas fa-redo"></i> إعادة الاختبار
                                     </button>
-                                ` : `<button class="btn btn-sm" style="padding:6px 12px; font-size:12px; background:rgba(245,158,11,0.15); color:#f59e0b; border:1px solid rgba(245,158,11,0.3); border-radius:8px; cursor:pointer;" disabled>
-                                    <i class="fas fa-redo"></i> لم يبدأ بعد
+                                ` : `<button class="btn btn-sm" style="padding:6px 12px; font-size:12px; background:linear-gradient(135deg,#3b82f6,#2563eb); color:white; font-weight:700; border:none; border-radius:8px; cursor:pointer;" onclick="resetStudentQuiz('${lessonId}', '${s.userId}', '${s.name}', this)" title="إتاحة الاختبار">
+                                    <i class="fas fa-unlock"></i> إتاحة الاختبار
                                 </button>`}
                             </td>
                         </tr>
