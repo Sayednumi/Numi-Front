@@ -1389,14 +1389,20 @@
                     <h2>تقارير نتائج اختبارات الدروس</h2>
                     <i class="fas fa-chart-line" style="color: var(--primary);"></i>
                 </div>
-                <div class="grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                <div class="grid" style="grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px;">
                     <div class="form-group">
                         <label>الصف الدراسي</label>
-                        <select class="form-control" id="report-filter-class" onchange="updateFilterDrop('report-filter-group', this.value)"></select>
+                        <select class="form-control" id="report-filter-class" onchange="updateFilterDrop('report-filter-group', this.value); document.getElementById('report-filter-course').innerHTML='<option value=\'\'>الكل</option>'; document.getElementById('report-filter-unit').innerHTML='<option value=\'\'>الكل</option>'; document.getElementById('report-filter-lesson').innerHTML='<option value=\'\'>اختر الدرس لعرض النتائج...</option>';"></select>
                     </div>
                     <div class="form-group">
                         <label>المجموعة</label>
-                        <select class="form-control" id="report-filter-group" onchange="updateFilterDrop('report-filter-unit', this.value, 'unit')"></select>
+                        <select class="form-control" id="report-filter-group" onchange="updateFilterDropCourse('report-filter-course', document.getElementById('report-filter-class').value, this.value); updateFilterDrop('report-filter-unit', '', 'unit'); document.getElementById('report-filter-lesson').innerHTML='<option value=\'\'>اختر الدرس لعرض النتائج...</option>';"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>المقرر</label>
+                        <select class="form-control" id="report-filter-course" onchange="updateFilterDrop('report-filter-unit', this.value, 'unit'); document.getElementById('report-filter-lesson').innerHTML='<option value=\'\'>اختر الدرس لعرض النتائج...</option>';">
+                            <option value="">الكل</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label>الوحدة</label>
@@ -2723,30 +2729,53 @@
                 const groups = db.classes[classId].groups;
                 for(let id in groups) target.innerHTML += `<option value="${id}">${groups[id].name}</option>`;
             } else if(type === 'unit') {
-                // Here classId is actually the groupId from previous drop
-                // We need the classId too, so let's find it
+                // Here classId is the courseId from previous drop. If empty, get units for all courses in group.
                 const cid = document.getElementById('report-filter-class').value;
-                if(!cid || !classId || !db.classes[cid].groups[classId]) return;
-                const grp = db.classes[cid].groups[classId];
-                for(let crid in grp.courses) {
+                const gid = document.getElementById('report-filter-group').value;
+                const courseId = classId;
+                if(!cid || !gid || !db.classes[cid].groups[gid]) return;
+                const grp = db.classes[cid].groups[gid];
+                
+                const addUnitsFromCourse = (crid) => {
+                    const course = grp.courses[crid];
+                    if (!course) return;
                     for(let t of ['term1','term2']) {
-                        const units = grp.courses[crid][t].units || {};
+                        const units = course[t] && course[t].units ? course[t].units : {};
                         for(let uid in units) target.innerHTML += `<option value="${uid}">${units[uid].title} (${t === 'term1' ? 'ت1' : 'ت2'})</option>`;
+                    }
+                };
+
+                if (courseId && grp.courses[courseId]) {
+                    addUnitsFromCourse(courseId);
+                } else {
+                    for (let crid in grp.courses) {
+                        addUnitsFromCourse(crid);
                     }
                 }
             } else if(type === 'lesson') {
                 // Here classId is the unitId
                 const cid = document.getElementById('report-filter-class').value;
                 const gid = document.getElementById('report-filter-group').value;
+                const courseId = document.getElementById('report-filter-course') ? document.getElementById('report-filter-course').value : null;
                 if(!cid || !gid) return;
                 const grp = db.classes[cid].groups[gid];
-                for(let crid in grp.courses) {
+                
+                const processCourseForLessons = (crid) => {
+                    if (!grp.courses[crid]) return;
                     for(let t of ['term1','term2']) {
-                        const units = grp.courses[crid][t].units || {};
+                        const units = grp.courses[crid][t] && grp.courses[crid][t].units ? grp.courses[crid][t].units : {};
                         if(units[classId]) {
                             const lessons = units[classId].lessons || {};
                             for(let lid in lessons) target.innerHTML += `<option value="${lid}">${lessons[lid].title}</option>`;
                         }
+                    }
+                };
+
+                if (courseId && grp.courses[courseId]) {
+                    processCourseForLessons(courseId);
+                } else {
+                    for (let crid in grp.courses) {
+                        processCourseForLessons(crid);
                     }
                 }
             }
