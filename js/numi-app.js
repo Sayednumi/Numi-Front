@@ -9,6 +9,41 @@ const SESSION_KEY = 'numi_session_user';
 const CHAT_KEY = 'numi_chat_data';
 const NOTES_KEY = 'numi_notes';
 
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.has('t')) {
+    localStorage.setItem('numi_tenant_id', urlParams.get('t'));
+}
+const currentTenantId = localStorage.getItem('numi_tenant_id') || 'main';
+
+const originalFetch = window.fetch;
+window.fetch = function() {
+    let [resource, config] = arguments;
+    if (!config) config = {};
+    if (!config.headers) config.headers = {};
+    
+    let activeTenantId = currentTenantId;
+    const userStr = localStorage.getItem(SESSION_KEY);
+    if (userStr) {
+        try {
+            const u = JSON.parse(userStr);
+            if (u && u.id) {
+                config.headers['x-user-id'] = u.id;
+                if (u.tenantId) activeTenantId = u.tenantId;
+            }
+        } catch(e) {}
+    }
+    
+    if (typeof resource === 'string' && resource.startsWith(API_URL)) {
+        try {
+            const urlObj = new URL(resource);
+            urlObj.searchParams.set('tenantId', activeTenantId);
+            resource = urlObj.toString();
+        } catch(e) {}
+    }
+    
+    return originalFetch(resource, config);
+};
+
 let currentUser = null;
 let platformDB = null;
 let lessonsList = [];
@@ -181,7 +216,7 @@ async function register() {
     try {
         const res = await fetch(`${API_URL}/auth/register`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(vals)
+            body: JSON.stringify({...vals, tenantId: currentTenantId})
         });
         const data = await res.json();
         if (data.success) {

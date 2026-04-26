@@ -4,7 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Numi Admin Dashboard</title>
-    <link rel="icon" href="logo.png">
+    <link rel="icon" href="icon-192x192.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon-192x192.png">
+    <meta name="theme-color" content="#0b1220">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -2163,8 +2169,14 @@
         // Check authentication
         const SESSION_KEY = 'numi_session_user';
         const sessionSaved = localStorage.getItem(SESSION_KEY);
-        if (!sessionSaved || JSON.parse(sessionSaved).role !== 'admin') {
+        let currentUser = null;
+        if (!sessionSaved) {
             window.location.href = 'index.html';
+        } else {
+            currentUser = JSON.parse(sessionSaved);
+            if (currentUser.role !== 'admin') {
+                window.location.href = 'index.html';
+            }
         }
 
         function logoutAdmin() {
@@ -2176,6 +2188,26 @@
         const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
             ? 'http://localhost:5000/api'
             : 'https://numi-production-7484.up.railway.app/api';
+
+        const currentTenantId = ((currentUser.permissions && currentUser.permissions.isOwner) || currentUser.id === 'admin') ? 'main' : currentUser.id;
+
+        const originalFetch = window.fetch;
+        window.fetch = function() {
+            let [resource, config] = arguments;
+            if (!config) config = {};
+            if (!config.headers) config.headers = {};
+            config.headers['x-user-id'] = currentUser.id;
+            
+            if (typeof resource === 'string' && resource.startsWith(API_URL)) {
+                try {
+                    const urlObj = new URL(resource);
+                    urlObj.searchParams.set('tenantId', currentTenantId);
+                    resource = urlObj.toString();
+                } catch(e) {}
+            }
+            return originalFetch(resource, config);
+        };
+
         let db = { classes: {} };
         let socket = null;
         try {
@@ -2253,6 +2285,15 @@
 
         // Main initialization
         window.onload = async () => {
+            // Multi-tenant check: hide Settings tab for non-owners
+            const isOwner = currentUser && ((currentUser.permissions && currentUser.permissions.isOwner) || currentUser.id === 'admin');
+            if (!isOwner) {
+                const settingsLink = document.querySelector('.menu a[data-target="settings"]');
+                if (settingsLink) {
+                    settingsLink.parentElement.style.display = 'none';
+                }
+            }
+
             await fetchDB();
             await loadStudents();
             await initHonorBoard();

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>أداة تحويل الأيقونات لـ Numi</title>
+    <style>
+        body { font-family: 'Cairo', sans-serif; text-align: center; background: #0b1220; color: white; padding: 50px; }
+        .box { background: #130f25; padding: 30px; border-radius: 15px; border: 2px dashed #6d3aee; display: inline-block; }
+        .btn { background: #6d3aee; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>أداة استخراج الأيقونات (192 و 512)</h2>
+        <p>قم باختيار الصورة التي أرفقتها في المحادثة:</p>
+        <input type="file" id="upload" accept="image/png, image/jpeg" style="margin:20px 0;">
+        <br>
+        <button class="btn" onclick="generate()">توليد وتحميل الأيقونات</button>
+    </div>
+
+    <script>
+        function resizeAndDownload(img, size, name) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            
+            // Draw centered and cropped
+            const minSide = Math.min(img.width, img.height);
+            const startX = (img.width - minSide) / 2;
+            const startY = (img.height - minSide) / 2;
+            
+            ctx.drawImage(img, startX, startY, minSide, minSide, 0, 0, size, size);
+            
+            const link = document.createElement('a');
+            link.download = name;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function generate() {
+            const file = document.getElementById('upload').files[0];
+            if (!file) return alert('الرجاء اختيار صورة أولاً');
+            
+            const img = new Image();
+            img.onload = () => {
+                resizeAndDownload(img, 512, 'icon-512x512.png');
+                setTimeout(() => resizeAndDownload(img, 192, 'icon-192x192.png'), 500);
+                alert('تم تحميل الأيقونات! قم بوضعها في مجلد المشروع.');
+            };
+            img.src = URL.createObjectURL(file);
+        }
+    </script>
+</body>
+</html>
