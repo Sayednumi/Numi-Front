@@ -708,13 +708,32 @@
 
 </head>
 <body>
-
-    <!-- Sidebar -->
+    <div id="super-admin-return-banner" style="display:none; background:var(--warning); color:#000; text-align:center; padding:10px; font-weight:bold; z-index:10000; position:relative;">
+        أنت الآن تستعرض المنصة كمعلم. <button onclick="returnToSuperAdmin()" style="background:#000; color:#fff; border:none; padding:5px 15px; border-radius:5px; cursor:pointer; margin-right:15px;">العودة لحساب المدير العام</button>
+    </div>
+    
+    <script>
+        function returnToSuperAdmin() {
+            const SUPER_ADMIN_KEY = 'numi_super_admin_backup';
+            const backup = localStorage.getItem(SUPER_ADMIN_KEY);
+            if (backup) {
+                localStorage.setItem('numi_session_user', backup);
+                localStorage.removeItem(SUPER_ADMIN_KEY);
+                window.location.reload();
+            }
+        }
+        
+        if (localStorage.getItem('numi_super_admin_backup')) {
+            document.addEventListener('DOMContentLoaded', () => {
+                document.getElementById('super-admin-return-banner').style.display = 'block';
+            });
+        }
+    </script>    <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <i class="fas fa-times mobile-close-btn" onclick="document.getElementById('sidebar').classList.remove('show')"></i>
         <div class="brand">Numi Platform</div>
         <ul class="menu" id="nav-menu">
-            <li><a href="#" data-target="dashboard"><i class="fas fa-home"></i> لوحة التحكم</a></li>
+            <li><a href="#" data-target="dashboard"><i class="fas fa-home"></i> لوحة المعلم</a></li>
             <li><a href="#" data-target="classes"><i class="fas fa-layer-group"></i> إدارة الصفوف</a></li>
             <li><a href="#" data-target="groups"><i class="fas fa-users-rectangle"></i> إدارة المجموعات</a></li>
             <li><a href="#" data-target="courses"><i class="fas fa-book"></i> إدارة المقررات</a></li>
@@ -728,12 +747,14 @@
             <li><a href="#" data-target="quiz-zone"><i class="fas fa-question-circle"></i> Quiz Zone</a></li>
             <li><a href="#" data-target="ailesson-zone"><i class="fas fa-magic"></i> الدرس (/lesson)</a></li>
             <li><a href="#" data-target="students"><i class="fas fa-user-graduate"></i> إدارة الطلاب</a></li>
+            <li id="nav-platform-management" style="display:none; margin-top:15px; border-top:1px solid rgba(255,255,255,0.05); padding-top:15px;">
+                <a href="#" data-target="platform-management" onclick="loadPlatformManagement()"><i class="fas fa-server" style="color:var(--danger)"></i> إدارة المنصة</a>
+            </li>
             <li><a href="#" data-target="reports" onclick="initReports()"><i class="fas fa-chart-bar"></i> التقارير والنتائج</a></li>
             <li><a href="#" data-target="question-bank" onclick="renderQuestionBank()"><i class="fas fa-database"></i> بنك الأسئلة</a></li>
             <li><a href="#" data-target="chat" onclick="renderChatHierarchy()"><i class="fas fa-comments"></i> الدردشة</a></li>
             <li><a href="#" data-target="teacher-platforms" onclick="loadTeacherPlatforms()"><i class="fas fa-th-large"></i> المنصات المساعدة</a></li>
             <li><a href="#" data-target="live-classes" onclick="loadLiveClasses()"><i class="fas fa-video"></i> الحصص المباشرة</a></li>
-            <li><a href="#" data-target="settings"><i class="fas fa-cog"></i> الإعدادات</a></li>
             <li style="margin-top: auto; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;">
                 <a href="#" onclick="logoutAdmin()" style="color: var(--danger);">
                     <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
@@ -1597,10 +1618,61 @@
             </div>
         </div>
 
-        <div id="settings" class="section">
-            <div class="card">
+        <!-- Platform Management Section -->
+        <div id="platform-management" class="section">
+            
+            <div class="grid" style="margin-bottom: 20px;">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>إجمالي المعلمين</h3>
+                        <i class="fas fa-chalkboard-teacher fa-2x" style="color: var(--primary);"></i>
+                    </div>
+                    <h2 id="stats-total-teachers">0</h2>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3>إجمالي الطلاب بالمنصة</h3>
+                        <i class="fas fa-user-graduate fa-2x" style="color: var(--success);"></i>
+                    </div>
+                    <h2 id="stats-total-students">0</h2>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3>إجمالي المجموعات</h3>
+                        <i class="fas fa-users-rectangle fa-2x" style="color: var(--accent);"></i>
+                    </div>
+                    <h2 id="stats-total-groups">0</h2>
+                </div>
+            </div>
+
+            <!-- Teachers Management -->
+            <div class="card" style="margin-bottom:20px;">
                 <div class="card-header">
-                    <h2>إدارة مديري المنصة</h2>
+                    <h2><i class="fas fa-chalkboard-teacher" style="color:var(--primary); margin-left:10px;"></i> إدارة المعلمين</h2>
+                    <button class="btn" onclick="openTeacherModal()"><i class="fas fa-plus"></i> إضافة معلم جديد</button>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>اسم المعلم</th>
+                                <th>رقم الهاتف</th>
+                                <th>عدد الطلاب</th>
+                                <th>الحالة</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teachers-list">
+                            <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:30px;">جارٍ التحميل...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Admins Management -->
+            <div class="card" style="margin-bottom:20px;">
+                <div class="card-header">
+                    <h2><i class="fas fa-user-shield" style="color:var(--danger); margin-left:10px;"></i> إدارة مديري المنصة والصلاحيات</h2>
                     <button class="btn" onclick="openAddAdminModal()"><i class="fas fa-user-plus"></i> إضافة مدير جديد</button>
                 </div>
                 <div style="overflow-x: auto;">
@@ -1615,6 +1687,30 @@
                             </tr>
                         </thead>
                         <tbody id="admins-list">
+                            <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:30px;">جارٍ التحميل...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Audit Logs -->
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-history" style="color:var(--accent); margin-left:10px;"></i> سجل نشاطات المنصة (Audit Logs)</h2>
+                    <button class="btn" onclick="loadAuditLogs()"><i class="fas fa-sync"></i> تحديث السجل</button>
+                </div>
+                <div style="overflow-x: auto; max-height: 400px; overflow-y: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>التاريخ والوقت</th>
+                                <th>المدير/المسؤول</th>
+                                <th>نوع الإجراء</th>
+                                <th>الهدف</th>
+                                <th>تفاصيل إضافية</th>
+                            </tr>
+                        </thead>
+                        <tbody id="audit-logs-list">
                             <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:30px;">جارٍ التحميل...</td></tr>
                         </tbody>
                     </table>
@@ -2082,6 +2178,7 @@
                             <label><input type="checkbox" class="perm-chk" value="view_dashboard" checked> استعراض إحصائيات المنصة</label>
                             <label><input type="checkbox" class="perm-chk" value="view_reports" checked> رؤية درجات وتقارير الاختبارات</label>
                             <label><input type="checkbox" class="perm-chk" value="reset_quiz" checked> التحكم في إعادة اختبار الطلاب</label>
+                            <label><input type="checkbox" class="perm-chk" value="manage_teachers"> إدارة المعلمين (إضافة/تعديل معلم)</label>
                             <label><input type="checkbox" class="perm-chk" value="manage_admins"> إدارة المشرفين (خطورة عالية)</label>
                         </div>
                     </div>
@@ -2097,6 +2194,137 @@
                     <button type="submit" class="btn"><i class="fas fa-user-shield"></i> إنشاء حساب مدير</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Teacher Modal -->
+    <div class="modal" id="teacherModal">
+        <div class="modal-content" style="max-width:500px;">
+            <h2 style="margin-bottom: 20px;" id="teacherModalTitle">إضافة معلم جديد</h2>
+            <form id="teacherForm" onsubmit="handleTeacherSubmit(event)">
+                <input type="hidden" id="teacher-id">
+                <div class="form-group">
+                    <label>اسم المعلم</label>
+                    <input type="text" id="teacher-name" class="form-control" required placeholder="مثال: أ. محمد أحمد">
+                </div>
+                <div class="form-group">
+                    <label>رقم الهاتف (يستخدم للدخول)</label>
+                    <input type="text" id="teacher-phone" class="form-control" required maxlength="11">
+                </div>
+                <div class="form-group">
+                    <label>كلمة المرور</label>
+                    <input type="text" id="teacher-password" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>تفعيل حساب المعلم</label>
+                    <label class="switch"><input type="checkbox" id="teacher-active" checked><span class="slider"></span></label>
+                </div>
+                <div class="form-group" style="margin-top:15px; max-height: 400px; overflow-y: auto;">
+                    <label>صلاحيات المعلم (ما يمكنه فعله في منصته):</label>
+                    
+                    <div style="margin-top:10px; padding:15px; background:rgba(255,255,255,0.03); border-radius:8px; border:1px solid rgba(255,255,255,0.05); margin-bottom:10px;">
+                        <strong style="color:var(--primary); display:block; margin-bottom:8px;"><i class="fas fa-user-graduate"></i> إدارة الطلاب والحسابات</strong>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px;">
+                            <label><input type="checkbox" class="perm-chk-teacher" value="view_students" checked> استعراض بيانات الطلاب</label>
+                            <label><input type="checkbox" class="perm-chk-teacher" value="add_student" checked> إضافة طلاب جدد</label>
+                            <label><input type="checkbox" class="perm-chk-teacher" value="edit_student" checked> تعديل الطلاب وكلمات السر</label>
+                            <label><input type="checkbox" class="perm-chk-teacher" value="delete_student" checked> حذف/حظر الطلاب</label>
+                        </div>
+                    </div>
+
+                    <div style="padding:15px; background:rgba(255,255,255,0.03); border-radius:8px; border:1px solid rgba(255,255,255,0.05); margin-bottom:10px;">
+                        <strong style="color:var(--accent); display:block; margin-bottom:8px;"><i class="fas fa-book-open"></i> إدارة المحتوى الدراسي</strong>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px;">
+                            <label><input type="checkbox" class="perm-chk-teacher" value="view_structure" checked> رؤية الصفوف والمقررات</label>
+                            <label><input type="checkbox" class="perm-chk-teacher" value="manage_structure" checked> إنشاء/حذف صفوف ومقررات</label>
+                            <label><input type="checkbox" class="perm-chk-teacher" value="manage_lessons" checked> بناء وإدارة وتعديل الدروس</label>
+                        </div>
+                    </div>
+
+                    <div style="padding:15px; background:rgba(255,255,255,0.03); border-radius:8px; border:1px solid rgba(255,255,255,0.05); margin-bottom:10px;">
+                        <strong style="color:#f59e0b; display:block; margin-bottom:8px;"><i class="fas fa-video"></i> التفاعل المباشر والتواصل</strong>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px;">
+                            <label><input type="checkbox" class="perm-chk-teacher" value="view_live" checked> الإطلاع على الحصص المباشرة</label>
+                            <label><input type="checkbox" class="perm-chk-teacher" value="manage_live" checked> جدولة وحذف الحصص المباشرة</label>
+                            <label><input type="checkbox" class="perm-chk-teacher" value="view_chat" checked> الإطلاع على رسائل المجموعات</label>
+                            <label><input type="checkbox" class="perm-chk-teacher" value="send_chat" checked> إرسال رسائل في المجموعات</label>
+                        </div>
+                    </div>
+
+                    <div style="padding:15px; background:rgba(255,255,255,0.03); border-radius:8px; border:1px solid rgba(255,255,255,0.05); margin-bottom:10px;">
+                        <strong style="color:var(--success); display:block; margin-bottom:8px;"><i class="fas fa-brain"></i> بنك الأسئلة والذكاء الاصطناعي</strong>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px;">
+                            <label><input type="checkbox" class="perm-chk-teacher" value="view_qbank" checked> الإطلاع على بنك الأسئلة</label>
+                            <label><input type="checkbox" class="perm-chk-teacher" value="generate_ai" checked> توليد أسئلة بالذكاء الاصطناعي</label>
+                            <label><input type="checkbox" class="perm-chk-teacher" value="manage_qbank" checked> إضافة وتعديل أسئلة البنك</label>
+                        </div>
+                    </div>
+
+                    <div style="padding:15px; background:rgba(255,255,255,0.03); border-radius:8px; border:1px solid rgba(255,255,255,0.05); margin-bottom:10px;">
+                        <strong style="color:#ec4899; display:block; margin-bottom:8px;"><i class="fas fa-gamepad"></i> الأنشطة التفاعلية وبنك الألعاب</strong>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px;">
+                            <label><input type="checkbox" class="perm-chk-teacher" value="view_games" checked> الإطلاع على بنك الألعاب (Kahoot)</label>
+                            <label><input type="checkbox" class="perm-chk-teacher" value="manage_games" checked> إضافة وتحكم في ألعاب البنك</label>
+                            <label><input type="checkbox" class="perm-chk-teacher" value="view_teacher_platforms" checked> رؤية منصات المعلم الخارجية</label>
+                            <label><input type="checkbox" class="perm-chk-teacher" value="manage_teacher_platforms" checked> إضافة/تعديل مشاركات المنصات</label>
+                        </div>
+                    </div>
+
+                    <div style="padding:15px; background:rgba(255,255,255,0.03); border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
+                        <strong style="color:var(--danger); display:block; margin-bottom:8px;"><i class="fas fa-shield-alt"></i> التقارير</strong>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px;">
+                            <label><input type="checkbox" class="perm-chk-teacher" value="view_dashboard" checked> استعراض إحصائيات المنصة</label>
+                            <label><input type="checkbox" class="perm-chk-teacher" value="view_reports" checked> رؤية درجات وتقارير الاختبارات</label>
+                            <label><input type="checkbox" class="perm-chk-teacher" value="reset_quiz" checked> التحكم في إعادة اختبار الطلاب</label>
+                        </div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top:20px;">
+                    <button type="button" class="btn btn-danger" onclick="closeModal('teacherModal')">إلغاء</button>
+                    <button type="submit" class="btn"><i class="fas fa-save"></i> حفظ بيانات المعلم</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Teacher Details Modal -->
+    <div class="modal" id="teacherDetailsModal">
+        <div class="modal-content" style="max-width:800px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 id="td-name"><i class="fas fa-chalkboard-teacher" style="color:var(--primary); margin-left:10px;"></i> تفاصيل المعلم</h2>
+                <button class="btn btn-sm btn-danger" onclick="closeModal('teacherDetailsModal')"><i class="fas fa-times"></i> إغلاق</button>
+            </div>
+            
+            <div class="grid" style="grid-template-columns:1fr 1fr 1fr 1fr; gap:15px; margin-bottom:20px;">
+                <div class="card" style="background:rgba(255,255,255,0.02); padding:15px; text-align:center;">
+                    <div style="color:var(--text-muted); font-size:12px;">عدد الطلاب</div>
+                    <div id="td-students-count" style="font-weight:800; font-size:24px; color:var(--success); margin-top:8px;">0</div>
+                </div>
+                <div class="card" style="background:rgba(255,255,255,0.02); padding:15px; text-align:center;">
+                    <div style="color:var(--text-muted); font-size:12px;">المجموعات</div>
+                    <div id="td-groups-count" style="font-weight:800; font-size:24px; color:var(--primary); margin-top:8px;">0</div>
+                </div>
+                <div class="card" style="background:rgba(255,255,255,0.02); padding:15px; text-align:center;">
+                    <div style="color:var(--text-muted); font-size:12px;">الدروس المرفوعة</div>
+                    <div id="td-lessons-count" style="font-weight:800; font-size:24px; color:var(--accent); margin-top:8px;">0</div>
+                </div>
+                <div class="card" style="background:rgba(255,255,255,0.02); padding:15px; text-align:center;">
+                    <div style="color:var(--text-muted); font-size:12px;">الحصص المباشرة</div>
+                    <div id="td-live-count" style="font-weight:800; font-size:24px; color:#f59e0b; margin-top:8px;">0</div>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-bottom:20px;">
+                <button class="btn" style="flex:1;" onclick="viewTeacherStudents()"><i class="fas fa-users"></i> عرض طلاب المعلم</button>
+                <button class="btn btn-warning" style="flex:1;" onclick="loginAsTeacher()"><i class="fas fa-sign-in-alt"></i> الدخول كمعلم (View as Teacher)</button>
+            </div>
+            
+            <div id="td-schedule-area">
+                <h3 style="margin-bottom:10px;"><i class="fas fa-calendar-alt"></i> جدول الحصص القادمة للمعلم</h3>
+                <div id="td-schedule-list" style="max-height:200px; overflow-y:auto; background:rgba(0,0,0,0.2); padding:10px; border-radius:8px;">
+                    <!-- Filled dynamically -->
+                </div>
+            </div>
         </div>
     </div>
 
@@ -2177,6 +2405,14 @@
             if (currentUser.role !== 'admin') {
                 window.location.href = 'index.html';
             }
+        }
+        
+        function hasPerm(permName) {
+            if (!currentUser) return false;
+            const isOwner = currentUser && ((currentUser.permissions && currentUser.permissions.isOwner) || currentUser.id === 'admin');
+            if (isOwner) return true;
+            if (!currentUser.permissions) return false;
+            return !!currentUser.permissions[permName];
         }
 
         function logoutAdmin() {
@@ -2285,16 +2521,52 @@
 
         // Main initialization
         window.onload = async () => {
-            // Multi-tenant check: hide Settings tab for non-owners
+            // Platform Management Visibility
             const isOwner = currentUser && ((currentUser.permissions && currentUser.permissions.isOwner) || currentUser.id === 'admin');
-            if (!isOwner) {
-                const settingsLink = document.querySelector('.menu a[data-target="settings"]');
-                if (settingsLink) {
-                    settingsLink.parentElement.style.display = 'none';
-                }
+            const hasPlatformManage = isOwner || (currentUser && currentUser.permissions && (currentUser.permissions.manage_teachers || currentUser.permissions.manage_admins));
+            
+            if (hasPlatformManage) {
+                const pmLink = document.getElementById('nav-platform-management');
+                if (pmLink) pmLink.style.display = 'block';
             }
 
             await fetchDB();
+            
+            // Enforce permissions for frontend elements
+            if (!isOwner) {
+                const perms = currentUser.permissions || {};
+                const hideLink = (target) => {
+                    const el = document.querySelector(`.menu a[data-target="${target}"]`);
+                    if(el) el.parentElement.style.display = 'none';
+                };
+                if (!perms.view_dashboard) hideLink('dashboard');
+                if (!perms.view_structure && !perms.manage_structure) {
+                    hideLink('classes'); hideLink('groups'); hideLink('courses'); hideLink('units'); hideLink('lessons');
+                }
+                if (!perms.manage_lessons) hideLink('ailesson-zone');
+                if (!perms.view_students) hideLink('students');
+                if (!perms.view_reports) hideLink('reports');
+                if (!perms.view_qbank) hideLink('question-bank');
+                if (!perms.view_chat) hideLink('chat');
+                if (!perms.view_live) hideLink('live');
+                if (!perms.view_games) hideLink('games');
+                
+                // Hide specific buttons based on edit permissions
+                if (!perms.add_student) {
+                    const btn = document.querySelector('button[onclick="openStudentModal()"]');
+                    if (btn) btn.style.display = 'none';
+                }
+                if (!perms.manage_structure) {
+                    const structBtns = document.querySelectorAll('#classes .card-header .btn, #groups .card-header .btn, #courses .card-header .btn, #units .card-header .btn');
+                    structBtns.forEach(btn => btn.style.display = 'none');
+                }
+                if (!perms.manage_lessons) {
+                    const lessonBtns = document.querySelectorAll('#ailesson-zone .card-header .btn'); // using #ailesson-zone which is the lesson section
+                    lessonBtns.forEach(btn => btn.style.display = 'none');
+                }
+
+            }
+
             await loadStudents();
             await initHonorBoard();
             updateStats();
@@ -2305,7 +2577,61 @@
             renderUnits();
             renderLessons();
             buildNavLessonSelectors();
+            if (hasPlatformManage) {
+                loadTeachers();
+            }
         };
+
+        // ── Platform Management & Audit Logs ─────────────────────────────────
+        async function logAudit(action, target, details = '') {
+            try {
+                await fetch(`${API_URL}/audit-logs`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        adminId: currentUser.id,
+                        adminName: currentUser.name || 'المدير',
+                        action,
+                        target,
+                        details
+                    })
+                });
+            } catch(e) {}
+        }
+
+        async function loadAuditLogs() {
+            try {
+                const res = await fetch(`${API_URL}/audit-logs`);
+                const data = await res.json();
+                const tbody = document.getElementById('audit-logs-list');
+                if(data.success && data.logs.length) {
+                    tbody.innerHTML = data.logs.map(log => `
+                        <tr>
+                            <td style="direction:ltr; text-align:right;">${new Date(log.createdAt).toLocaleString('ar-EG')}</td>
+                            <td>${log.adminName}</td>
+                            <td><span style="background:var(--accent); color:#000; padding:2px 8px; border-radius:4px; font-size:12px; font-weight:bold;">${log.action}</span></td>
+                            <td>${log.target}</td>
+                            <td style="color:var(--text-muted); font-size:12px;">${log.details || '-'}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:30px;">لا توجد سجلات بعد</td></tr>`;
+                }
+            } catch(e) {
+                document.getElementById('audit-logs-list').innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--danger);padding:30px;">فشل تحميل السجلات</td></tr>`;
+            }
+        }
+
+        function loadPlatformManagement() {
+            loadTeachers();
+            loadAuditLogs();
+            document.getElementById('stats-total-students').innerText = allStudents.filter(u=>u.role==='student').length;
+            let totalG = 0;
+            for(let c in db.classes) {
+                totalG += Object.keys(db.classes[c].groups || {}).length;
+            }
+            document.getElementById('stats-total-groups').innerText = totalG;
+        }
 
         // ── Students from MongoDB ────────────────────────────────────────────
         let allStudents = [];
@@ -2358,7 +2684,7 @@
                             <td><div style="display:flex; flex-wrap:wrap; gap:4px;">${permsHtml}</div></td>
                             <td>
                                 <button class="btn btn-sm" style="background:#3b82f6; color:white;" onclick="editAdmin('${u.id}')" title="تعديل"><i class="fas fa-edit"></i></button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteStudent('${u.id}','${u.name}')" title="حذف"><i class="fas fa-trash"></i></button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteAdmin('${u.id}','${u.name}')" title="حذف"><i class="fas fa-trash"></i></button>
                             </td>
                         </tr>
                         `;
@@ -2418,12 +2744,12 @@
                                 <button class="btn btn-sm" onclick="resetDevice('${u.id}')" title="إعادة تعيين الجهاز">
                                     <i class="fas fa-mobile-alt"></i>
                                 </button>
-                                <button class="btn btn-sm" style="background:#3b82f6; color:white;" onclick="editStudent('${u.id}')" title="تعديل البيانات">
+                                ${hasPerm('edit_student') ? `<button class="btn btn-sm" style="background:#3b82f6; color:white;" onclick="editStudent('${u.id}')" title="تعديل البيانات">
                                     <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteStudent('${u.id}','${u.name}')" title="حذف">
+                                </button>` : ''}
+                                ${hasPerm('delete_student') ? `<button class="btn btn-sm btn-danger" onclick="deleteStudent('${u.id}','${u.name}')" title="حذف">
                                     <i class="fas fa-trash"></i>
-                                </button>
+                                </button>` : ''}
                             </div>
                         </td>
                     </tr>`;
@@ -2431,6 +2757,261 @@
             }
             const countEl = document.getElementById('students-count');
             if (countEl) countEl.textContent = `إجمالي النتائج: ${filtered.length} طالب`;
+        }
+
+        // ── Teachers Logic ────────────────────────────────────────────
+        let allTeachers = [];
+        let currentViewingTeacherId = null;
+
+        async function loadTeachers() {
+            try {
+                const res = await fetch(`${API_URL}/users`);
+                if (res.ok) {
+                    const allUsers = await res.json();
+                    allTeachers = allUsers.filter(u => u.role === 'teacher');
+                    renderTeachersList();
+                }
+            } catch (err) {
+                console.error('Failed to load teachers', err);
+            }
+        }
+
+        function renderTeachersList() {
+            const tbody = document.getElementById('teachers-list');
+            if (!tbody) return;
+            if (!allTeachers.length) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:30px;">لا يوجد معلمون مسجلون</td></tr>`;
+                return;
+            }
+            
+            tbody.innerHTML = allTeachers.map(t => {
+                const studentsCount = allStudents.filter(u => u.role === 'student' && u.tenantId === t.id).length;
+                return `
+                <tr>
+                    <td style="font-weight:700;">${t.name}</td>
+                    <td>${t.phone}</td>
+                    <td><span style="background:rgba(109,58,238,0.2); color:white; padding:4px 8px; border-radius:6px;">${studentsCount} طالب</span></td>
+                    <td>
+                        <label class="switch">
+                            <input type="checkbox" ${t.status === 'active' ? 'checked' : ''} onchange="toggleTeacherStatus('${t.id}', '${t.status}')">
+                            <span class="slider"></span>
+                        </label>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm" style="background:var(--success); color:white;" onclick="viewTeacherDetails('${t.id}')"><i class="fas fa-eye"></i> تفاصيل</button>
+                        <button class="btn btn-sm" style="background:#3b82f6; color:white;" onclick="openTeacherModal('${t.id}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteTeacher('${t.id}', '${t.name}')"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function openTeacherModal(id = null) {
+            document.getElementById('teacherModalTitle').innerText = id ? 'تعديل بيانات المعلم' : 'إضافة معلم جديد';
+            
+            // Reset all checkboxes first
+            document.querySelectorAll('.perm-chk-teacher').forEach(chk => chk.checked = true);
+            
+            if (id) {
+                const t = allTeachers.find(x => x.id === id);
+                if (t) {
+                    document.getElementById('teacher-id').value = t.id;
+                    document.getElementById('teacher-name').value = t.name;
+                    document.getElementById('teacher-phone').value = t.phone;
+                    document.getElementById('teacher-password').value = t.password;
+                    document.getElementById('teacher-active').checked = t.status === 'active';
+                    
+                    if (t.permissions) {
+                        document.querySelectorAll('.perm-chk-teacher').forEach(chk => {
+                            chk.checked = !!t.permissions[chk.value];
+                        });
+                    }
+                }
+            } else {
+                document.getElementById('teacherForm').reset();
+                document.getElementById('teacher-id').value = '';
+                document.getElementById('teacher-active').checked = true;
+                document.querySelectorAll('.perm-chk-teacher').forEach(chk => chk.checked = true);
+            }
+            openModal('teacherModal');
+        }
+
+        async function handleTeacherSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('teacher-id').value;
+            let permissions = {};
+            document.querySelectorAll('.perm-chk-teacher:checked').forEach(chk => {
+                permissions[chk.value] = true;
+            });
+            
+            const payload = {
+                name: document.getElementById('teacher-name').value,
+                phone: document.getElementById('teacher-phone').value,
+                password: document.getElementById('teacher-password').value,
+                status: document.getElementById('teacher-active').checked ? 'active' : 'inactive',
+                role: 'teacher',
+                permissions: permissions
+            };
+            
+            try {
+                const url = id ? `${API_URL}/users/${id}` : `${API_URL}/users`;
+                const method = id ? 'PUT' : 'POST';
+                const res = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+                const data = await res.json();
+                if (!data.success) throw new Error(data.msg || 'فشل الحفظ');
+                await logAudit(id ? 'edit' : 'create', payload.name, `قام بـ${id ? 'تعديل بيانات' : 'إضافة'} معلم`);
+                closeModal('teacherModal');
+                await loadTeachers();
+                showNotif('✅ تم حفظ بيانات المعلم بنجاح', 'success');
+            } catch (err) { alert(err.message); }
+        }
+
+        async function toggleTeacherStatus(id, currentStatus) {
+            const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+            try {
+                const res = await fetch(`${API_URL}/users/${id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ status: newStatus }) });
+                if(!res.ok) throw new Error('فشل التحديث');
+                await loadTeachers();
+            } catch(e) { alert('حدث خطأ: ' + e.message); }
+        }
+
+        async function deleteTeacher(id, name) {
+            if (!confirm(`هل تريد حذف المعلم "${name}" نهائيًا؟ سيتم حذف حساب المعلم، لكن بيانات الطلاب ستبقى مسجلة.`)) return;
+            try {
+                await fetch(`${API_URL}/users/${id}`, { method: 'DELETE' });
+                await logAudit('delete', name, 'قام بحذف المعلم من المنصة');
+                await loadTeachers();
+                showNotif('🗑️ تم حذف المعلم', 'success');
+            } catch(e) { alert('حدث خطأ: ' + e.message); }
+        }
+
+        async function viewTeacherDetails(tId) {
+            const t = allTeachers.find(x => x.id === tId);
+            if (!t) return;
+            currentViewingTeacherId = tId;
+            document.getElementById('td-name').innerHTML = `<i class="fas fa-chalkboard-teacher" style="color:var(--primary); margin-left:10px;"></i> تفاصيل المعلم: ${t.name}`;
+            
+            const studentsCount = allStudents.filter(u => u.role === 'student' && u.tenantId === tId).length;
+            document.getElementById('td-students-count').innerText = studentsCount;
+            
+            document.getElementById('td-groups-count').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            document.getElementById('td-lessons-count').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            document.getElementById('td-schedule-list').innerHTML = '<div style="text-align:center; padding:10px;"><i class="fas fa-spinner fa-spin"></i> جارٍ الجلب...</div>';
+            openModal('teacherDetailsModal');
+
+            try {
+                // Fetch teacher's platform data
+                const res = await fetch(`${API_URL}/platform-data?tenantId=${tId}`);
+                let gCount = 0;
+                let lCount = 0;
+                if (res.ok) {
+                    const tDb = await res.json();
+                    if (tDb.classes) {
+                        for (let c of Object.values(tDb.classes)) {
+                            if (c.groups) {
+                                gCount += Object.keys(c.groups).length;
+                                for (let g of Object.values(c.groups)) {
+                                    if (g.courses) {
+                                        for (let cs of Object.values(g.courses)) {
+                                            ['term1', 'term2'].forEach(term => {
+                                                if (cs[term] && cs[term].units) {
+                                                    for (let u of Object.values(cs[term].units)) {
+                                                        if (u.lessons) lCount += Object.keys(u.lessons).length;
+                                                    }
+                                                }
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                document.getElementById('td-groups-count').innerText = gCount;
+                document.getElementById('td-lessons-count').innerText = lCount;
+
+                // Fetch teacher's live classes
+                const liveRes = await fetch(`${API_URL}/live-classes?teacherId=${tId}`);
+                let liveClassesHtml = '<div style="text-align:center; color:var(--text-muted); padding:10px;">لا يوجد حصص مجدولة</div>';
+                let liveCount = 0;
+                if (liveRes.ok) {
+                    const lData = await liveRes.json();
+                    if (lData.success && lData.liveClasses.length > 0) {
+                        liveCount = lData.liveClasses.length;
+                        liveClassesHtml = lData.liveClasses.map(lc => `
+                            <div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid rgba(255,255,255,0.05);">
+                                <div><strong style="color:var(--primary);">${lc.title}</strong> <span style="font-size:11px; color:var(--text-muted);">${lc.date} ${lc.time}</span></div>
+                                <div style="font-size:12px; color:${lc.status==='finished'?'var(--success)':'#f59e0b'};">${lc.status==='finished'?'انتهت':'مجدولة'}</div>
+                            </div>
+                        `).join('');
+                    }
+                }
+                document.getElementById('td-live-count').innerText = liveCount;
+                document.getElementById('td-schedule-list').innerHTML = liveClassesHtml;
+                
+            } catch (err) {
+                console.error(err);
+                document.getElementById('td-schedule-list').innerHTML = '<div style="color:var(--danger); text-align:center;">حدث خطأ أثناء جلب البيانات</div>';
+            }
+        }
+
+        function viewTeacherStudents() {
+            closeModal('teacherDetailsModal');
+            showSection('students');
+            document.getElementById('student-search').value = '';
+            document.getElementById('student-filter-status').value = '';
+            // Filter view to only show this teacher's students
+            const tbody = document.getElementById('students-list');
+            const filtered = allStudents.filter(u => u.role === 'student' && u.tenantId === currentViewingTeacherId);
+            document.getElementById('students-count').textContent = `طلاب المعلم: ${filtered.length} طالب`;
+            // Temporary overwrite renderStudents for this specific view
+            if (!filtered.length) {
+                tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--text-muted);padding:30px;">لا يوجد طلاب للمعلم المختار</td></tr>`;
+                return;
+            }
+            if (tbody) {
+                tbody.innerHTML = filtered.map(u => {
+                    const avatarHtml = u.avatar
+                        ? `<img src="${u.avatar}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid var(--primary-light);">` 
+                        : `<div style="width:40px;height:40px;border-radius:50%;background:var(--bg-elevated);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;border:2px solid var(--border);color:var(--text-muted);">${(u.name || '?').charAt(0)}</div>`;
+                    return `
+                    <tr>
+                        <td><input type="checkbox" class="student-select" value="${u.id}"></td>
+                        <td style="text-align:center;">${avatarHtml}</td>
+                        <td>${u.name || '-'}</td>
+                        <td><code style="color:var(--primary);">${u.password || '---'}</code></td>
+                        <td>${u.phone || '-'}</td>
+                        <td style="color:var(--text-secondary);">${u.parentPhone || '-'}</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>${u.xp || 0} ⭐</td>
+                        <td><span style="font-size:13px; color:${u.status === 'active' ? 'var(--success)' : '#f39c12'}; font-weight:800;">${u.status === 'active' ? 'نشط' : 'غير نشط'}</span></td>
+                        <td>-</td>
+                        <td>
+                            ${hasPerm('edit_student') ? `<button class="btn btn-sm" style="background:#3b82f6; color:white;" onclick="editStudent('${u.id}')"><i class="fas fa-edit"></i></button>` : ''}
+                        </td>
+                    </tr>`;
+                }).join('');
+            }
+        }
+
+        async function loginAsTeacher() {
+            if (!currentViewingTeacherId) return;
+            const t = allTeachers.find(x => x.id === currentViewingTeacherId);
+            if (!t) return;
+            if (!confirm(`هل أنت متأكد أنك تريد الدخول كمعلم "${t.name}"؟ ستتمكن من إدارة منصته كأنك هو.`)) return;
+            
+            await logAudit('impersonate', t.name, 'قام بتسجيل الدخول كمعلم');
+
+            // Backup super admin session?
+            const SUPER_ADMIN_KEY = 'numi_super_admin_backup';
+            localStorage.setItem(SUPER_ADMIN_KEY, JSON.stringify(currentUser));
+            
+            const teacherSession = { ...t, role: 'admin', permissions: {} }; // Give teacher session privileges of their own platform
+            localStorage.setItem(SESSION_KEY, JSON.stringify(teacherSession));
+            
+            window.location.reload();
         }
 
         async function toggleStudentStatus(id, currentStatus) {
@@ -2717,6 +3298,7 @@
                 const res = await fetch(url, { method: method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
                 const data = await res.json();
                 if (data.success) { 
+                    await logAudit(editId ? 'edit' : 'create', name, `قام بـ${editId ? 'تعديل بيانات' : 'إضافة'} مدير للمنصة`);
                     closeModal('adminAccountModal'); 
                     await loadStudents(); // refresh all
                     alert(`✅ تم ${editId ? 'تحديث بيانات' : 'إضافة'} المدير بنجاح.`);
@@ -2724,6 +3306,16 @@
                     alert('❌ فشل العملية: ' + (data.msg || data.error));
                 }
             } catch(e) { alert('❌ حدث خطأ في الاتصال بالخادم: ' + e.message); }
+        }
+
+        async function deleteAdmin(id, name) {
+            if (!confirm(`هل تريد حذف المدير "${name}" نهائيًا من المنصة؟`)) return;
+            try {
+                await fetch(`${API_URL}/users/${id}`, { method: 'DELETE' });
+                await logAudit('delete', name, 'قام بحذف مدير من المنصة');
+                await loadStudents();
+                showNotif('🗑️ تم حذف المدير بنجاح', 'success');
+            } catch(e) { alert('حدث خطأ: ' + e.message); }
         }
 
         async function updateStats() {
@@ -2934,8 +3526,8 @@
                 list.innerHTML += `<div class="item-row">
                     <div><strong>${db.classes[id].name}</strong></div>
                     <div class="item-actions">
-                        <button class="btn btn-sm" onclick="editClass('${id}')"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteClass('${id}')"><i class="fas fa-trash"></i></button>
+                        ${hasPerm('manage_structure') ? `<button class="btn btn-sm" onclick="editClass('${id}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteClass('${id}')"><i class="fas fa-trash"></i></button>` : ''}
                     </div>
                 </div>`;
             }
@@ -2977,8 +3569,8 @@
                     list.innerHTML += `<div class="item-row">
                         <div><strong>${g.name}</strong> <small style="color:var(--text-muted);">(${db.classes[cid].name})</small></div>
                         <div class="item-actions">
-                            <button class="btn btn-sm" onclick="editGroup('${cid}','${gid}')"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteGroup('${cid}','${gid}')"><i class="fas fa-trash"></i></button>
+                            ${hasPerm('manage_structure') ? `<button class="btn btn-sm" onclick="editGroup('${cid}','${gid}')"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteGroup('${cid}','${gid}')"><i class="fas fa-trash"></i></button>` : ''}
                         </div>
                     </div>`;
                 }
@@ -3021,8 +3613,8 @@
                         list.innerHTML += `<div class="item-row">
                             <div><strong>${courses[csid].name}</strong> <small style="color:var(--text-muted);">(${groups[gid].name} - ${db.classes[cid].name})</small></div>
                             <div class="item-actions">
-                                <button class="btn btn-sm" onclick="editCourse('${cid}','${gid}','${csid}')"><i class="fas fa-edit"></i></button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteCourse('${cid}','${gid}','${csid}')"><i class="fas fa-trash"></i></button>
+                                ${hasPerm('manage_structure') ? `<button class="btn btn-sm" onclick="editCourse('${cid}','${gid}','${csid}')"><i class="fas fa-edit"></i></button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteCourse('${cid}','${gid}','${csid}')"><i class="fas fa-trash"></i></button>` : ''}
                             </div>
                         </div>`;
                     }
@@ -3081,8 +3673,8 @@
                             list.innerHTML += `<div class="item-row">
                                 <div><strong>${u.title}</strong> <small style="color:var(--text-muted);">(ترتيب: ${u.order} | قفل: ${u.locked ? 'نعم' : 'لا'})</small></div>
                                 <div class="item-actions">
-                                    <button class="btn btn-sm" onclick="editUnit('${cid}','${gid}','${csid}','${tF}','${uid}')"><i class="fas fa-edit"></i></button>
-                                    <button class="btn btn-sm btn-danger" onclick="deleteUnit('${cid}','${gid}','${csid}','${tF}','${uid}')"><i class="fas fa-trash"></i></button>
+                                    ${hasPerm('manage_structure') ? `<button class="btn btn-sm" onclick="editUnit('${cid}','${gid}','${csid}','${tF}','${uid}')"><i class="fas fa-edit"></i></button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteUnit('${cid}','${gid}','${csid}','${tF}','${uid}')"><i class="fas fa-trash"></i></button>` : ''}
                                 </div>
                             </div>`;
                         }
@@ -3155,8 +3747,8 @@
                                 list.innerHTML += `<div class="item-row">
                                     <div><strong>${l.title}</strong> <small style="color:var(--text-muted);">(ترتيب: ${l.order} | قفل: ${l.locked ? 'نعم' : 'لا'} | إخفاء: <span style="color:${l.isHidden?'var(--danger)':'var(--success)'}">${l.isHidden ? 'مخفي' : 'ظاهر'}</span>)</small></div>
                                     <div class="item-actions">
-                                        <button class="btn btn-sm" onclick="editLesson('${cid}','${gid}','${csid}','${tF}','${uid}','${lid}')"><i class="fas fa-edit"></i></button>
-                                        <button class="btn btn-sm btn-danger" onclick="deleteLesson('${cid}','${gid}','${csid}','${tF}','${uid}','${lid}')"><i class="fas fa-trash"></i></button>
+                                        ${hasPerm('manage_lessons') ? `<button class="btn btn-sm" onclick="editLesson('${cid}','${gid}','${csid}','${tF}','${uid}','${lid}')"><i class="fas fa-edit"></i></button>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteLesson('${cid}','${gid}','${csid}','${tF}','${uid}','${lid}')"><i class="fas fa-trash"></i></button>` : ''}
                                     </div>
                                 </div>`;
                             }
