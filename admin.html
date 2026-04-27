@@ -4878,29 +4878,8 @@
         function openPlatform(url, name) {
             _currentPlatformUrl  = url;
             _currentPlatformName = name;
-
-            if (platformIsBlocked(url)) {
-                // Open in new tab
-                window.open(url, '_blank', 'noopener,noreferrer');
-                return;
-            }
-
-            // Try to load in iframe
-            const wrapper = document.getElementById('platform-iframe-wrapper');
-            const iframe  = document.getElementById('platform-iframe');
-            const title   = document.getElementById('platform-iframe-title');
-
-            iframe.src     = url;
-            title.textContent = name;
-            wrapper.classList.add('active');
-            wrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-            // Fallback: if iframe fails to load (X-Frame-Options), open in tab
-            iframe.onerror = () => {
-                wrapper.classList.remove('active');
-                iframe.src = 'about:blank';
-                window.open(url, '_blank', 'noopener,noreferrer');
-            };
+            // Always open in a new tab
+            window.open(url, '_blank', 'noopener,noreferrer');
         }
 
         function closePlatformIframe() {
