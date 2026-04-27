@@ -861,9 +861,9 @@
                 <i class="fas fa-bars"></i>
             </div>
             <h1 id="page-title">لوحة التحكم</h1>
-            <div class="user-info">
-                <span>المدير العام</span>
-                <i class="fas fa-user-circle fa-2x" style="vertical-align: middle; margin-right: 10px; color: var(--primary);"></i>
+            <div class="user-info" id="header-user-info">
+                <span id="header-user-name">تحميل...</span>
+                <i class="fas fa-user-circle fa-2x" style="vertical-align:middle;margin-right:10px;color:var(--primary);"></i>
             </div>
         </div>
 
@@ -2614,21 +2614,24 @@
             }
         }
 
+        let _saveDBTimer = null;
         async function saveDB() {
-            // Update UI elements synchronously
-            updateStats(); 
-            refreshAllDropdowns(); 
+            updateStats();
+            refreshAllDropdowns();
             buildNavLessonSelectors();
-            try {
-                // Save to Backend
-                await fetch(`${API_URL}/platform-data`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(db)
-                });
-            } catch (err) {
-                console.error("Failed to save DB to backend", err);
-            }
+            // Debounce the actual network save — prevent flooding on rapid edits
+            clearTimeout(_saveDBTimer);
+            _saveDBTimer = setTimeout(async () => {
+                try {
+                    await fetch(`${API_URL}/platform-data`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(db)
+                    });
+                } catch (err) {
+                    console.error('Failed to save DB to backend', err);
+                }
+            }, 1500);
         }
         function generateId() { return Date.now().toString(36) + Math.random().toString(36).substr(2); }
 
@@ -2648,54 +2651,73 @@
             menuLinks.forEach(l => l.classList.remove('active'));
             const link = document.querySelector(`.menu a[data-target="${targetId}"]`);
             if (link) link.classList.add('active');
-            
+
             sections.forEach(s => s.classList.remove('active'));
             const targetSection = document.getElementById(targetId);
             if (targetSection) targetSection.classList.add('active');
-            
-            pageTitle.innerText = link ? link.innerText : 'لوحة التحكم';
-            
+
+            // Strip icon characters for clean page title
+            const rawTitle = link ? (link.textContent || link.innerText) : 'لوحة التحكم';
+            pageTitle.innerText = rawTitle.trim();
+
             if (window.innerWidth <= 1024) {
                 document.getElementById('sidebar')?.classList.remove('show');
             }
-            if (targetId === 'dashboard') updateStats();
-            if (targetId === 'students') loadStudents();
-            if (targetId === 'chat') renderChatHierarchy();
+
+            // Section-specific loaders
+            if (targetId === 'dashboard')        updateStats();
+            if (targetId === 'students')         loadStudents();
+            if (targetId === 'chat')             renderChatHierarchy();
+            if (targetId === 'teacher-platforms') loadTeacherPlatforms();
+            if (targetId === 'live-classes')     loadLiveClasses();
+            if (targetId === 'platform-management') loadPlatformManagement();
+            if (targetId === 'reports')          initReports();
+            if (targetId === 'question-bank')    renderQuestionBank();
+            if (targetId === 'game-bank-section') renderGameBankSection();
         }
 
         // Main initialization
         window.onload = async () => {
+            // Populate header with real user info
+            const headerName = document.getElementById('header-user-name');
+            if (headerName && currentUser) {
+                const roleLabel = currentUser.role === 'admin'
+                    ? ((currentUser.permissions?.isOwner || currentUser.id === 'admin') ? 'مدير عام' : 'مدير')
+                    : 'معلم';
+                headerName.innerHTML = `${currentUser.name || currentUser.id} <span style="background:var(--primary);color:white;font-size:10px;padding:2px 7px;border-radius:10px;margin-right:6px;font-weight:700;">${roleLabel}</span>`;
+            }
+
             // Platform Management Visibility
             const isOwner = currentUser && ((currentUser.permissions && currentUser.permissions.isOwner) || currentUser.id === 'admin');
-            const hasPlatformManage = isOwner || (currentUser && currentUser.permissions && (currentUser.permissions.manage_teachers || currentUser.permissions.manage_admins));
-            
+            const hasPlatformManage = isOwner || (currentUser && currentUser.permissions &&
+                (currentUser.permissions.manage_teachers || currentUser.permissions.manage_admins));
+
             if (hasPlatformManage) {
                 const pmLink = document.getElementById('nav-platform-management');
                 if (pmLink) pmLink.style.display = 'block';
             }
 
             await fetchDB();
-            
+
             // Enforce permissions for frontend elements
             if (!isOwner) {
                 const perms = currentUser.permissions || {};
                 const hideLink = (target) => {
                     const el = document.querySelector(`.menu a[data-target="${target}"]`);
-                    if(el) el.parentElement.style.display = 'none';
+                    if (el) el.parentElement.style.display = 'none';
                 };
-                if (!perms.view_dashboard) hideLink('dashboard');
+                if (!perms.view_dashboard)  hideLink('dashboard');
                 if (!perms.view_structure && !perms.manage_structure) {
                     hideLink('classes'); hideLink('groups'); hideLink('courses'); hideLink('units'); hideLink('lessons');
                 }
-                if (!perms.manage_lessons) hideLink('ailesson-zone');
-                if (!perms.view_students) hideLink('students');
-                if (!perms.view_reports) hideLink('reports');
-                if (!perms.view_qbank) hideLink('question-bank');
-                if (!perms.view_chat) hideLink('chat');
-                if (!perms.view_live) hideLink('live');
-                if (!perms.view_games) hideLink('games');
-                
-                // Hide specific buttons based on edit permissions
+                if (!perms.manage_lessons)  hideLink('ailesson-zone');
+                if (!perms.view_students)   hideLink('students');
+                if (!perms.view_reports)    hideLink('reports');
+                if (!perms.view_qbank)      hideLink('question-bank');
+                if (!perms.view_chat)       hideLink('chat');
+                if (!perms.view_live)       hideLink('live-classes');
+                if (!perms.view_games)      hideLink('game-zone');
+
                 if (!perms.add_student) {
                     const btn = document.querySelector('button[onclick="openStudentModal()"]');
                     if (btn) btn.style.display = 'none';
@@ -2704,11 +2726,6 @@
                     const structBtns = document.querySelectorAll('#classes .card-header .btn, #groups .card-header .btn, #courses .card-header .btn, #units .card-header .btn');
                     structBtns.forEach(btn => btn.style.display = 'none');
                 }
-                if (!perms.manage_lessons) {
-                    const lessonBtns = document.querySelectorAll('#ailesson-zone .card-header .btn'); // using #ailesson-zone which is the lesson section
-                    lessonBtns.forEach(btn => btn.style.display = 'none');
-                }
-
             }
 
             await loadStudents();
@@ -2768,8 +2785,8 @@
 
         function loadPlatformManagement() {
             // Stats cards
-            const teacherCount = allStudents.filter(u => u.role === 'teacher').length ||
-                                 (allTeachers ? allTeachers.length : 0);
+            const teacherCount = (allTeachers && allTeachers.length) ||
+                allStudents.filter(u => u.role === 'teacher').length || 0;
             const el = document.getElementById('stats-total-teachers');
             if (el) el.innerText = teacherCount;
 
@@ -2781,7 +2798,7 @@
             const ge = document.getElementById('stats-total-groups');
             if (ge) ge.innerText = totalG;
 
-            // Load tables
+            // Load tables (always refresh)
             loadTeachers();
             loadAuditLogs();
         }
