@@ -449,6 +449,97 @@
             opacity: 0; transition: opacity 0.2s ease;
         }
         .platform-card:hover .platform-delete-btn { opacity: 1; }
+
+        /* ─── Platform Card Enhancements ─────────────────────────── */
+        .platform-card-actions {
+            position: absolute; top: 7px; left: 7px;
+            display: flex; gap: 4px;
+            opacity: 0; transition: opacity 0.2s ease;
+        }
+        .platform-card:hover .platform-card-actions { opacity: 1; }
+        .platform-card-actions button {
+            background: rgba(0,0,0,0.5); border: none; border-radius: 6px;
+            color: white; width: 26px; height: 26px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; cursor: pointer; transition: background 0.2s;
+        }
+        .platform-card-actions button:first-child:hover { background: #3b82f6; }
+        .platform-card-actions button:last-child:hover  { background: var(--danger); }
+        .platform-desc {
+            font-size: 11px; color: var(--text-muted); text-align: center;
+            line-height: 1.3; max-width: 100%;
+            display: -webkit-box; -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .pin-badge {
+            position: absolute; top: 6px; right: 8px;
+            font-size: 13px;
+        }
+        .pinned-platform {
+            border-color: rgba(245,158,11,0.6) !important;
+            box-shadow: 0 4px 15px rgba(245,158,11,0.2);
+        }
+        .default-badge {
+            background: rgba(109,58,238,0.25); color: #a78bfa;
+            font-size: 10px; padding: 1px 6px; border-radius: 4px;
+            font-weight: 600; margin-right: 6px;
+        }
+
+        /* ─── Platform List View ──────────────────────────────────── */
+        .platform-list-item {
+            display: flex; align-items: center; gap: 14px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px; padding: 12px 16px;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        .platform-list-item:hover {
+            border-color: var(--primary);
+            background: var(--bg-elevated);
+        }
+        .platform-list-item.pinned-platform { border-color: rgba(245,158,11,0.5); }
+        .drag-handle {
+            color: var(--text-muted); font-size: 18px;
+            cursor: grab; flex-shrink: 0; padding: 0 4px;
+            transition: color 0.2s;
+        }
+        .drag-handle:hover { color: var(--primary); }
+        .drag-handle:active { cursor: grabbing; }
+        .drag-disabled { cursor: default !important; }
+        .platform-list-icon {
+            width: 44px; height: 44px; flex-shrink: 0;
+            background: rgba(109,58,238,0.15);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px;
+        }
+        .platform-list-info { flex: 1; min-width: 0; }
+        .platform-list-name {
+            font-weight: 700; font-size: 14px; color: #e2e8f0;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .platform-list-desc {
+            font-size: 12px; color: var(--text-muted); margin-top: 2px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        /* ─── Drag & Drop State Classes ───────────────────────────── */
+        .platform-drag-ghost {
+            opacity: 0.35;
+            background: rgba(109,58,238,0.2) !important;
+            border: 2px dashed var(--primary) !important;
+        }
+        .platform-drag-chosen {
+            box-shadow: 0 8px 30px rgba(109,58,238,0.45);
+            border-color: var(--primary) !important;
+            scale: 1.02;
+        }
+        .platform-drag-dragging {
+            opacity: 0.9;
+            background: var(--bg-elevated) !important;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+        }
         .platform-iframe-wrapper {
             width: 100%; border-radius: 12px;
             overflow: hidden; border: 1px solid rgba(109,58,238,0.3);
@@ -705,7 +796,7 @@
             color: #4fc3f7;
         }
     </style>
-
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 </head>
 <body>
     <div id="super-admin-return-banner" style="display:none; background:var(--warning); color:#000; text-align:center; padding:10px; font-weight:bold; z-index:10000; position:relative;">
@@ -1590,30 +1681,70 @@
         </div>
 
 
-        <!-- ═══ Teacher Platforms Section ═══ -->
+        <!-- ═══ Teacher Platforms Section (Advanced) ═══ -->
         <div id="teacher-platforms" class="section">
-            <!-- iframe viewer (hidden until a platform that supports embedding is opened) -->
-            <div class="platform-iframe-wrapper" id="platform-iframe-wrapper">
-                <div class="platform-iframe-topbar">
-                    <span><i class="fas fa-external-link-alt" style="margin-left:8px;"></i><span id="platform-iframe-title">المنصة</span></span>
-                    <div style="display:flex;gap:8px;">
-                        <button onclick="openCurrentPlatformTab()"><i class="fas fa-external-link-alt"></i> فتح في تبويب</button>
-                        <button onclick="closePlatformIframe()"><i class="fas fa-times"></i> إغلاق</button>
-                    </div>
-                </div>
-                <iframe id="platform-iframe" src="about:blank" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation" loading="lazy"></iframe>
-            </div>
 
             <div class="card">
                 <div class="card-header">
-                    <h2><i class="fas fa-th-large" style="color:var(--primary); margin-left:10px;"></i> المنصات المساعدة</h2>
-                    <button class="btn" onclick="openModal('platformModal')"><i class="fas fa-plus"></i> إضافة منصة</button>
-                </div>
-                <p style="color:var(--text-muted); font-size:13px; margin-bottom:20px;">اضغط على أي منصة لفتحها مباشرةً. المنصات التي لا تدعم الدمج ستفتح تلقائياً في تبويب جديد.</p>
-                <div class="platforms-grid" id="platforms-grid">
-                    <div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted);">
-                        <i class="fas fa-spinner fa-spin fa-2x"></i>
+                    <h2><i class="fas fa-th-large" style="color:var(--primary);margin-left:10px;"></i> إدارة المنصات المساعدة</h2>
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                        <input id="platform-search" type="text" placeholder="🔍 ابحث عن منصة..." oninput="filterPlatforms()" style="padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:white;font-size:13px;width:170px;outline:none;">
+                        <button class="btn btn-ghost" id="pm-view-toggle" onclick="togglePlatformView()" title="تبديل طريقة العرض" style="padding:7px 12px;"><i class="fas fa-list"></i></button>
+                        <button class="btn btn-ghost" onclick="resetPlatformOrder()" title="إعادة الترتيب الافتراضي" style="padding:7px 12px;"><i class="fas fa-undo"></i></button>
+                        <button class="btn" onclick="openModal('platformModal')"><i class="fas fa-plus"></i> إضافة منصة</button>
                     </div>
+                </div>
+                <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">
+                    <i class="fas fa-grip-vertical" style="margin-left:6px;color:var(--primary);"></i>
+                    اسحب وأفلت أي منصة لإعادة ترتيبها. يتم حفظ الترتيب تلقائياً.
+                </p>
+
+                <!-- Grid View (default, non-sortable) -->
+                <div id="platforms-grid" class="platforms-grid" style="position:relative;">
+                    <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin fa-2x"></i></div>
+                </div>
+
+                <!-- List View (drag-and-drop sortable) -->
+                <div id="platforms-list-view" style="display:none;">
+                    <div id="platforms-sortable-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+                </div>
+            </div>
+
+            <!-- Edit Platform Modal -->
+            <div class="modal" id="editPlatformModal">
+                <div class="modal-content" style="max-width:460px;">
+                    <h2 style="margin-bottom:20px;"><i class="fas fa-edit" style="color:var(--primary);margin-left:10px;"></i> تعديل بيانات المنصة</h2>
+                    <form id="editPlatformForm" onsubmit="handleEditPlatformSubmit(event)">
+                        <input type="hidden" id="edit-platform-id">
+                        <div class="form-group">
+                            <label>اسم المنصة <span style="color:var(--danger)">*</span></label>
+                            <input type="text" id="edit-platform-name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>رابط المنصة (URL) <span style="color:var(--danger)">*</span></label>
+                            <input type="url" id="edit-platform-url" class="form-control" required placeholder="https://...">
+                        </div>
+                        <div class="form-group">
+                            <label>وصف مختصر (اختياري)</label>
+                            <input type="text" id="edit-platform-desc" class="form-control" placeholder="مثال: منصة إنشاء التصميمات">
+                        </div>
+                        <div class="form-group">
+                            <label>أيقونة (إيموجي)</label>
+                            <input type="text" id="edit-platform-icon" class="form-control" placeholder="مثال: 🌐 أو 🎨 أو 💻">
+                        </div>
+                        <div style="display:flex;gap:20px;margin-bottom:16px;">
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                                <input type="checkbox" id="edit-platform-pinned" style="width:16px;height:16px;"> 📌 تثبيت في الأعلى
+                            </label>
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                                <input type="checkbox" id="edit-platform-visible" style="width:16px;height:16px;"> 👁 ظهور للطلاب
+                            </label>
+                        </div>
+                        <div style="display:flex;gap:10px;justify-content:flex-end;">
+                            <button type="button" class="btn btn-danger" onclick="closeModal('editPlatformModal')"><i class="fas fa-times"></i> إلغاء</button>
+                            <button type="submit" class="btn"><i class="fas fa-save"></i> حفظ التعديلات</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -1837,20 +1968,33 @@
     </style>
 
     <div class="modal" id="platformModal">
-        <div class="modal-content" style="max-width:440px;">
-            <h2 style="margin-bottom:20px;"><i class="fas fa-plus-circle" style="color:var(--primary);"></i> إضافة منصة جديدة</h2>
+        <div class="modal-content" style="max-width:480px;">
+            <h2 style="margin-bottom:20px;"><i class="fas fa-plus-circle" style="color:var(--primary);margin-left:10px;"></i> إضافة منصة مساعدة جديدة</h2>
             <form id="platformForm" onsubmit="handlePlatformSubmit(event)">
-                <div class="form-group">
-                    <label><i class="fas fa-tag" style="margin-left:6px;"></i> اسم المنصة</label>
-                    <input type="text" id="platform-name-input" class="form-control" required placeholder="مثال: Google Classroom">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <div class="form-group" style="grid-column:1/-1;">
+                        <label><i class="fas fa-tag" style="margin-left:6px;color:var(--primary);"></i> اسم المنصة <span style="color:var(--danger)">*</span></label>
+                        <input type="text" id="platform-name-input" class="form-control" required placeholder="مثال: Google Classroom">
+                    </div>
+                    <div class="form-group" style="grid-column:1/-1;">
+                        <label><i class="fas fa-link" style="margin-left:6px;color:var(--primary);"></i> رابط المنصة (URL) <span style="color:var(--danger)">*</span></label>
+                        <input type="url" id="platform-url-input" class="form-control" required placeholder="https://...">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-align-left" style="margin-left:6px;"></i> وصف مختصر</label>
+                        <input type="text" id="platform-desc-input" class="form-control" placeholder="مثال: للتصميم والعروض">
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fas fa-smile" style="margin-left:6px;"></i> أيقونة (إيموجي)</label>
+                        <input type="text" id="platform-icon-input" class="form-control" placeholder="مثال: 🎨 أو 📋">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label><i class="fas fa-link" style="margin-left:6px;"></i> رابط المنصة (URL)</label>
-                    <input type="url" id="platform-url-input" class="form-control" required placeholder="https://...">
-                </div>
-                <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:10px;">
-                    <button type="button" class="btn btn-danger" onclick="closeModal('platformModal')">إلغاء</button>
-                    <button type="submit" class="btn"><i class="fas fa-save"></i> حفظ المنصة</button>
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:16px;">
+                    <input type="checkbox" id="platform-pin-input" style="width:16px;height:16px;"> 📌 تثبيت في أعلى القائمة
+                </label>
+                <div style="display:flex; gap:10px; justify-content:flex-end;">
+                    <button type="button" class="btn btn-danger" onclick="closeModal('platformModal')"><i class="fas fa-times"></i> إلغاء</button>
+                    <button type="submit" class="btn"><i class="fas fa-save"></i> إضافة المنصة</button>
                 </div>
             </form>
         </div>
@@ -2623,14 +2767,23 @@
         }
 
         function loadPlatformManagement() {
+            // Stats cards
+            const teacherCount = allStudents.filter(u => u.role === 'teacher').length ||
+                                 (allTeachers ? allTeachers.length : 0);
+            const el = document.getElementById('stats-total-teachers');
+            if (el) el.innerText = teacherCount;
+
+            const se = document.getElementById('stats-total-students');
+            if (se) se.innerText = allStudents.filter(u => u.role === 'student').length;
+
+            let totalG = 0;
+            for (let c in db.classes) totalG += Object.keys(db.classes[c].groups || {}).length;
+            const ge = document.getElementById('stats-total-groups');
+            if (ge) ge.innerText = totalG;
+
+            // Load tables
             loadTeachers();
             loadAuditLogs();
-            document.getElementById('stats-total-students').innerText = allStudents.filter(u=>u.role==='student').length;
-            let totalG = 0;
-            for(let c in db.classes) {
-                totalG += Object.keys(db.classes[c].groups || {}).length;
-            }
-            document.getElementById('stats-total-groups').innerText = totalG;
         }
 
         // ── Students from MongoDB ────────────────────────────────────────────
@@ -5388,126 +5541,306 @@
 
         // Default platforms that always appear (not stored in DB)
         const DEFAULT_PLATFORMS = [
-            { _id: 'default_notebooklm', name: 'NotebookLM', url: 'https://notebooklm.google.com', icon: '📓', isDefault: true },
-            { _id: 'default_googledrive', name: 'Google Drive', url: 'https://drive.google.com', icon: '📁', isDefault: true },
-            { _id: 'default_canva',       name: 'Canva',       url: 'https://www.canva.com',       icon: '🎨', isDefault: true }
+            { _id: 'default_notebooklm', name: 'NotebookLM', url: 'https://notebooklm.google.com', icon: '📓', description: 'مساعد AI لتلخيص الملفات', isDefault: true, isVisible: true, isPinned: false },
+            { _id: 'default_googledrive', name: 'Google Drive', url: 'https://drive.google.com', icon: '📁', description: 'تخزين ومشاركة الملفات', isDefault: true, isVisible: true, isPinned: false },
+            { _id: 'default_canva', name: 'Canva', url: 'https://www.canva.com', icon: '🎨', description: 'تصميم العروض والمواد', isDefault: true, isVisible: true, isPinned: false }
         ];
 
-        // Sites known to block iframes — open in new tab directly
-        const IFRAME_BLOCKED_PATTERNS = [
-            'notebooklm.google.com',
-            'drive.google.com',
-            'docs.google.com',
-            'accounts.google.com',
-            'canva.com',
-            'facebook.com',
-            'instagram.com',
-            'twitter.com',
-            'x.com'
-        ];
-
+        let _allPlatforms = [];       // full loaded list
+        let _pmViewMode  = 'grid';    // 'grid' | 'list'
+        let _sortableInst = null;     // SortableJS instance
         let _currentPlatformUrl  = '';
         let _currentPlatformName = '';
 
-        function platformIsBlocked(url) {
-            try {
-                const host = new URL(url).hostname;
-                return IFRAME_BLOCKED_PATTERNS.some(p => host.includes(p));
-            } catch { return true; }
-        }
-
-        function getPlatformIcon(platform) {
-            if (platform.icon) return platform.icon;
-            const name = (platform.name || '').toLowerCase();
-            if (name.includes('google') || name.includes('drive') || name.includes('docs')) return '📁';
-            if (name.includes('canva'))    return '🎨';
-            if (name.includes('notebook')) return '📓';
-            if (name.includes('youtube'))  return '▶️';
-            if (name.includes('zoom'))     return '📹';
-            if (name.includes('meet'))     return '📹';
-            if (name.includes('teams'))    return '💬';
-            if (name.includes('classroom')) return '🏫';
-            if (name.includes('kahoot'))   return '🎯';
-            if (name.includes('quiziz'))   return '❓';
-            if (name.includes('padlet'))   return '📌';
+        function getPlatformIcon(p) {
+            if (p && p.icon) return p.icon;
+            const n = (p && p.name || '').toLowerCase();
+            if (n.includes('google') || n.includes('drive') || n.includes('docs')) return '📁';
+            if (n.includes('canva'))     return '🎨';
+            if (n.includes('notebook'))  return '📓';
+            if (n.includes('youtube'))   return '▶️';
+            if (n.includes('zoom'))      return '📹';
+            if (n.includes('meet'))      return '📹';
+            if (n.includes('teams'))     return '💬';
+            if (n.includes('classroom')) return '🏫';
+            if (n.includes('kahoot'))    return '🎯';
+            if (n.includes('quiziz'))    return '❓';
+            if (n.includes('padlet'))    return '📌';
             return '🌐';
-        }
-
-        async function loadTeacherPlatforms() {
-            const grid = document.getElementById('platforms-grid');
-            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
-            try {
-                const res  = await fetch(`${API_URL}/teacher-platforms?teacherId=${encodeURIComponent(TEACHER_ID)}`);
-                const data = await res.json();
-                const customPlatforms = data.success ? data.platforms : [];
-                const allPlatforms = [...DEFAULT_PLATFORMS, ...customPlatforms];
-                renderPlatformsGrid(allPlatforms);
-            } catch (e) {
-                renderPlatformsGrid(DEFAULT_PLATFORMS);
-            }
-        }
-
-        function renderPlatformsGrid(platforms) {
-            const grid = document.getElementById('platforms-grid');
-            if (!platforms.length) {
-                grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);"><i class="fas fa-th-large fa-3x" style="opacity:0.2;"></i><p style="margin-top:15px;">لا توجد منصات بعد. اضغط «إضافة منصة» للبدء.</p></div>';
-                return;
-            }
-            grid.innerHTML = platforms.map(p => `
-                <div class="platform-card" onclick="openPlatform('${escHtml(p.url)}', '${escHtml(p.name)}')"
-                     title="${escHtml(p.name)}">
-                    ${!p.isDefault ? `<button class="platform-delete-btn" onclick="event.stopPropagation(); deletePlatform('${p._id}')" title="حذف"><i class="fas fa-times"></i></button>` : ''}
-                    <div class="platform-icon">${getPlatformIcon(p)}</div>
-                    <div class="platform-name">${escHtml(p.name)}</div>
-                </div>
-            `).join('');
         }
 
         function escHtml(str) {
             return String(str || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
         }
 
-        function openPlatform(url, name) {
-            _currentPlatformUrl  = url;
-            _currentPlatformName = name;
-            // Always open in a new tab
+        function openPlatform(url) {
+            _currentPlatformUrl = url;
             window.open(url, '_blank', 'noopener,noreferrer');
-        }
-
-        function closePlatformIframe() {
-            const wrapper = document.getElementById('platform-iframe-wrapper');
-            const iframe  = document.getElementById('platform-iframe');
-            wrapper.classList.remove('active');
-            iframe.src = 'about:blank';
         }
 
         function openCurrentPlatformTab() {
             if (_currentPlatformUrl) window.open(_currentPlatformUrl, '_blank', 'noopener,noreferrer');
         }
 
+        function closePlatformIframe() { /* legacy kept */ }
+
+        async function loadTeacherPlatforms() {
+            const grid = document.getElementById('platforms-grid');
+            if (grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
+            try {
+                const res  = await fetch(`${API_URL}/teacher-platforms?teacherId=${encodeURIComponent(TEACHER_ID)}`);
+                const data = await res.json();
+                const custom = data.success ? data.platforms : [];
+                // Sort custom platforms by order_index (DB order)
+                const sorted = custom.sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+                _allPlatforms = [...DEFAULT_PLATFORMS, ...sorted];
+            } catch (e) {
+                _allPlatforms = [...DEFAULT_PLATFORMS];
+            }
+            // Apply full saved order from localStorage (includes defaults)
+            _allPlatforms = applyStoredOrder(_allPlatforms);
+            renderPlatformsActive();
+        }
+
+        function getFilteredPlatforms() {
+            const q = (document.getElementById('platform-search')?.value || '').toLowerCase().trim();
+            return _allPlatforms.filter(p => !q || p.name.toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q));
+        }
+
+        function renderPlatformsActive() {
+            if (_pmViewMode === 'grid') renderPlatformsGrid(getFilteredPlatforms());
+            else                         renderPlatformsList(getFilteredPlatforms());
+        }
+
+        function filterPlatforms() { renderPlatformsActive(); }
+
+        // ── GRID VIEW ──────────────────────────────────────────────
+        function renderPlatformsGrid(platforms) {
+            const grid = document.getElementById('platforms-grid');
+            if (!grid) return;
+            if (!platforms.length) {
+                grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:50px;color:var(--text-muted);"><i class="fas fa-th-large fa-3x" style="opacity:0.15;"></i><p style="margin-top:15px;">لا توجد منصات مطابقة.</p></div>';
+                return;
+            }
+            grid.innerHTML = platforms.map(p => `
+                <div class="platform-card${p.isPinned ? ' pinned-platform' : ''}" onclick="openPlatform('${escHtml(p.url)}')" title="${escHtml(p.name)}" data-id="${p._id}">
+                    ${p.isPinned ? '<span class="pin-badge">📌</span>' : ''}
+                    ${!p.isDefault ? `
+                        <div class="platform-card-actions">
+                            <button onclick="event.stopPropagation();openEditPlatformModal('${p._id}')" title="تعديل"><i class="fas fa-edit"></i></button>
+                            <button onclick="event.stopPropagation();deletePlatform('${p._id}')" title="حذف"><i class="fas fa-times"></i></button>
+                        </div>` : ''}
+                    <div class="platform-icon">${getPlatformIcon(p)}</div>
+                    <div class="platform-name">${escHtml(p.name)}</div>
+                    ${p.description ? `<div class="platform-desc">${escHtml(p.description)}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        // ── LIST VIEW (drag-and-drop) — all platforms draggable ────
+        function renderPlatformsList(platforms) {
+            const container = document.getElementById('platforms-sortable-list');
+            if (!container) return;
+            const canEdit = hasPerm('manage_platforms') || hasPerm('manage_structure') ||
+                ((currentUser.permissions && currentUser.permissions.isOwner) || currentUser.id === 'admin');
+
+            container.innerHTML = platforms.map(p => `
+                <div class="platform-list-item${p.isPinned ? ' pinned-platform' : ''}" data-id="${p._id}" data-default="${p.isDefault ? '1' : '0'}">
+                    ${canEdit
+                        ? '<div class="drag-handle" title="\u0627\u0633\u062d\u0628 \u0644\u0625\u0639\u0627\u062f\u0629 \u0627\u0644\u062a\u0631\u062a\u064a\u0628"><i class="fas fa-grip-vertical"></i></div>'
+                        : '<div class="drag-handle drag-disabled"><i class="fas fa-lock" style="opacity:0.3;font-size:12px;"></i></div>'}
+                    <div class="platform-list-icon">${getPlatformIcon(p)}</div>
+                    <div class="platform-list-info">
+                        <div class="platform-list-name">
+                            ${p.isPinned ? '\ud83d\udccc ' : ''}${escHtml(p.name)}
+                            ${p.isDefault ? '<span class="default-badge">\u0627\u0641\u062a\u0631\u0627\u0636\u064a</span>' : ''}
+                        </div>
+                        ${p.description ? `<div class="platform-list-desc">${escHtml(p.description)}</div>` : ''}
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;margin-right:auto;">
+                        <a href="${escHtml(p.url)}" target="_blank" rel="noopener"
+                           class="btn btn-sm" style="background:var(--primary);color:white;"
+                           onclick="event.stopPropagation()">
+                            <i class="fas fa-external-link-alt"></i> \u0641\u062a\u062d
+                        </a>
+                        ${!p.isDefault && canEdit ? `
+                        <button class="btn btn-sm" style="background:#3b82f6;color:white;"
+                                onclick="openEditPlatformModal('${p._id}')" title="\u062a\u0639\u062f\u064a\u0644">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger"
+                                onclick="deletePlatform('${p._id}')" title="\u062d\u0630\u0641">
+                            <i class="fas fa-trash"></i>
+                        </button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            // Destroy previous Sortable
+            if (_sortableInst) { _sortableInst.destroy(); _sortableInst = null; }
+
+            if (canEdit && typeof Sortable !== 'undefined') {
+                _sortableInst = new Sortable(container, {
+                    animation: 200,
+                    handle: '.drag-handle:not(.drag-disabled)',
+                    ghostClass: 'platform-drag-ghost',
+                    chosenClass: 'platform-drag-chosen',
+                    dragClass: 'platform-drag-dragging',
+                    easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+                    onEnd() { savePlatformOrder(); }
+                });
+            }
+        }
+
+        const _ORDER_KEY = `numi_platform_order_${TEACHER_ID}`;
+
+        function applyStoredOrder(platforms) {
+            try {
+                const stored = JSON.parse(localStorage.getItem(_ORDER_KEY) || 'null');
+                if (!stored || !stored.length) return platforms;
+                const map = new Map(platforms.map(p => [p._id, p]));
+                const ordered = stored.map(id => map.get(id)).filter(Boolean);
+                // Append any new platforms not yet in the stored order
+                platforms.forEach(p => { if (!stored.includes(p._id)) ordered.push(p); });
+                return ordered;
+            } catch { return platforms; }
+        }
+
+        async function savePlatformOrder() {
+            const container = document.getElementById('platforms-sortable-list');
+            if (!container) return;
+
+            // Full order — all items
+            const allIds = Array.from(container.querySelectorAll('.platform-list-item'))
+                .map(el => el.dataset.id);
+
+            // Save full order to localStorage (includes defaults)
+            localStorage.setItem(_ORDER_KEY, JSON.stringify(allIds));
+
+            // Save only custom platform order to DB
+            const customIds = Array.from(container.querySelectorAll('.platform-list-item[data-default="0"]'))
+                .map(el => el.dataset.id);
+
+            if (customIds.length) {
+                try {
+                    await fetch(`${API_URL}/teacher-platforms/reorder`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderedIds: customIds })
+                    });
+                } catch (e) { /* silent — localStorage already saved */ }
+            }
+
+            // Reorder _allPlatforms in memory to match new order
+            const map = new Map(_allPlatforms.map(p => [p._id, p]));
+            _allPlatforms = allIds.map(id => map.get(id)).filter(Boolean);
+            // Append anything missing (safety)
+            _allPlatforms.forEach ? null : null;
+
+            showNotif('\u2705 \u062a\u0645 \u062d\u0641\u0638 \u0627\u0644\u062a\u0631\u062a\u064a\u0628 \u0627\u0644\u062c\u062f\u064a\u062f', 'success');
+        }
+
+        async function resetPlatformOrder() {
+            if (!confirm('\u0647\u0644 \u062a\u0631\u064a\u062f \u0625\u0639\u0627\u062f\u0629 \u062a\u0631\u062a\u064a\u0628 \u062c\u0645\u064a\u0639 \u0627\u0644\u0645\u0646\u0635\u0627\u062a \u0644\u0644\u062a\u0631\u062a\u064a\u0628 \u0627\u0644\u0627\u0641\u062a\u0631\u0627\u0636\u064a\u061f')) return;
+            // Clear localStorage order
+            localStorage.removeItem(_ORDER_KEY);
+            // Reset DB order for custom platforms
+            const custom = _allPlatforms.filter(p => !p.isDefault);
+            if (custom.length) {
+                try {
+                    await fetch(`${API_URL}/teacher-platforms/reorder`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderedIds: custom.map(p => p._id) })
+                    });
+                } catch(e) {}
+            }
+            await loadTeacherPlatforms();
+            showNotif('\u2705 \u062a\u0645\u062a \u0625\u0639\u0627\u062f\u0629 \u0627\u0644\u062a\u0631\u062a\u064a\u0628 \u0627\u0644\u0627\u0641\u062a\u0631\u0627\u0636\u064a', 'success');
+        }
+
+        function togglePlatformView() {
+            const btn = document.getElementById('pm-view-toggle');
+            const gridEl = document.getElementById('platforms-grid');
+            const listEl = document.getElementById('platforms-list-view');
+            if (_pmViewMode === 'grid') {
+                _pmViewMode = 'list';
+                gridEl.style.display = 'none';
+                listEl.style.display = 'block';
+                btn.innerHTML = '<i class="fas fa-th-large"></i>';
+                btn.title = 'عرض شبكي';
+                renderPlatformsList(getFilteredPlatforms());
+            } else {
+                _pmViewMode = 'grid';
+                listEl.style.display = 'none';
+                gridEl.style.display = 'grid';
+                btn.innerHTML = '<i class="fas fa-list"></i>';
+                btn.title = 'عرض قائمة (مع سحب وإفلات)';
+                renderPlatformsGrid(getFilteredPlatforms());
+            }
+        }
+
+        function openEditPlatformModal(id) {
+            const p = _allPlatforms.find(x => x._id === id);
+            if (!p || p.isDefault) return;
+            document.getElementById('edit-platform-id').value = p._id;
+            document.getElementById('edit-platform-name').value = p.name;
+            document.getElementById('edit-platform-url').value = p.url;
+            document.getElementById('edit-platform-desc').value = p.description || '';
+            document.getElementById('edit-platform-icon').value = p.icon || '';
+            document.getElementById('edit-platform-pinned').checked = !!p.isPinned;
+            document.getElementById('edit-platform-visible').checked = p.isVisible !== false;
+            openModal('editPlatformModal');
+        }
+
+        async function handleEditPlatformSubmit(e) {
+            e.preventDefault();
+            const id   = document.getElementById('edit-platform-id').value;
+            const body = {
+                name:        document.getElementById('edit-platform-name').value.trim(),
+                url:         document.getElementById('edit-platform-url').value.trim(),
+                description: document.getElementById('edit-platform-desc').value.trim(),
+                icon:        document.getElementById('edit-platform-icon').value.trim(),
+                isPinned:    document.getElementById('edit-platform-pinned').checked,
+                isVisible:   document.getElementById('edit-platform-visible').checked,
+            };
+            try {
+                const res  = await fetch(`${API_URL}/teacher-platforms/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    closeModal('editPlatformModal');
+                    await loadTeacherPlatforms();
+                    showNotif('✅ تم تحديث بيانات المنصة', 'success');
+                } else { alert('خطأ: ' + (data.msg || data.error)); }
+            } catch(err) { alert('خطأ في الاتصال.'); }
+        }
+
         async function handlePlatformSubmit(e) {
             e.preventDefault();
-            const name = document.getElementById('platform-name-input').value.trim();
-            const url  = document.getElementById('platform-url-input').value.trim();
+            const name     = document.getElementById('platform-name-input').value.trim();
+            const url      = document.getElementById('platform-url-input').value.trim();
+            const desc     = document.getElementById('platform-desc-input')?.value?.trim() || '';
+            const icon     = document.getElementById('platform-icon-input')?.value?.trim() || '';
+            const isPinned = document.getElementById('platform-pin-input')?.checked || false;
             if (!name || !url) return;
-
             try {
                 const res  = await fetch(`${API_URL}/teacher-platforms`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, url, teacherId: TEACHER_ID })
+                    body: JSON.stringify({ name, url, teacherId: TEACHER_ID, description: desc, icon, isPinned })
                 });
                 const data = await res.json();
                 if (data.success) {
                     closeModal('platformModal');
                     document.getElementById('platformForm').reset();
-                    loadTeacherPlatforms();
-                } else {
-                    alert('خطأ: ' + (data.msg || data.error));
-                }
-            } catch (err) {
-                alert('خطأ في الاتصال بالخادم.');
-            }
+                    await loadTeacherPlatforms();
+                    showNotif('✅ تمت إضافة المنصة', 'success');
+                } else { alert('خطأ: ' + (data.msg || data.error)); }
+            } catch (err) { alert('خطأ في الاتصال بالخادم.'); }
         }
 
         async function deletePlatform(id) {
@@ -5515,11 +5848,9 @@
             try {
                 const res  = await fetch(`${API_URL}/teacher-platforms/${id}`, { method: 'DELETE' });
                 const data = await res.json();
-                if (data.success) loadTeacherPlatforms();
+                if (data.success) { await loadTeacherPlatforms(); showNotif('🗑️ تم حذف المنصة', 'success'); }
                 else alert('خطأ أثناء الحذف.');
-            } catch (err) {
-                alert('خطأ في الاتصال.');
-            }
+            } catch (err) { alert('خطأ في الاتصال.'); }
         }
 
         // ═══════════════════════════════════════════════════════════
