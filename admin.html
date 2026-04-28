@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Redirecting to Admin Dashboard...</title>
+    <!-- Redirect to the actual app inside the public folder -->
+    <meta http-equiv="refresh" content="0; url=./public/admin.html" />
+    <style>
+        body {
+            background-color: #0b0914;
+            color: white;
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <p>جارِ التوجيه إلى لوحة التحكم...</p>
+    <script>
+        // Fallback Javascript redirect
+        window.location.replace("./public/admin.html");
+    </script>
+</body>
+</html>
