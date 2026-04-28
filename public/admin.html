@@ -767,36 +767,12 @@
 
         <!-- Dashboard Section -->
         <div id="dashboard" class="section active">
-            <div class="grid">
-                <div class="card clickable" onclick="showSection('classes')">
-                    <div class="card-header">
-                        <h3>إجمالي الصفوف</h3>
-                        <i class="fas fa-layer-group fa-2x" style="color: var(--primary);"></i>
-                    </div>
-                    <h2 id="stats-classes">0</h2>
-                </div>
-                <div class="card clickable" onclick="showSection('groups')">
-                    <div class="card-header">
-                        <h3>إجمالي المجموعات</h3>
-                        <i class="fas fa-users-rectangle fa-2x" style="color: var(--accent);"></i>
-                    </div>
-                    <h2 id="stats-groups">0</h2>
-                </div>
-                <div class="card clickable" onclick="showSection('students')">
-                    <div class="card-header">
-                        <h3>إجمالي الطلاب</h3>
-                        <i class="fas fa-user-graduate fa-2x" style="color: var(--success);"></i>
-                    </div>
-                    <h2 id="stats-students">0</h2>
-                </div>
-                <div class="card clickable" onclick="showSection('lessons')">
-                    <div class="card-header">
-                        <h3>إجمالي الدروس</h3>
-                        <i class="fas fa-file-video fa-2x" style="color: var(--danger);"></i>
-                    </div>
-                    <h2 id="stats-lessons">0</h2>
-                </div>
-            </div>
+            <!-- Dashboard Cards Component -->
+            <div id="dashboard-cards-placeholder"></div>
+            <script src="../src/components/DashboardCards.js"></script>
+            <script>
+                document.getElementById('dashboard-cards-placeholder').outerHTML = renderDashboardCards();
+            </script>
 
             <div class="card" style="margin-top: 30px;">
                 <div class="card-header">

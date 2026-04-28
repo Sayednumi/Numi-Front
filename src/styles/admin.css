@@ -88,3 +88,48 @@
     .header { flex-direction: row; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
     .header h1 { font-size: 22px; }
 }
+
+/* ─── Cards ─── */
+.card {
+    background-color: var(--card);
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.02);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding-bottom: 15px;
+}
+
+.card.clickable:hover {
+    transform: translateY(-5px);
+    border-color: var(--primary);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+/* ─── Grid ─── */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+/* ─── Responsive Card / Grid ─── */
+@media (max-width: 1024px) {
+    .grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+@media (max-width: 768px) {
+    .grid { grid-template-columns: 1fr !important; }
+    .card { padding: 15px; }
+    .card-header { flex-direction: column; gap: 15px; text-align: center; }
+    .card-header .btn { width: 100%; justify-content: center; }
+}
