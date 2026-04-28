@@ -52,7 +52,24 @@
 
 
 
+        /* Cards and Elements */
+        .card {
+            background-color: var(--card);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.02);
+        }
 
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 15px;
+        }
 
         .btn {
             background-color: var(--primary);
@@ -156,7 +173,12 @@
         th { color: var(--text-muted); font-weight: 600; }
         tr:hover td { background-color: rgba(255,255,255,0.02); }
 
-
+        /* Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
 
         /* Section visibility */
         .section { display: none; }
@@ -225,12 +247,19 @@
             .sidebar.show { transform: translateX(0); }
             .main-content { margin-right: 0; padding: 20px; overflow-x: hidden; width: 100%; box-sizing: border-box; }
             .mobile-toggle { display: block !important; }
+            .grid { grid-template-columns: repeat(2, 1fr) !important; }
             .mobile-close-btn { display: flex !important; }
         }
 
         @media (max-width: 768px) {
             .sidebar { width: 260px; }
             .main-content { padding: 15px; }
+            .grid { grid-template-columns: 1fr !important; }
+            .header { flex-direction: row; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
+            .header h1 { font-size: 22px; }
+            .card { padding: 15px; }
+            .card-header { flex-direction: column; gap: 15px; text-align: center; }
+            .card-header .btn { width: 100%; justify-content: center; }
             .form-group { width: 100%; }
             table, thead, tbody, th, td, tr { display: block; width: 100%; border: none; }
             table thead tr { position: absolute; top: -9999px; left: -9999px; } /* Hide headers visually but keep for screen readers/JS */
@@ -285,6 +314,7 @@
             border: 1px solid rgba(255,255,255,0.1); transition: all 0.3s;
         }
         .mobile-close-btn:hover { color: var(--danger); border-color: var(--danger); transform: scale(1.1); }
+        .card.clickable:hover { transform: translateY(-5px); border-color: var(--primary); cursor: pointer; }
 
         /* ═══ Teacher Platforms Styles ═══ */
         .platforms-grid {
@@ -737,12 +767,36 @@
 
         <!-- Dashboard Section -->
         <div id="dashboard" class="section active">
-            <!-- Dashboard Cards Placeholder -->
-            <div id="dashboard-cards-placeholder"></div>
-            <script src="../src/components/DashboardCards.js"></script>
-            <script>
-                document.getElementById('dashboard-cards-placeholder').outerHTML = renderDashboardCards();
-            </script>
+            <div class="grid">
+                <div class="card clickable" onclick="showSection('classes')">
+                    <div class="card-header">
+                        <h3>إجمالي الصفوف</h3>
+                        <i class="fas fa-layer-group fa-2x" style="color: var(--primary);"></i>
+                    </div>
+                    <h2 id="stats-classes">0</h2>
+                </div>
+                <div class="card clickable" onclick="showSection('groups')">
+                    <div class="card-header">
+                        <h3>إجمالي المجموعات</h3>
+                        <i class="fas fa-users-rectangle fa-2x" style="color: var(--accent);"></i>
+                    </div>
+                    <h2 id="stats-groups">0</h2>
+                </div>
+                <div class="card clickable" onclick="showSection('students')">
+                    <div class="card-header">
+                        <h3>إجمالي الطلاب</h3>
+                        <i class="fas fa-user-graduate fa-2x" style="color: var(--success);"></i>
+                    </div>
+                    <h2 id="stats-students">0</h2>
+                </div>
+                <div class="card clickable" onclick="showSection('lessons')">
+                    <div class="card-header">
+                        <h3>إجمالي الدروس</h3>
+                        <i class="fas fa-file-video fa-2x" style="color: var(--danger);"></i>
+                    </div>
+                    <h2 id="stats-lessons">0</h2>
+                </div>
+            </div>
 
             <div class="card" style="margin-top: 30px;">
                 <div class="card-header">
