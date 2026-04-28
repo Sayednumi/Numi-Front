@@ -2938,31 +2938,162 @@
 
     <!-- Scripts -->
     <script src="https://numi-production-7484.up.railway.app/socket.io/socket.io.js"></script>
+    <!-- Permission System Core Layer -->
+    <script src="../src/services/PermissionService.js"></script>
     <script>
-        // Check authentication
+        // ─── Authentication & Role Bootstrap ─────────────────────────────────
         const SESSION_KEY = 'numi_session_user';
         const sessionSaved = localStorage.getItem(SESSION_KEY);
         let currentUser = null;
+        let _userProfile = null; // Resolved profile via PermissionService
+
         if (!sessionSaved) {
             window.location.href = 'index.html';
         } else {
             currentUser = JSON.parse(sessionSaved);
-            if (currentUser.role !== 'admin') {
+            // Allow admin, manager, and teacher roles into the dashboard
+            const allowedRoles = ['admin', 'manager', 'teacher'];
+            if (!allowedRoles.includes(currentUser.role)) {
                 window.location.href = 'index.html';
+            }
+            // Build full resolved profile using PermissionService
+            if (window.PermissionService) {
+                _userProfile = window.PermissionService.buildUserProfile(currentUser);
             }
         }
 
+        /**
+         * hasPerm(permName) — checks if current user has a specific permission.
+         * Delegates to PermissionService when available, falls back to legacy check.
+         * This keeps backward compatibility with all existing hasPerm() calls in the code.
+         */
         function hasPerm(permName) {
             if (!currentUser) return false;
-            const isOwner = currentUser && ((currentUser.permissions && currentUser.permissions.isOwner) || currentUser.id === 'admin');
+            // Use PermissionService if available
+            if (window.PermissionService && _userProfile) {
+                return window.PermissionService.hasPermission(_userProfile, permName);
+            }
+            // Legacy fallback
+            const isOwner = currentUser.permissions?.isOwner || currentUser.id === 'admin';
             if (isOwner) return true;
-            if (!currentUser.permissions) return false;
-            return !!currentUser.permissions[permName];
+            return !!(currentUser.permissions || {})[permName];
+        }
+
+        /**
+         * hasRole(...roles) — checks if current user has one of the specified roles.
+         * Usage: hasRole('admin')  or  hasRole('admin','manager')
+         */
+        function hasRole(...roles) {
+            if (!currentUser) return false;
+            return roles.includes(currentUser.role);
+        }
+
+        /**
+         * getRoleLabel() — returns a localised role badge label.
+         */
+        function getRoleLabel() {
+            if (!currentUser) return '';
+            const isOwner = currentUser.permissions?.isOwner || currentUser.id === 'admin';
+            const map = {
+                admin:   isOwner ? 'مدير عام' : 'مدير',
+                manager: 'مدير تعليمي',
+                teacher: 'معلم'
+            };
+            return map[currentUser.role] || currentUser.role;
         }
 
         function logoutAdmin() {
             localStorage.removeItem(SESSION_KEY);
             window.location.href = 'index.html';
+        }
+
+        /**
+         * applyRoleBasedUI()
+         * Central function that applies permission-based show/hide rules to the UI.
+         * Called once after login. Uses hasPerm() and hasRole() which delegate to PermissionService.
+         */
+        function applyRoleBasedUI() {
+            const isOwner = currentUser?.permissions?.isOwner || currentUser?.id === 'admin';
+
+            // ── Sidebar link visibility ────────────────────────────────────
+            const hideLink = (target) => {
+                const el = document.querySelector(`.menu a[data-target="${target}"]`);
+                if (el) el.parentElement.style.display = 'none';
+            };
+            const showLink = (target) => {
+                const el = document.querySelector(`.menu a[data-target="${target}"]`);
+                if (el) el.parentElement.style.display = '';
+            };
+
+            // Platform Management (Sidebar entry): admin-only
+            if (hasPerm('manage_teachers') || hasPerm('manage_admins') || isOwner) {
+                const pmLink = document.getElementById('nav-platform-management');
+                if (pmLink) pmLink.style.display = 'block';
+            }
+
+            // Skip further UI restrictions for owner-admins
+            if (isOwner) return;
+
+            // Dashboard
+            if (!hasPerm('view_dashboard'))   hideLink('dashboard');
+
+            // Structure
+            if (!hasPerm('view_structure') && !hasPerm('manage_structure')) {
+                ['classes','groups','courses','units','lessons'].forEach(hideLink);
+            }
+
+            // Content zones
+            if (!hasPerm('manage_lessons'))   hideLink('ailesson-zone');
+            if (!hasPerm('view_students'))    hideLink('students');
+            if (!hasPerm('view_reports'))     hideLink('reports');
+            if (!hasPerm('view_qbank'))       hideLink('question-bank');
+            if (!hasPerm('view_chat'))        hideLink('chat');
+            if (!hasPerm('view_live'))        hideLink('live-classes');
+            if (!hasPerm('view_games')) {
+                hideLink('game-zone');
+                hideLink('game-bank-section');
+            }
+            if (!hasPerm('view_teacher_platforms')) hideLink('teacher-platforms');
+
+            // ── Action Buttons ─────────────────────────────────────────────
+
+            // Add Student button → requires add_student
+            if (!hasPerm('add_student')) {
+                const btn = document.querySelector('button[onclick="openStudentModal()"]');
+                if (btn) btn.style.display = 'none';
+            }
+
+            // Add Teacher button → requires manage_teachers (MANAGER or ADMIN)
+            if (!hasPerm('manage_teachers')) {
+                const btn = document.querySelector('button[onclick="openTeacherModal()"]');
+                if (btn) btn.style.display = 'none';
+            }
+
+            // Add Admin button → requires manage_admins (ADMIN only)
+            if (!hasPerm('manage_admins')) {
+                const btn = document.querySelector('button[onclick="openAddAdminModal()"]');
+                if (btn) btn.style.display = 'none';
+            }
+
+            // Structure CRUD buttons (Add Class/Group/Course/Unit)
+            if (!hasPerm('manage_structure')) {
+                document.querySelectorAll(
+                    '#classes .card-header .btn, #groups .card-header .btn, ' +
+                    '#courses .card-header .btn, #units .card-header .btn'
+                ).forEach(btn => btn.style.display = 'none');
+            }
+
+            // Question Bank: restrict write actions
+            if (!hasPerm('manage_qbank')) {
+                document.querySelectorAll('.qbank-add-btn, .qbank-edit-btn, .qbank-delete-btn')
+                    .forEach(btn => btn.style.display = 'none');
+            }
+
+            // Game Bank: restrict management
+            if (!hasPerm('manage_games')) {
+                document.querySelectorAll('.game-add-btn, .game-edit-btn, .game-delete-btn')
+                    .forEach(btn => btn.style.display = 'none');
+            }
         }
 
         // Database connection to Node.js backend
@@ -3082,52 +3213,14 @@
             // Populate header with real user info
             const headerName = document.getElementById('header-user-name');
             if (headerName && currentUser) {
-                const roleLabel = currentUser.role === 'admin'
-                    ? ((currentUser.permissions?.isOwner || currentUser.id === 'admin') ? 'مدير عام' : 'مدير')
-                    : 'معلم';
+                const roleLabel = getRoleLabel();
                 headerName.innerHTML = `${currentUser.name || currentUser.id} <span style="background:var(--primary);color:white;font-size:10px;padding:2px 7px;border-radius:10px;margin-right:6px;font-weight:700;">${roleLabel}</span>`;
             }
 
-            // Platform Management Visibility
-            const isOwner = currentUser && ((currentUser.permissions && currentUser.permissions.isOwner) || currentUser.id === 'admin');
-            const hasPlatformManage = isOwner || (currentUser && currentUser.permissions &&
-                (currentUser.permissions.manage_teachers || currentUser.permissions.manage_admins));
-
-            if (hasPlatformManage) {
-                const pmLink = document.getElementById('nav-platform-management');
-                if (pmLink) pmLink.style.display = 'block';
-            }
+            // ─── Role-Based UI Application ─────────────────────────────────
+            applyRoleBasedUI();
 
             await fetchDB();
-
-            // Enforce permissions for frontend elements
-            if (!isOwner) {
-                const perms = currentUser.permissions || {};
-                const hideLink = (target) => {
-                    const el = document.querySelector(`.menu a[data-target="${target}"]`);
-                    if (el) el.parentElement.style.display = 'none';
-                };
-                if (!perms.view_dashboard) hideLink('dashboard');
-                if (!perms.view_structure && !perms.manage_structure) {
-                    hideLink('classes'); hideLink('groups'); hideLink('courses'); hideLink('units'); hideLink('lessons');
-                }
-                if (!perms.manage_lessons) hideLink('ailesson-zone');
-                if (!perms.view_students) hideLink('students');
-                if (!perms.view_reports) hideLink('reports');
-                if (!perms.view_qbank) hideLink('question-bank');
-                if (!perms.view_chat) hideLink('chat');
-                if (!perms.view_live) hideLink('live-classes');
-                if (!perms.view_games) hideLink('game-zone');
-
-                if (!perms.add_student) {
-                    const btn = document.querySelector('button[onclick="openStudentModal()"]');
-                    if (btn) btn.style.display = 'none';
-                }
-                if (!perms.manage_structure) {
-                    const structBtns = document.querySelectorAll('#classes .card-header .btn, #groups .card-header .btn, #courses .card-header .btn, #units .card-header .btn');
-                    structBtns.forEach(btn => btn.style.display = 'none');
-                }
-            }
 
             await loadStudents();
             await initHonorBoard();
