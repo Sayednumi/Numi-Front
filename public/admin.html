@@ -13,6 +13,7 @@
     <meta name="theme-color" content="#0b1220">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="../src/styles/admin.css" rel="stylesheet">
     <style>
         :root {
             --primary: #6d3aee;
@@ -40,67 +41,6 @@
             min-height: 100vh;
         }
 
-        /* Sidebar styling */
-        .sidebar {
-            width: 280px;
-            background-color: var(--panel);
-            border-left: 1px solid rgba(255,255,255,0.05);
-            padding: 20px 0;
-            display: flex;
-            flex-direction: column;
-            position: fixed;
-            height: 100vh;
-            overflow-y: auto;
-            z-index: 100;
-        }
-        
-        .sidebar::-webkit-scrollbar { width: 5px; }
-        .sidebar::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 5px; }
-
-        .brand {
-            padding: 0 20px 20px;
-            font-size: 24px;
-            font-weight: 800;
-            color: var(--primary);
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            margin-bottom: 20px;
-            text-align: center;
-            background: linear-gradient(45deg, #6d3aee, #9d72ff);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .menu {
-            list-style: none;
-        }
-
-        .menu li {
-            padding: 0 15px;
-            margin-bottom: 5px;
-        }
-
-        .menu a {
-            display: flex;
-            align-items: center;
-            padding: 12px 20px;
-            color: var(--text-muted);
-            text-decoration: none;
-            border-radius: 10px;
-            transition: var(--transition);
-            font-weight: 600;
-        }
-
-        .menu a i {
-            margin-left: 15px;
-            width: 20px;
-            text-align: center;
-        }
-
-        .menu a:hover, .menu a.active {
-            background: linear-gradient(90deg, var(--primary) 0%, rgba(109, 58, 238, 0.2) 100%);
-            color: var(--text-main);
-        }
 
         /* Main Content */
         .main-content {
@@ -110,36 +50,9 @@
             overflow-y: auto;
         }
 
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
 
-        .header h1 {
-            font-size: 28px;
-            font-weight: 800;
-        }
 
-        /* Cards and Elements */
-        .card {
-            background-color: var(--card);
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            border: 1px solid rgba(255,255,255,0.02);
-        }
 
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            padding-bottom: 15px;
-        }
 
         .btn {
             background-color: var(--primary);
@@ -243,12 +156,7 @@
         th { color: var(--text-muted); font-weight: 600; }
         tr:hover td { background-color: rgba(255,255,255,0.02); }
 
-        /* Grid */
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-        }
+
 
         /* Section visibility */
         .section { display: none; }
@@ -317,19 +225,12 @@
             .sidebar.show { transform: translateX(0); }
             .main-content { margin-right: 0; padding: 20px; overflow-x: hidden; width: 100%; box-sizing: border-box; }
             .mobile-toggle { display: block !important; }
-            .grid { grid-template-columns: repeat(2, 1fr) !important; }
             .mobile-close-btn { display: flex !important; }
         }
 
         @media (max-width: 768px) {
             .sidebar { width: 260px; }
             .main-content { padding: 15px; }
-            .grid { grid-template-columns: 1fr !important; }
-            .header { flex-direction: row; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
-            .header h1 { font-size: 22px; }
-            .card { padding: 15px; }
-            .card-header { flex-direction: column; gap: 15px; text-align: center; }
-            .card-header .btn { width: 100%; justify-content: center; }
             .form-group { width: 100%; }
             table, thead, tbody, th, td, tr { display: block; width: 100%; border: none; }
             table thead tr { position: absolute; top: -9999px; left: -9999px; } /* Hide headers visually but keep for screen readers/JS */
@@ -384,7 +285,6 @@
             border: 1px solid rgba(255,255,255,0.1); transition: all 0.3s;
         }
         .mobile-close-btn:hover { color: var(--danger); border-color: var(--danger); transform: scale(1.1); }
-        .card.clickable:hover { transform: translateY(-5px); border-color: var(--primary); cursor: pointer; }
 
         /* ═══ Teacher Platforms Styles ═══ */
         .platforms-grid {
@@ -819,86 +719,30 @@
                 document.getElementById('super-admin-return-banner').style.display = 'block';
             });
         }
-    </script>    <!-- Sidebar -->
-    <div class="sidebar" id="sidebar">
-        <i class="fas fa-times mobile-close-btn" onclick="document.getElementById('sidebar').classList.remove('show')"></i>
-        <div class="brand">Numi Platform</div>
-        <ul class="menu" id="nav-menu">
-            <li><a href="#" data-target="dashboard"><i class="fas fa-home"></i> لوحة المعلم</a></li>
-            <li><a href="#" data-target="classes"><i class="fas fa-layer-group"></i> إدارة الصفوف</a></li>
-            <li><a href="#" data-target="groups"><i class="fas fa-users-rectangle"></i> إدارة المجموعات</a></li>
-            <li><a href="#" data-target="courses"><i class="fas fa-book"></i> إدارة المقررات</a></li>
-            <li><a href="#" data-target="units"><i class="fas fa-cubes"></i> إدارة الوحدات</a></li>
-            <li><a href="#" data-target="lessons"><i class="fas fa-file-video"></i> إدارة الدروس</a></li>
-            <li><a href="#" data-target="video-zone"><i class="fas fa-play-circle"></i> Video Zone</a></li>
-            <li><a href="#" data-target="podcast-zone"><i class="fas fa-podcast"></i> Wood Podcast Zone</a></li>
-            <li><a href="#" data-target="mindscape-zone"><i class="fas fa-project-diagram"></i> Mindscape</a></li>
-            <li><a href="#" data-target="game-zone"><i class="fas fa-gamepad"></i> Game Zone</a></li>
-            <li><a href="#" data-target="game-bank-section" onclick="renderGameBankSection()"><i class="fas fa-archive" style="color:#f59e0b;"></i> <span style="color:#f59e0b; font-weight:700;">بنك الألعاب</span></a></li>
-            <li><a href="#" data-target="quiz-zone"><i class="fas fa-question-circle"></i> Quiz Zone</a></li>
-            <li><a href="#" data-target="ailesson-zone"><i class="fas fa-magic"></i> الدرس (/lesson)</a></li>
-            <li><a href="#" data-target="students"><i class="fas fa-user-graduate"></i> إدارة الطلاب</a></li>
-            <li id="nav-platform-management" style="display:none; margin-top:15px; border-top:1px solid rgba(255,255,255,0.05); padding-top:15px;">
-                <a href="#" data-target="platform-management" onclick="loadPlatformManagement()"><i class="fas fa-server" style="color:var(--danger)"></i> إدارة المنصة</a>
-            </li>
-            <li><a href="#" data-target="reports" onclick="initReports()"><i class="fas fa-chart-bar"></i> التقارير والنتائج</a></li>
-            <li><a href="#" data-target="question-bank" onclick="renderQuestionBank()"><i class="fas fa-database"></i> بنك الأسئلة</a></li>
-            <li><a href="#" data-target="chat" onclick="renderChatHierarchy()"><i class="fas fa-comments"></i> الدردشة</a></li>
-            <li><a href="#" data-target="teacher-platforms" onclick="loadTeacherPlatforms()"><i class="fas fa-th-large"></i> المنصات المساعدة</a></li>
-            <li><a href="#" data-target="live-classes" onclick="loadLiveClasses()"><i class="fas fa-video"></i> الحصص المباشرة</a></li>
-            <li style="margin-top: auto; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;">
-                <a href="#" onclick="logoutAdmin()" style="color: var(--danger);">
-                    <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
-                </a>
-            </li>
-        </ul>
-    </div>
+    </script>    <!-- Sidebar Component Placeholder -->
+    <div id="admin-sidebar-placeholder"></div>
+    <script src="../src/components/AdminSidebar.js"></script>
+    <script>
+        document.getElementById('admin-sidebar-placeholder').outerHTML = renderAdminSidebar();
+    </script>
 
     <!-- Main Content -->
     <div class="main-content">
-        <div class="header">
-            <div class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('show')">
-                <i class="fas fa-bars"></i>
-            </div>
-            <h1 id="page-title">لوحة التحكم</h1>
-            <div class="user-info" id="header-user-info">
-                <span id="header-user-name">تحميل...</span>
-                <i class="fas fa-user-circle fa-2x" style="vertical-align:middle;margin-right:10px;color:var(--primary);"></i>
-            </div>
-        </div>
+        <!-- Admin Navbar Placeholder -->
+        <div id="admin-navbar-placeholder"></div>
+        <script src="../src/components/AdminNavbar.js"></script>
+        <script>
+            document.getElementById('admin-navbar-placeholder').outerHTML = renderAdminNavbar();
+        </script>
 
         <!-- Dashboard Section -->
         <div id="dashboard" class="section active">
-            <div class="grid">
-                <div class="card clickable" onclick="showSection('classes')">
-                    <div class="card-header">
-                        <h3>إجمالي الصفوف</h3>
-                        <i class="fas fa-layer-group fa-2x" style="color: var(--primary);"></i>
-                    </div>
-                    <h2 id="stats-classes">0</h2>
-                </div>
-                <div class="card clickable" onclick="showSection('groups')">
-                    <div class="card-header">
-                        <h3>إجمالي المجموعات</h3>
-                        <i class="fas fa-users-rectangle fa-2x" style="color: var(--accent);"></i>
-                    </div>
-                    <h2 id="stats-groups">0</h2>
-                </div>
-                <div class="card clickable" onclick="showSection('students')">
-                    <div class="card-header">
-                        <h3>إجمالي الطلاب</h3>
-                        <i class="fas fa-user-graduate fa-2x" style="color: var(--success);"></i>
-                    </div>
-                    <h2 id="stats-students">0</h2>
-                </div>
-                <div class="card clickable" onclick="showSection('lessons')">
-                    <div class="card-header">
-                        <h3>إجمالي الدروس</h3>
-                        <i class="fas fa-file-video fa-2x" style="color: var(--danger);"></i>
-                    </div>
-                    <h2 id="stats-lessons">0</h2>
-                </div>
-            </div>
+            <!-- Dashboard Cards Placeholder -->
+            <div id="dashboard-cards-placeholder"></div>
+            <script src="../src/components/DashboardCards.js"></script>
+            <script>
+                document.getElementById('dashboard-cards-placeholder').outerHTML = renderDashboardCards();
+            </script>
 
             <div class="card" style="margin-top: 30px;">
                 <div class="card-header">

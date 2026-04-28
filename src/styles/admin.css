@@ -1,0 +1,132 @@
+/* ─── Admin Sidebar Styles ─── */
+.sidebar {
+    width: 280px;
+    background-color: var(--panel);
+    border-left: 1px solid rgba(255,255,255,0.05);
+    padding: 20px 0;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: 100;
+}
+
+.sidebar::-webkit-scrollbar { width: 5px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 5px; }
+
+.brand {
+    padding: 0 20px 20px;
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--primary);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    margin-bottom: 20px;
+    text-align: center;
+    background: linear-gradient(45deg, #6d3aee, #9d72ff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.menu {
+    list-style: none;
+}
+
+.menu li {
+    padding: 0 15px;
+    margin-bottom: 5px;
+}
+
+.menu a {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-radius: 10px;
+    transition: var(--transition);
+    font-weight: 600;
+}
+
+.menu a i {
+    margin-left: 15px;
+    width: 20px;
+    text-align: center;
+}
+
+.menu a:hover, .menu a.active {
+    background: linear-gradient(90deg, var(--primary) 0%, rgba(109, 58, 238, 0.2) 100%);
+    color: var(--text-main);
+}
+
+/* ─── Admin Header Styles ─── */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.header h1 {
+    font-size: 28px;
+    font-weight: 800;
+}
+
+.mobile-toggle { 
+    display: none; 
+    font-size: 24px; 
+    cursor: pointer; 
+    color: var(--text-main); 
+}
+
+@media (max-width: 1024px) {
+    .mobile-toggle { display: block !important; }
+}
+
+@media (max-width: 768px) {
+    .header { flex-direction: row; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
+    .header h1 { font-size: 22px; }
+}
+
+/* ─── Dashboard Cards & Grid Styles ─── */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.card {
+    background-color: var(--card);
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.02);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding-bottom: 15px;
+}
+
+.card.clickable:hover { 
+    transform: translateY(-5px); 
+    border-color: var(--primary); 
+    cursor: pointer; 
+}
+
+@media (max-width: 1024px) {
+    .grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+@media (max-width: 768px) {
+    .grid { grid-template-columns: 1fr !important; }
+    .card { padding: 15px; }
+    .card-header { flex-direction: column; gap: 15px; text-align: center; }
+    .card-header .btn { width: 100%; justify-content: center; }
+}
