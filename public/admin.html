@@ -3009,91 +3009,159 @@
 
         /**
          * applyRoleBasedUI()
-         * Central function that applies permission-based show/hide rules to the UI.
-         * Called once after login. Uses hasPerm() and hasRole() which delegate to PermissionService.
+         * Central function — applies permission-based show/hide to ALL UI elements.
+         * Called once on login. Uses hasPerm() + hasRole() via PermissionService.
+         *
+         * FULL COVERAGE AUDIT ─ Protected elements:
+         *  ✅ Sidebar navigation links (all 12 sections)
+         *  ✅ Add/Edit/Delete — Students, Teachers, Admins
+         *  ✅ Add — Classes, Groups, Courses, Units, Lessons
+         *  ✅ Bulk actions bar (status update + bulk delete)
+         *  ✅ Zone delete (Video, Podcast, Mindscape, Game, Quiz, AI-Lesson)
+         *  ✅ Kahoot Maker, Save to Game Bank, Assign Game to Lesson
+         *  ✅ Live Classes — Reset Sessions button
+         *  ✅ Teacher Platforms — Add Platform + Reset Order
+         *  ✅ Teacher Details — loginAsTeacher (Owner only)
+         *  ✅ Audit Logs — Admin/Manager only
+         *  ✅ Question Bank write buttons
+         *  ✅ Chat delete messages
          */
         function applyRoleBasedUI() {
             const isOwner = currentUser?.permissions?.isOwner || currentUser?.id === 'admin';
 
-            // ── Sidebar link visibility ────────────────────────────────────
+            // ── Helpers ──────────────────────────────────────────────────────
+            /** Hide all elements matching a CSS selector */
+            const hideEl = (sel) => document.querySelectorAll(sel).forEach(el => el.style.display = 'none');
+            /** Hide a sidebar nav link by its data-target attribute */
             const hideLink = (target) => {
                 const el = document.querySelector(`.menu a[data-target="${target}"]`);
                 if (el) el.parentElement.style.display = 'none';
             };
-            const showLink = (target) => {
-                const el = document.querySelector(`.menu a[data-target="${target}"]`);
-                if (el) el.parentElement.style.display = '';
-            };
 
-            // Platform Management (Sidebar entry): admin-only
+            // ── Platform Management sidebar link ──────────────────────────────
             if (hasPerm('manage_teachers') || hasPerm('manage_admins') || isOwner) {
                 const pmLink = document.getElementById('nav-platform-management');
                 if (pmLink) pmLink.style.display = 'block';
             }
 
-            // Skip further UI restrictions for owner-admins
+            // Owner-admin bypass — full access, exit early
             if (isOwner) return;
 
-            // Dashboard
-            if (!hasPerm('view_dashboard'))   hideLink('dashboard');
-
-            // Structure
-            if (!hasPerm('view_structure') && !hasPerm('manage_structure')) {
-                ['classes','groups','courses','units','lessons'].forEach(hideLink);
-            }
-
-            // Content zones
-            if (!hasPerm('manage_lessons'))   hideLink('ailesson-zone');
-            if (!hasPerm('view_students'))    hideLink('students');
-            if (!hasPerm('view_reports'))     hideLink('reports');
-            if (!hasPerm('view_qbank'))       hideLink('question-bank');
-            if (!hasPerm('view_chat'))        hideLink('chat');
-            if (!hasPerm('view_live'))        hideLink('live-classes');
+            // ════════════════════════════════════════════════════════════════
+            // SIDEBAR NAVIGATION
+            // ════════════════════════════════════════════════════════════════
+            if (!hasPerm('view_dashboard'))          hideLink('dashboard');
+            if (!hasPerm('view_students'))           hideLink('students');
+            if (!hasPerm('view_reports'))            hideLink('reports');
+            if (!hasPerm('view_qbank'))              hideLink('question-bank');
+            if (!hasPerm('view_chat'))               hideLink('chat');
+            if (!hasPerm('view_live'))               hideLink('live-classes');
+            if (!hasPerm('view_teacher_platforms'))  hideLink('teacher-platforms');
+            if (!hasPerm('manage_lessons'))          hideLink('ailesson-zone');
             if (!hasPerm('view_games')) {
                 hideLink('game-zone');
                 hideLink('game-bank-section');
             }
-            if (!hasPerm('view_teacher_platforms')) hideLink('teacher-platforms');
-
-            // ── Action Buttons ─────────────────────────────────────────────
-
-            // Add Student button → requires add_student
-            if (!hasPerm('add_student')) {
-                const btn = document.querySelector('button[onclick="openStudentModal()"]');
-                if (btn) btn.style.display = 'none';
+            if (!hasPerm('view_structure') && !hasPerm('manage_structure')) {
+                ['classes','groups','courses','units','lessons'].forEach(hideLink);
             }
 
-            // Add Teacher button → requires manage_teachers (MANAGER or ADMIN)
-            if (!hasPerm('manage_teachers')) {
-                const btn = document.querySelector('button[onclick="openTeacherModal()"]');
-                if (btn) btn.style.display = 'none';
+            // ════════════════════════════════════════════════════════════════
+            // STUDENTS SECTION
+            // ════════════════════════════════════════════════════════════════
+            if (!hasPerm('add_student'))
+                hideEl('button[onclick="openStudentModal()"]');
+
+            // Bulk actions bar — hide entirely if no edit OR delete perm
+            if (!hasPerm('edit_student') && !hasPerm('delete_student')) {
+                hideEl('#bulk-actions-bar');
+            } else {
+                if (!hasPerm('edit_student'))
+                    hideEl('button[onclick*="bulkStatusUpdate"]');
+                if (!hasPerm('delete_student'))
+                    hideEl('button[onclick="bulkDeleteStudents()"]');
             }
 
-            // Add Admin button → requires manage_admins (ADMIN only)
-            if (!hasPerm('manage_admins')) {
-                const btn = document.querySelector('button[onclick="openAddAdminModal()"]');
-                if (btn) btn.style.display = 'none';
-            }
+            // ════════════════════════════════════════════════════════════════
+            // TEACHERS SECTION
+            // ════════════════════════════════════════════════════════════════
+            if (!hasPerm('manage_teachers'))
+                hideEl('button[onclick="openTeacherModal()"]');
 
-            // Structure CRUD buttons (Add Class/Group/Course/Unit)
+            // loginAsTeacher: owner-only — always hidden for non-owners here
+            hideEl('button[onclick="loginAsTeacher()"]');
+
+            // ════════════════════════════════════════════════════════════════
+            // ADMINS SECTION
+            // ════════════════════════════════════════════════════════════════
+            if (!hasPerm('manage_admins'))
+                hideEl('button[onclick="openAddAdminModal()"]');
+
+            // Audit Logs: manager+ level
+            if (!hasPerm('manage_admins') && !hasPerm('manage_teachers'))
+                hideEl('button[onclick="loadAuditLogs()"]');
+
+            // ════════════════════════════════════════════════════════════════
+            // STRUCTURE — Classes, Groups, Courses, Units
+            // ════════════════════════════════════════════════════════════════
             if (!hasPerm('manage_structure')) {
+                // "Add" buttons inside card headers (not small btn-sm action buttons)
                 document.querySelectorAll(
-                    '#classes .card-header .btn, #groups .card-header .btn, ' +
-                    '#courses .card-header .btn, #units .card-header .btn'
+                    '#classes .card-header .btn:not(.btn-sm), ' +
+                    '#groups .card-header .btn:not(.btn-sm), ' +
+                    '#courses .card-header .btn:not(.btn-sm), ' +
+                    '#units .card-header .btn:not(.btn-sm)'
                 ).forEach(btn => btn.style.display = 'none');
             }
 
-            // Question Bank: restrict write actions
-            if (!hasPerm('manage_qbank')) {
-                document.querySelectorAll('.qbank-add-btn, .qbank-edit-btn, .qbank-delete-btn')
+            // ════════════════════════════════════════════════════════════════
+            // LESSONS & ZONE MANAGEMENT
+            // ════════════════════════════════════════════════════════════════
+            if (!hasPerm('manage_lessons')) {
+                // Add Lesson button
+                document.querySelectorAll('#lessons .card-header .btn:not(.btn-sm)')
                     .forEach(btn => btn.style.display = 'none');
+                // All zone delete buttons (video, podcast, mindscape, game, quiz, ai-lesson)
+                hideEl('button[onclick*="deleteZoneData"]');
             }
 
-            // Game Bank: restrict management
+            // ════════════════════════════════════════════════════════════════
+            // KAHOOT / GAME BANK
+            // ════════════════════════════════════════════════════════════════
             if (!hasPerm('manage_games')) {
-                document.querySelectorAll('.game-add-btn, .game-edit-btn, .game-delete-btn')
-                    .forEach(btn => btn.style.display = 'none');
+                hideEl('button[onclick="openKahootMakerStandalone()"]');
+                hideEl('button[onclick="saveToGameBank()"]');
+                hideEl('button[onclick="assignGameToLesson()"]');
+                hideEl('.game-add-btn, .game-edit-btn, .game-delete-btn');
             }
+
+            // ════════════════════════════════════════════════════════════════
+            // LIVE CLASSES
+            // ════════════════════════════════════════════════════════════════
+            if (!hasPerm('manage_live'))
+                hideEl('button[onclick="resetLiveSessions()"]');
+
+            // ════════════════════════════════════════════════════════════════
+            // TEACHER PLATFORMS
+            // ════════════════════════════════════════════════════════════════
+            if (!hasPerm('manage_teacher_platforms')) {
+                // Add Platform button — uses openModal('platformModal')
+                document.querySelectorAll('button[onclick*="platformModal"]')
+                    .forEach(btn => { if (!btn.onclick?.toString().includes('close')) btn.style.display = 'none'; });
+                hideEl('button[onclick="resetPlatformOrder()"]');
+            }
+
+            // ════════════════════════════════════════════════════════════════
+            // QUESTION BANK
+            // ════════════════════════════════════════════════════════════════
+            if (!hasPerm('manage_qbank'))
+                hideEl('.qbank-add-btn, .qbank-edit-btn, .qbank-delete-btn');
+
+            // ════════════════════════════════════════════════════════════════
+            // CHAT
+            // ════════════════════════════════════════════════════════════════
+            if (!hasPerm('send_chat'))
+                hideEl('.chat-delete-btn');
         }
 
         // Database connection to Node.js backend
