@@ -2304,25 +2304,8 @@
                     <button class="btn" onclick="openAddAdminModal()"><i class="fas fa-user-plus"></i> إضافة مدير
                         جديد</button>
                 </div>
-                <div style="overflow-x: auto;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>الاسم</th>
-                                <th>رقم الهاتف (الاسم المستخدم)</th>
-                                <th>كلمة المرور</th>
-                                <th>الصلاحيات</th>
-                                <th>إجراءات</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admins-list">
-                            <tr>
-                                <td colspan="5" style="text-align:center;color:var(--text-muted);padding:30px;">جارٍ
-                                    التحميل...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <div id="table-placeholder"></div>
+                <script src="../src/components/DataTable.js"></script>
             </div>
 
             <!-- Audit Logs -->
@@ -3566,11 +3549,19 @@
 
             // Render Admins
             const admins = allStudents.filter(u => u.role === 'admin');
-            if (abody) {
-                if (!admins.length) {
-                    abody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:20px;">لا يوجد مديرون آخرون</td></tr>`;
-                } else {
-                    abody.innerHTML = admins.map(u => {
+            const tablePlaceholder = document.getElementById('table-placeholder');
+            
+            if (tablePlaceholder) {
+                // Sample Data as requested for initial testing
+                const sampleData = [
+                    { id: '123', name: "Ahmed", phone: "01000000000", password: "123", permissions: { view_students: true } }
+                ];
+                
+                const columns = [
+                    { key: "name", label: "الاسم" },
+                    { key: "phone", label: "رقم الهاتف (الاسم المستخدم)" },
+                    { key: "password", label: "كلمة المرور", render: (u) => u.password || '******' },
+                    { key: "permissions", label: "الصلاحيات", render: (u) => {
                         let permsObj = u.permissions || {};
                         let permsAr = [];
                         if (permsObj.view_students || Object.keys(permsObj).length === 0) permsAr.push('استعراض الطلاب');
@@ -3581,23 +3572,17 @@
                         if (permsObj.view_reports) permsAr.push('التقارير');
                         if (permsObj.manage_admins) permsAr.push('إدارة المديرين');
                         if (permsAr.length === 0) permsAr.push('بدون صلاحيات');
+                        return permsAr.map(p => `<span style="background:rgba(109,58,238,0.2); border:1px solid rgba(109,58,238,0.4); color:#fff; padding:2px 6px; border-radius:4px; font-size:11px; margin-bottom:4px; display:inline-block; margin-left:4px;">${p}</span>`).join('');
+                    }},
+                    { key: "actions", label: "إجراءات", render: (u) => `
+                        <button class="btn btn-sm" style="background:#3b82f6; color:white;" onclick="editAdmin('${u.id}')" title="تعديل"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteAdmin('${u.id}','${u.name}')" title="حذف"><i class="fas fa-trash"></i></button>
+                    `}
+                ];
 
-                        let permsHtml = permsAr.map(p => `<span style="background:rgba(109,58,238,0.2); border:1px solid rgba(109,58,238,0.4); color:#fff; padding:2px 6px; border-radius:4px; font-size:11px; margin-bottom:4px; display:inline-block; margin-left:4px;">${p}</span>`).join('');
-
-                        return `
-                        <tr>
-                            <td>${u.name}</td>
-                            <td>${u.phone}</td>
-                            <td>${u.password || '******'}</td>
-                            <td><div style="display:flex; flex-wrap:wrap; gap:4px;">${permsHtml}</div></td>
-                            <td>
-                                <button class="btn btn-sm" style="background:#3b82f6; color:white;" onclick="editAdmin('${u.id}')" title="تعديل"><i class="fas fa-edit"></i></button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteAdmin('${u.id}','${u.name}')" title="حذف"><i class="fas fa-trash"></i></button>
-                            </td>
-                        </tr>
-                        `;
-                    }).join('');
-                }
+                // Inject component using real data (fallback to sample data if empty to show the component structure)
+                const dataToRender = admins.length > 0 ? admins : sampleData;
+                tablePlaceholder.innerHTML = renderDataTable(dataToRender, columns);
             }
 
             // Render Students
