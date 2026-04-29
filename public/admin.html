@@ -3919,9 +3919,10 @@
             const loader = document.getElementById('global-loader');
             if (loader && loader.style.display !== 'none') {
                 loader.style.display = 'none';
-                console.warn("⚠️ [Boot] Forced loading recovery triggered after timeout.");
+                document.body.classList.remove('loading');
+                console.warn("⚠️ [Boot] Forced loading recovery triggered after 5s timeout.");
             }
-        }, 8000);
+        }, 5000);
 
         const isStaticEnv = location.hostname.includes("github.io") || 
                            location.hostname.includes("github.com") ||
@@ -3999,7 +4000,7 @@
             }
 
             // 5. Section-specific loaders (Centralized & Protected)
-            safeInit(() => {
+            safeStep(() => {
                 switch(targetId) {
                     case 'dashboard': updateStats(); break;
                     case 'students': loadStudents(); break;
