@@ -3518,293 +3518,13 @@
     <script src="https://numi-production-7484.up.railway.app/socket.io/socket.io.js"></script>
     <!-- Permission System Core Layer -->
     <script src="../src/services/PermissionService.js"></script>
+    <script src="../src/admin_core.js"></script>
     <script>
-        // ─── Authentication & Role Bootstrap ─────────────────────────────────
-        const SESSION_KEY = 'numi_session_user';
-        const sessionSaved = localStorage.getItem(SESSION_KEY);
-        let currentUser = null;
-        let _userProfile = null; // Resolved profile via PermissionService
+        // Initialize the modularized admin core
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.initAdmin) window.initAdmin();
+        });
 
-        if (!sessionSaved) {
-            window.location.href = 'index.html';
-        } else {
-            currentUser = JSON.parse(sessionSaved);
-            // Allow admin, manager, teacher AND super_admin into the dashboard
-            const allowedRoles = ['admin', 'manager', 'teacher', 'super_admin'];
-            if (!allowedRoles.includes(currentUser.role)) {
-                window.location.href = 'index.html';
-            }
-            // Build full resolved profile using PermissionService
-            if (window.PermissionService) {
-                _userProfile = window.PermissionService.buildUserProfile(currentUser);
-            }
-        }
-
-        /** Quick check — is the current user the platform owner? */
-        function isSuperAdmin() {
-            if (!currentUser) return false;
-            return currentUser.role === 'super_admin'
-                || currentUser.name === 'سيد حمدي'
-                || currentUser.phone === '01110154093'
-                || (currentUser.permissions && currentUser.permissions.isSuperAdmin === true);
-        }
-
-        /**
-         * hasPerm(permName) — checks if current user has a specific permission.
-         * Delegates to PermissionService when available, falls back to legacy check.
-         * This keeps backward compatibility with all existing hasPerm() calls in the code.
-         */
-        function hasPerm(permName) {
-            if (!currentUser) return false;
-            // Super Admin has ALL permissions unconditionally
-            if (isSuperAdmin()) return true;
-            // Use PermissionService if available
-            if (window.PermissionService && _userProfile) {
-                return window.PermissionService.hasPermission(_userProfile, permName);
-            }
-            // Legacy fallback
-            const isOwner = currentUser.permissions?.isOwner || currentUser.id === 'admin';
-            if (isOwner) return true;
-            return !!(currentUser.permissions || {})[permName];
-        }
-
-        /**
-         * hasRole(...roles) — checks if current user has one of the specified roles.
-         * Usage: hasRole('admin')  or  hasRole('admin','manager')
-         */
-        function hasRole(...roles) {
-            if (!currentUser) return false;
-            return roles.includes(currentUser.role);
-        }
-
-        /**
-         * getRoleLabel() — returns a localised role badge label.
-         */
-        function getRoleLabel() {
-            if (!currentUser) return '';
-            if (isSuperAdmin()) return '👑 مالك المنصة';
-            const isOwner = currentUser.permissions?.isOwner || currentUser.id === 'admin';
-            const map = {
-                admin:   isOwner ? 'مدير عام' : 'مدير',
-                manager: 'مدير تعليمي',
-                teacher: 'معلم'
-            };
-            return map[currentUser.role] || currentUser.role;
-        }
-
-        function logoutAdmin() {
-            localStorage.removeItem(SESSION_KEY);
-            window.location.href = 'index.html';
-        }
-
-        /**
-         * applyRoleBasedUI()
-         * Central function — applies permission-based show/hide to ALL UI elements.
-         * Called once on login. Uses hasPerm() + hasRole() via PermissionService.
-         *
-         * FULL COVERAGE AUDIT ─ Protected elements:
-         *  ✅ Sidebar navigation links (all 12 sections)
-         *  ✅ Add/Edit/Delete — Students, Teachers, Admins
-         *  ✅ Add — Classes, Groups, Courses, Units, Lessons
-         *  ✅ Bulk actions bar (status update + bulk delete)
-         *  ✅ Zone delete (Video, Podcast, Mindscape, Game, Quiz, AI-Lesson)
-         *  ✅ Kahoot Maker, Save to Game Bank, Assign Game to Lesson
-         *  ✅ Live Classes — Reset Sessions button
-         *  ✅ Teacher Platforms — Add Platform + Reset Order
-         *  ✅ Teacher Details — loginAsTeacher (Owner only)
-         *  ✅ Audit Logs — Admin/Manager only
-         *  ✅ Question Bank write buttons
-         *  ✅ Chat delete messages
-         */
-        function applyRoleBasedUI() {
-            const isOwner = currentUser?.permissions?.isOwner || currentUser?.id === 'admin';
-
-            // ── SUPER ADMIN: FULL ACCESS — EXIT IMMEDIATELY ───────────────────
-            // The platform owner (phone: 01110154093) has zero restrictions.
-            if (isSuperAdmin()) {
-                const show = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'block'; };
-                show('nav-platform-management');
-                show('nav-super-admin-orgs');
-                show('nav-super-admin-teachers');
-                show('nav-super-admin-students');
-                show('nav-super-admin-perms');
-                show('nav-super-admin-settings');
-                show('nav-super-admin-subs');
-                show('nav-super-admin-finance');
-                show('nav-super-admin-audit');
-                show('nav-super-admin-growth');
-                return;
-            }
-
-            // ── Helpers ──────────────────────────────────────────────────────
-            /** Hide all elements matching a CSS selector */
-            const hideEl = (sel) => document.querySelectorAll(sel).forEach(el => el.style.display = 'none');
-            /** Hide a sidebar nav link by its data-target attribute */
-            const hideLink = (target) => {
-                const el = document.querySelector(`.menu a[data-target="${target}"]`);
-                if (el) el.parentElement.style.display = 'none';
-            };
-
-            // ── Platform Management sidebar link ──────────────────────────────
-            if (hasPerm('manage_teachers') || hasPerm('manage_admins') || isOwner) {
-                const pmLink = document.getElementById('nav-platform-management');
-                if (pmLink) pmLink.style.display = 'block';
-            }
-
-            // Owner-admin bypass — full access, exit early
-            if (isOwner) return;
-
-            // ════════════════════════════════════════════════════════════════
-            // SIDEBAR NAVIGATION
-            // ════════════════════════════════════════════════════════════════
-            if (!hasPerm('view_dashboard'))          hideLink('dashboard');
-            if (!hasPerm('view_students'))           hideLink('students');
-            if (!hasPerm('view_reports'))            hideLink('reports');
-            if (!hasPerm('view_qbank'))              hideLink('question-bank');
-            if (!hasPerm('view_chat'))               hideLink('chat');
-            if (!hasPerm('view_live'))               hideLink('live-classes');
-            if (!hasPerm('view_teacher_platforms'))  hideLink('teacher-platforms');
-            if (!hasPerm('manage_lessons'))          hideLink('ailesson-zone');
-            if (!hasPerm('view_games')) {
-                hideLink('game-zone');
-                hideLink('game-bank-section');
-            }
-            if (!hasPerm('view_structure') && !hasPerm('manage_structure')) {
-                ['classes','groups','courses','units','lessons'].forEach(hideLink);
-            }
-
-            // ════════════════════════════════════════════════════════════════
-            // STUDENTS SECTION
-            // ════════════════════════════════════════════════════════════════
-            if (!hasPerm('add_student'))
-                hideEl('button[onclick="openStudentModal()"]');
-
-            // Bulk actions bar — hide entirely if no edit OR delete perm
-            if (!hasPerm('edit_student') && !hasPerm('delete_student')) {
-                hideEl('#bulk-actions-bar');
-            } else {
-                if (!hasPerm('edit_student'))
-                    hideEl('button[onclick*="bulkStatusUpdate"]');
-                if (!hasPerm('delete_student'))
-                    hideEl('button[onclick="bulkDeleteStudents()"]');
-            }
-
-            // ════════════════════════════════════════════════════════════════
-            // TEACHERS SECTION
-            // ════════════════════════════════════════════════════════════════
-            if (!hasPerm('manage_teachers'))
-                hideEl('button[onclick="openTeacherModal()"]');
-
-            // loginAsTeacher: owner-only — always hidden for non-owners here
-            hideEl('button[onclick="loginAsTeacher()"]');
-
-            // ════════════════════════════════════════════════════════════════
-            // ADMINS SECTION
-            // ════════════════════════════════════════════════════════════════
-            if (!hasPerm('manage_admins'))
-                hideEl('button[onclick="openAddAdminModal()"]');
-
-            // Audit Logs: manager+ level
-            if (!hasPerm('manage_admins') && !hasPerm('manage_teachers'))
-                hideEl('button[onclick="loadAuditLogs()"]');
-
-            // ════════════════════════════════════════════════════════════════
-            // STRUCTURE — Classes, Groups, Courses, Units
-            // ════════════════════════════════════════════════════════════════
-            if (!hasPerm('manage_structure')) {
-                // "Add" buttons inside card headers (not small btn-sm action buttons)
-                document.querySelectorAll(
-                    '#classes .card-header .btn:not(.btn-sm), ' +
-                    '#groups .card-header .btn:not(.btn-sm), ' +
-                    '#courses .card-header .btn:not(.btn-sm), ' +
-                    '#units .card-header .btn:not(.btn-sm)'
-                ).forEach(btn => btn.style.display = 'none');
-            }
-
-            // ════════════════════════════════════════════════════════════════
-            // LESSONS & ZONE MANAGEMENT
-            // ════════════════════════════════════════════════════════════════
-            if (!hasPerm('manage_lessons')) {
-                // Add Lesson button
-                document.querySelectorAll('#lessons .card-header .btn:not(.btn-sm)')
-                    .forEach(btn => btn.style.display = 'none');
-                // All zone delete buttons (video, podcast, mindscape, game, quiz, ai-lesson)
-                hideEl('button[onclick*="deleteZoneData"]');
-            }
-
-            // ════════════════════════════════════════════════════════════════
-            // KAHOOT / GAME BANK
-            // ════════════════════════════════════════════════════════════════
-            if (!hasPerm('manage_games')) {
-                hideEl('button[onclick="openKahootMakerStandalone()"]');
-                hideEl('button[onclick="saveToGameBank()"]');
-                hideEl('button[onclick="assignGameToLesson()"]');
-                hideEl('.game-add-btn, .game-edit-btn, .game-delete-btn');
-            }
-
-            // ════════════════════════════════════════════════════════════════
-            // LIVE CLASSES
-            // ════════════════════════════════════════════════════════════════
-            if (!hasPerm('manage_live'))
-                hideEl('button[onclick="resetLiveSessions()"]');
-
-            // ════════════════════════════════════════════════════════════════
-            // TEACHER PLATFORMS
-            // ════════════════════════════════════════════════════════════════
-            if (!hasPerm('manage_teacher_platforms')) {
-                // Add Platform button — uses openModal('platformModal')
-                document.querySelectorAll('button[onclick*="platformModal"]')
-                    .forEach(btn => { if (!btn.onclick?.toString().includes('close')) btn.style.display = 'none'; });
-                hideEl('button[onclick="resetPlatformOrder()"]');
-            }
-
-            // ════════════════════════════════════════════════════════════════
-            // QUESTION BANK
-            // ════════════════════════════════════════════════════════════════
-            if (!hasPerm('manage_qbank'))
-                hideEl('.qbank-add-btn, .qbank-edit-btn, .qbank-delete-btn');
-
-            // ════════════════════════════════════════════════════════════════
-            // CHAT
-            // ════════════════════════════════════════════════════════════════
-            if (!hasPerm('send_chat'))
-                hideEl('.chat-delete-btn');
-        }
-
-        // Database connection to Node.js backend
-        const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-            ? 'http://localhost:5000/api'
-            : 'https://numi-production-7484.up.railway.app/api';
-
-        // Super Admin gets global scope; regular users are scoped to their own tenant
-        const currentTenantId = isSuperAdmin()
-            ? 'global'
-            : ((currentUser.permissions && currentUser.permissions.isOwner) || currentUser.id === 'admin')
-                ? 'main'
-                : currentUser.id;
-
-        const originalFetch = window.fetch;
-        window.fetch = function () {
-            let [resource, config] = arguments;
-            if (!config) config = {};
-            if (!config.headers) config.headers = {};
-            config.headers['x-user-id'] = currentUser.id;
-
-            if (typeof resource === 'string' && resource.startsWith(API_URL)) {
-                try {
-                    const urlObj = new URL(resource);
-                    if (isSuperAdmin()) {
-                        urlObj.searchParams.set('scope', 'global');
-                    } else {
-                        urlObj.searchParams.set('tenantId', currentTenantId);
-                    }
-                    resource = urlObj.toString();
-                } catch (e) { }
-            }
-            return originalFetch(resource, config);
-        };
-
-        let db = { classes: {} };
         let socket = null;
         try {
             socket = io(API_URL.replace('/api', ''));
@@ -3823,10 +3543,15 @@
                 const res = await fetch(`${API_URL}/platform-data`);
                 if (res.ok) {
                     const data = await res.json();
-                    if (data && data.classes) db = data;
+                    if (data && data.classes) {
+                        db = data;
+                        localStorage.setItem('numi_db_cache', JSON.stringify(db));
+                    }
                 }
             } catch (err) {
-                console.error("Failed to load DB from backend, falling back to empty/cache", err);
+                console.error("Failed to load DB from backend, falling back to cache", err);
+                const cache = localStorage.getItem('numi_db_cache');
+                if (cache) db = JSON.parse(cache);
             }
         }
 
@@ -3843,6 +3568,9 @@
             // Debounce the actual network save — prevent flooding on rapid edits
             clearTimeout(_saveDBTimer);
             _saveDBTimer = setTimeout(async () => {
+                // Sync to local cache immediately
+                localStorage.setItem('numi_db_cache', JSON.stringify(db));
+
                 try {
                     await fetch(`${API_URL}/platform-data`, {
                         method: 'POST',
@@ -4849,6 +4577,7 @@
                 const table = document.getElementById('platform-overview-table');
                 if (table) table.innerHTML = '';
 
+                let tableHtml = [];
                 classList.forEach(cid => {
                     const cls = db.classes[cid];
                     let groups = Object.keys(cls.groups || {}).length;
@@ -4869,18 +4598,17 @@
                         }
                     }
 
-                    if (table) {
-                        const studentCount = (allStudents || []).filter(s => s.classId === cid).length;
-                        table.innerHTML += `
-                            <tr>
-                                <td>${cls.name}</td>
-                                <td>${groups}</td>
-                                <td>${coursesCount}</td>
-                                <td>${studentCount}</td>
-                            </tr>
-                        `;
-                    }
+                    const studentCount = (allStudents || []).filter(s => s.classId === cid).length;
+                    tableHtml.push(`
+                        <tr>
+                            <td>${cls.name}</td>
+                            <td>${groups}</td>
+                            <td>${coursesCount}</td>
+                            <td>${studentCount}</td>
+                        </tr>
+                    `);
                 });
+                if (table) table.innerHTML = tableHtml.join('');
 
                 if (document.getElementById('stats-classes')) document.getElementById('stats-classes').innerText = classList.length;
                 if (document.getElementById('stats-groups')) document.getElementById('stats-groups').innerText = groupCount;
