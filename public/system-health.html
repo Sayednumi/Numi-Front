@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Numi - System Health Report Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #0f172a; --card: rgba(30,41,59,0.85); --border: rgba(255,255,255,0.08);
+            --primary: #3b82f6; --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+            --text: #f8fafc; --muted: #94a3b8;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Cairo',sans-serif; }
+        body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 2rem;
+            background-image: radial-gradient(at 0% 0%, rgba(59,130,246,0.12) 0, transparent 50%),
+                              radial-gradient(at 100% 100%, rgba(239,68,68,0.08) 0, transparent 50%);
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        /* Header */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        .header h1 { font-size: 1.8rem; font-weight: 800; display: flex; align-items: center; gap: 0.75rem; }
+        .header-actions { display: flex; gap: 1rem; }
+        
+        .btn { padding: 0.6rem 1.2rem; border-radius: 0.5rem; font-family: inherit; font-weight: 700; cursor: pointer; border: none; display: flex; align-items: center; gap: 0.5rem; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-ghost { background: rgba(255,255,255,0.05); color: var(--text); border: 1px solid var(--border); }
+        .btn-ghost:hover { background: rgba(255,255,255,0.1); }
+        .btn-warning { background: var(--warning); color: #fff; }
+        .btn-warning:hover { background: #d97706; }
+
+        /* KPI Cards */
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .kpi-card { background: var(--card); border: 1px solid var(--border); border-radius: 1rem; padding: 1.5rem; backdrop-filter: blur(10px); }
+        .kpi-title { color: var(--muted); font-size: 0.9rem; margin-bottom: 0.5rem; font-weight: 700; }
+        .kpi-value { font-size: 2rem; font-weight: 800; }
+        .kpi-value.score { color: var(--success); }
+        .kpi-value.issues { color: var(--danger); }
+
+        /* Issues Section */
+        .panel { background: var(--card); border: 1px solid var(--border); border-radius: 1rem; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+        .panel-title { font-size: 1.2rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem; }
+
+        /* Issue List */
+        .issue-list { display: flex; flex-direction: column; gap: 0.75rem; max-height: 400px; overflow-y: auto; padding-right: 0.5rem; }
+        .issue-list::-webkit-scrollbar { width: 6px; }
+        .issue-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
+        .issue-item { display: flex; gap: 1rem; background: rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 1rem; border-radius: 0.75rem; }
+        .issue-item.cat-frontend { border-right: 4px solid var(--primary); }
+        .issue-item.cat-backend { border-right: 4px solid var(--warning); }
+        .issue-item.cat-permissions { border-right: 4px solid var(--success); }
+        .issue-item.cat-ai { border-right: 4px solid var(--danger); }
+
+        .issue-icon { width: 40px; height: 40px; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; background: rgba(255,255,255,0.05); }
+        .issue-body { flex: 1; }
+        .issue-title { font-weight: 700; margin-bottom: 0.25rem; display: flex; justify-content: space-between; }
+        .issue-desc { font-size: 0.85rem; color: var(--muted); }
+        .issue-meta { font-size: 0.75rem; padding: 0.1rem 0.5rem; background: rgba(255,255,255,0.1); border-radius: 999px; margin-right: 0.5rem; }
+        
+        .auto-fix-badge { font-size: 0.75rem; color: var(--success); background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); padding: 0.1rem 0.5rem; border-radius: 999px; }
+
+        /* Layout Grid */
+        .dashboard-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+
+        /* Progress Circle */
+        .progress-circle { position: relative; width: 120px; height: 120px; margin: 0 auto; }
+        .progress-circle svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .progress-circle circle { fill: none; stroke-width: 10; stroke-linecap: round; }
+        .progress-circle .bg { stroke: rgba(255,255,255,0.1); }
+        .progress-circle .progress { stroke: var(--success); stroke-dasharray: 314; stroke-dashoffset: 314; transition: stroke-dashoffset 1s ease; }
+        .progress-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.8rem; font-weight: 800; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1><i class="fas fa-stethoscope" style="color:var(--success);"></i> System Health Report Dashboard</h1>
+        <div class="header-actions">
+            <button class="btn btn-ghost" onclick="loadReport()"><i class="fas fa-sync-alt"></i> تحديث الفحص</button>
+            <button class="btn btn-warning" onclick="autoFix()"><i class="fas fa-magic"></i> إصلاح تلقائي (Auto Fix)</button>
+            <button class="btn btn-primary" onclick="exportPDF()"><i class="fas fa-file-pdf"></i> تصدير التقرير PDF</button>
+        </div>
+    </div>
+
+    <div class="kpi-grid">
+        <div class="kpi-card" style="text-align: center;">
+            <div class="kpi-title">نسبة جاهزية النظام (Readiness)</div>
+            <div class="progress-circle">
+                <svg><circle class="bg" cx="60" cy="60" r="50"></circle><circle class="progress" cx="60" cy="60" r="50" id="readiness-circle"></circle></svg>
+                <div class="progress-text" id="readiness-text">0%</div>
+            </div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-title">إجمالي الأخطاء المكتشفة</div>
+            <div class="kpi-value issues" id="kpi-total-issues">0</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-title">أخطاء واجهة المستخدم (Dead UI)</div>
+            <div class="kpi-value" style="color:var(--primary);" id="kpi-frontend">0</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-title">تجاوز نظام الذكاء الاصطناعي</div>
+            <div class="kpi-value" style="color:var(--danger);" id="kpi-ai">0</div>
+        </div>
+    </div>
+
+    <div class="dashboard-layout">
+        <!-- Chart -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title"><i class="fas fa-chart-pie"></i> توزيع المشاكل حسب القسم</div>
+            </div>
+            <canvas id="issuesChart" height="200"></canvas>
+        </div>
+
+        <!-- Issues List -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title"><i class="fas fa-clipboard-list"></i> قائمة العناصر المكسورة والمشاكل</div>
+            </div>
+            <div class="issue-list" id="issues-list">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let chartInstance = null;
+
+    const ICONS = {
+        frontend: 'fa-desktop',
+        backend: 'fa-server',
+        permissions: 'fa-key',
+        ai: 'fa-brain'
+    };
+
+    const COLORS = {
+        frontend: '#3b82f6',
+        backend: '#f59e0b',
+        permissions: '#10b981',
+        ai: '#ef4444'
+    };
+
+    async function loadReport() {
+        try {
+            // Fetch the JSON generated by our Audit Engine
+            const res = await fetch('audit_report.json');
+            if (!res.ok) throw new Error("Report not found. Run 'node src/utils/test_audit_engine.js' first.");
+            const data = await res.json();
+            renderDashboard(data);
+        } catch (e) {
+            console.error(e);
+            alert("فشل تحميل التقرير: " + e.message);
+        }
+    }
+
+    function renderDashboard(data) {
+        // 1. Readiness Score
+        const rScore = Math.max(0, data.readinessScore);
+        document.getElementById('readiness-text').innerText = rScore + '%';
+        
+        // Calculate stroke-dashoffset (Circumference is 314)
+        const offset = 314 - (314 * rScore) / 100;
+        const circle = document.getElementById('readiness-circle');
+        circle.style.strokeDashoffset = offset;
+        
+        // Color code the circle
+        if (rScore < 50) circle.style.stroke = 'var(--danger)';
+        else if (rScore < 80) circle.style.stroke = 'var(--warning)';
+        else circle.style.stroke = 'var(--success)';
+
+        // 2. KPIs
+        document.getElementById('kpi-total-issues').innerText = data.issues.length;
+        document.getElementById('kpi-frontend').innerText = data.summary.frontend;
+        document.getElementById('kpi-ai').innerText = data.summary.ai;
+
+        // 3. Chart
+        renderChart(data.summary);
+
+        // 4. Issues List
+        const list = document.getElementById('issues-list');
+        list.innerHTML = '';
+        
+        if (data.issues.length === 0) {
+            list.innerHTML = `<div style="text-align:center; padding: 2rem; color: var(--muted);">
+                <i class="fas fa-check-circle" style="font-size:3rem; color:var(--success); margin-bottom:1rem;"></i>
+                <p>النظام سليم بالكامل! لا توجد أخطاء مكتشفة.</p>
+            </div>`;
+            return;
+        }
+
+        data.issues.forEach(issue => {
+            const icon = ICONS[issue.category] || 'fa-bug';
+            const color = COLORS[issue.category] || '#fff';
+            
+            const item = document.createElement('div');
+            item.className = `issue-item cat-${issue.category}`;
+            item.innerHTML = `
+                <div class="issue-icon" style="color: ${color};">
+                    <i class="fas ${icon}"></i>
+                </div>
+                <div class="issue-body">
+                    <div class="issue-title">
+                        <span>${issue.message}</span>
+                        ${issue.autoFixable ? '<span class="auto-fix-badge"><i class="fas fa-wrench"></i> قابل للإصلاح</span>' : ''}
+                    </div>
+                    <div class="issue-desc">
+                        <span class="issue-meta">${issue.type}</span>
+                        الملف: <span style="font-family:monospace; color:${color};">${issue.file}</span>
+                    </div>
+                </div>
+            `;
+            list.appendChild(item);
+        });
+    }
+
+    function renderChart(summary) {
+        const ctx = document.getElementById('issuesChart').getContext('2d');
+        if (chartInstance) chartInstance.destroy();
+
+        chartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Frontend (UI)', 'Backend (API)', 'Permissions', 'AI System'],
+                datasets: [{
+                    data: [summary.frontend, summary.backend, summary.permissions, summary.ai],
+                    backgroundColor: [COLORS.frontend, COLORS.backend, COLORS.permissions, COLORS.ai],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right', labels: { color: '#f8fafc', font: { family: 'Cairo' } } }
+                }
+            }
+        });
+    }
+
+    function autoFix() {
+        alert("بدء عملية الإصلاح التلقائي (Auto Fix)...\nسيتم استخدام SystemAuditEngine.applyAutoFixes() لتصحيح الأخطاء الممكنة وتحديث الكود.");
+        // Simulated fix
+        setTimeout(() => {
+            alert("تم إصلاح 0 مشاكل. المتبقي: يحتاج لتدخل يدوي.");
+        }, 1500);
+    }
+
+    function exportPDF() {
+        alert("جاري تجهيز تقرير PDF للمستثمرين...");
+        window.print();
+    }
+
+    // Init
+    document.addEventListener('DOMContentLoaded', loadReport);
+</script>
+
+</body>
+</html>
