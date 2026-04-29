@@ -1182,7 +1182,12 @@
     </script>
 
     <!-- Main Content -->
-    <div class="main-content">
+        <!-- Subscription Warning Banner -->
+        <div id="subscription-warning-banner" style="display:none; background:var(--danger); color:white; text-align:center; padding:12px; font-weight:bold; margin: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);">
+            <i class="fas fa-exclamation-triangle"></i> <span id="sub-warning-text">تم انتهاء اشتراك المؤسسة، يرجى التجديد لاستعادة الوصول للميزات الاحترافية.</span>
+            <button class="btn btn-sm" style="background:white; color:var(--danger); margin-right:15px; border:none;" onclick="showSection('superAdminSubsSection')">تجديد الآن</button>
+        </div>
+
         <!-- Admin Navbar Placeholder -->
         <div id="admin-navbar-placeholder"></div>
         <script src="../src/components/AdminNavbar.js"></script>
@@ -2859,6 +2864,231 @@
         </div>
     </div>
 
+    <!-- Super Admin Teachers Section -->
+    <div id="superAdminTeachersSection" class="section" style="display:none;">
+        <div class="card-header"
+            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2><i class="fas fa-chalkboard-teacher" style="color:#3498db"></i> إدارة المعلمين (على مستوى المنصة)</h2>
+        </div>
+        <div class="card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>الاسم</th>
+                        <th>الهاتف</th>
+                        <th>المؤسسة</th>
+                        <th>الحالة</th>
+                    </tr>
+                </thead>
+                <tbody id="teachers-table-body">
+                    <tr><td colspan="4" style="text-align:center; padding:40px;"><i class="fas fa-spinner fa-spin"></i> جارٍ التحميل...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Super Admin Students Section -->
+    <div id="superAdminStudentsSection" class="section" style="display:none;">
+        <div class="card-header"
+            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2><i class="fas fa-user-graduate" style="color:#2ecc71"></i> إدارة الطلاب (على مستوى المنصة)</h2>
+        </div>
+        <div class="card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>الاسم</th>
+                        <th>الهاتف</th>
+                        <th>المؤسسة</th>
+                        <th>الصف</th>
+                        <th>الحالة</th>
+                    </tr>
+                </thead>
+                <tbody id="students-table-body">
+                    <tr><td colspan="5" style="text-align:center; padding:40px;"><i class="fas fa-spinner fa-spin"></i> جارٍ التحميل...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Super Admin Subscriptions Section -->
+    <div id="superAdminSubsSection" class="section" style="display:none;">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2><i class="fas fa-credit-card" style="color:#9b59b6"></i> إدارة الاشتراكات والتحكم في الوصول</h2>
+        </div>
+        <div class="grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+            <div class="card" style="border-right: 4px solid var(--primary);">
+                <h4 style="color:var(--text-muted);">إجمالي الاشتراكات النشطة</h4>
+                <h2 id="total-active-subs" style="margin:10px 0;">0</h2>
+            </div>
+            <div class="card" style="border-right: 4px solid var(--danger);">
+                <h4 style="color:var(--text-muted);">اشتراكات منتهية</h4>
+                <h2 id="total-expired-subs" style="margin:10px 0;">0</h2>
+            </div>
+            <div class="card" style="border-right: 4px solid var(--accent);">
+                <h4 style="color:var(--text-muted);">إجمالي استخدام AI اليوم</h4>
+                <h2 id="total-ai-today" style="margin:10px 0;">0</h2>
+            </div>
+        </div>
+        <div class="card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>المؤسسة</th>
+                        <th>الخطة</th>
+                        <th>تاريخ الانتهاء</th>
+                        <th>استخدام AI</th>
+                        <th>الحالة</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="subs-table-body">
+                    <tr><td colspan="6" style="text-align:center; padding:40px;"><i class="fas fa-spinner fa-spin"></i> جارٍ التحميل...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Financial Control Center Section -->
+    <div id="financialControlSection" class="section" style="display:none;">
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2><i class="fas fa-file-invoice-dollar" style="color:#27ae60"></i> المركز المالي (SaaS Finance)</h2>
+            <button class="btn" onclick="openModal('exemptionModal')"><i class="fas fa-user-shield"></i> منح إعفاء يدوي</button>
+        </div>
+
+        <div class="grid" style="grid-template-columns: repeat(5, 1fr); gap: 15px; margin-bottom: 25px;">
+            <div class="card" style="border-top: 4px solid #27ae60; text-align:center;">
+                <h4 style="color:var(--text-muted); font-size:12px;">إجمالي الإيرادات</h4>
+                <h3 id="fin-total-revenue" style="margin:10px 0; color:#27ae60;">0 EGP</h3>
+            </div>
+            <div class="card" style="border-top: 4px solid #f39c12; text-align:center;">
+                <h4 style="color:var(--text-muted); font-size:12px;">مدفوعات معلقة</h4>
+                <h3 id="fin-pending-payments" style="margin:10px 0; color:#f39c12;">0</h3>
+            </div>
+            <div class="card" style="border-top: 4px solid #3498db; text-align:center;">
+                <h4 style="color:var(--text-muted); font-size:12px;">اشتراكات نشطة</h4>
+                <h3 id="fin-active-subs" style="margin:10px 0; color:#3498db;">0</h3>
+            </div>
+            <div class="card" style="border-top: 4px solid #e74c3c; text-align:center;">
+                <h4 style="color:var(--text-muted); font-size:12px;">اشتراكات منتهية</h4>
+                <h3 id="fin-expired-subs" style="margin:10px 0; color:#e74c3c;">0</h3>
+            </div>
+            <div class="card" style="border-top: 4px solid #9b59b6; text-align:center;">
+                <h4 style="color:var(--text-muted); font-size:12px;">إعفاءات نشطة</h4>
+                <h3 id="fin-total-exemptions" style="margin:10px 0; color:#9b59b6;">0</h3>
+            </div>
+        </div>
+
+        <!-- Payments Table -->
+        <div class="card" style="margin-bottom:25px;">
+            <div class="card-header"><h3><i class="fas fa-history"></i> سجل المدفوعات</h3></div>
+            <div style="padding:15px; display:flex; gap:10px; flex-wrap:wrap;">
+                <select class="form-control" id="pay-filter-status" onchange="fetchPayments()" style="width:150px;">
+                    <option value="">كل الحالات</option>
+                    <option value="pending">معلق</option>
+                    <option value="verified">تم التأكيد</option>
+                    <option value="rejected">مرفوض</option>
+                </select>
+                <select class="form-control" id="pay-filter-method" onchange="fetchPayments()" style="width:150px;">
+                    <option value="">كل الطرق</option>
+                    <option value="vodafone_cash">فودافون كاش</option>
+                    <option value="instapay">InstaPay</option>
+                    <option value="fawry">فوري</option>
+                </select>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>المؤسسة</th>
+                        <th>المبلغ</th>
+                        <th>الطريقة</th>
+                        <th>كود العملية</th>
+                        <th>الحالة</th>
+                        <th>التاريخ</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="payments-table-body"></tbody>
+            </table>
+        </div>
+
+        <!-- Exemptions Table -->
+        <div class="card">
+            <div class="card-header"><h3><i class="fas fa-user-shield"></i> سجل الإعفاءات اليدوية</h3></div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>المؤسسة</th>
+                        <th>بواسطة</th>
+                        <th>النوع</th>
+                        <th>السبب</th>
+                        <th>ينتهي في</th>
+                        <th>الحالة</th>
+                    </tr>
+                </thead>
+                <tbody id="exemptions-table-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Audit Log Viewer Section -->
+    <div id="auditLogSection" class="section" style="display:none;">
+        <div class="card-header" style="margin-bottom:20px;">
+            <h2><i class="fas fa-shield-alt" style="color:#e67e22"></i> سجل العمليات (Audit Logs)</h2>
+        </div>
+        <div class="card">
+            <div style="padding:15px; display:flex; gap:10px;">
+                <input type="text" class="form-control" id="audit-filter-action" placeholder="بحث بالعملية (مثلاً: LOGIN)..." oninput="fetchAuditLogs()">
+                <input type="text" class="form-control" id="audit-filter-org" placeholder="بحث بالمؤسسة..." oninput="fetchAuditLogs()">
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>العملية</th>
+                        <th>بواسطة</th>
+                        <th>المؤسسة</th>
+                        <th>التفاصيل</th>
+                        <th>IP</th>
+                        <th>الوقت</th>
+                    </tr>
+                </thead>
+                <tbody id="audit-table-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Exemption Modal -->
+    <div id="exemptionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>منح إعفاء لمؤسسة</h2>
+                <span class="close-modal" onclick="closeModal('exemptionModal')">&times;</span>
+            </div>
+            <form id="exemptionForm" onsubmit="grantExemption(event)">
+                <div class="form-group">
+                    <label>المؤسسة</label>
+                    <select class="form-control" id="ex-org-id" required></select>
+                </div>
+                <div class="form-group">
+                    <label>نوع الإعفاء</label>
+                    <select class="form-control" id="ex-type" required>
+                        <option value="free_access">وصول مجاني كامل</option>
+                        <option value="manual_deal">اتفاق يدوي (Manual Deal)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>تاريخ الانتهاء</label>
+                    <input type="date" class="form-control" id="ex-end-date" required>
+                </div>
+                <div class="form-group">
+                    <label>السبب / ملاحظات</label>
+                    <textarea class="form-control" id="ex-reason" rows="3" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-block">تفعيل الإعفاء</button>
+            </form>
+        </div>
+    </div>
+
     <!-- Admin Account Modal Placeholder -->
     <div id="admin-modal-placeholder"></div>
     <script src="../src/components/Modal.js"></script>
@@ -3107,8 +3337,13 @@
                 const show = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'block'; };
                 show('nav-platform-management');
                 show('nav-super-admin-orgs');
+                show('nav-super-admin-teachers');
+                show('nav-super-admin-students');
                 show('nav-super-admin-perms');
                 show('nav-super-admin-settings');
+                show('nav-super-admin-subs');
+                show('nav-super-admin-finance');
+                show('nav-super-admin-audit');
                 return;
             }
 
@@ -7734,36 +7969,36 @@
         tableObserver.observe(document.body, { childList: true, subtree: true });
         window.addEventListener('resize', bindTableLabels);
 
-        // ─── SUPER ADMIN: ORGANIZATION MANAGEMENT ──────────────────────────
-        let allOrganizations = [];
-
-        async function fetchAllOrganizations() {
+        // ─── SUPER ADMIN: DATA FLOW & MANAGEMENT ──────────────────────────
+        
+        /** 1. Fetch & Render Organizations */
+        async function fetchOrganizations() {
             const tbody = document.getElementById('organizations-table-body');
             if (!tbody) return;
-
             try {
+                console.log('Fetching Organizations...');
                 const res = await fetch(`${API_URL}/organizations?scope=global`);
-                if (res.ok) {
-                    allOrganizations = await res.json();
-                    renderOrganizationsTable(allOrganizations);
+                const json = await res.json();
+                console.log('Organizations Response:', json);
+                
+                if (json.success) {
+                    renderOrganizationsTable(json.data);
                 } else {
-                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--danger);">خطأ في تحميل البيانات</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--danger);">خطأ: ${json.error || 'فشل تحميل البيانات'}</td></tr>`;
                 }
             } catch (err) {
-                console.error('Failed to fetch organizations', err);
+                console.error('fetchOrganizations Error:', err);
                 tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--danger);">فشل الاتصال بالخادم</td></tr>`;
             }
         }
 
         function renderOrganizationsTable(orgs) {
             const tbody = document.getElementById('organizations-table-body');
-            if (!tbody) return;
-
+            if (!tbody || !orgs) return;
             if (orgs.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:40px; color:var(--text-muted);">لا توجد مؤسسات مسجلة حالياً</td></tr>`;
                 return;
             }
-
             tbody.innerHTML = orgs.map(org => `
                 <tr>
                     <td style="font-weight:700;">${org.name}</td>
@@ -7778,54 +8013,384 @@
             `).join('');
         }
 
+        /** 2. Fetch & Render Teachers */
+        async function fetchTeachers() {
+            const tbody = document.getElementById('teachers-table-body');
+            if (!tbody) return;
+            try {
+                console.log('Fetching Teachers...');
+                const res = await fetch(`${API_URL}/users?role=teacher&scope=global`);
+                const json = await res.json();
+                console.log('Teachers Response:', json);
+                
+                if (json.success) {
+                    renderTeachersTable(json.data);
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--danger);">خطأ: ${json.error || 'فشل تحميل البيانات'}</td></tr>`;
+                }
+            } catch (err) {
+                console.error('fetchTeachers Error:', err);
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--danger);">فشل الاتصال بالخادم</td></tr>`;
+            }
+        }
+
+        function renderTeachersTable(teachers) {
+            const tbody = document.getElementById('teachers-table-body');
+            if (!tbody || !teachers) return;
+            if (teachers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:40px; color:var(--text-muted);">لا يوجد معلمون مسجلون حالياً</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = teachers.map(t => `
+                <tr>
+                    <td style="font-weight:700;">${t.name}</td>
+                    <td>${t.phone}</td>
+                    <td>${t.tenantId || '—'}</td>
+                    <td><span class="badge ${t.status === 'active' ? 'badge-success' : 'badge-danger'}">${t.status === 'active' ? 'نشط' : 'معطل'}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        /** 3. Fetch & Render Students */
+        async function fetchStudents() {
+            const tbody = document.getElementById('students-table-body');
+            if (!tbody) return;
+            try {
+                console.log('Fetching Students...');
+                const res = await fetch(`${API_URL}/users?role=student&scope=global`);
+                const json = await res.json();
+                console.log('Students Response:', json);
+                
+                if (json.success) {
+                    renderStudentsTable(json.data);
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--danger);">خطأ: ${json.error || 'فشل تحميل البيانات'}</td></tr>`;
+                }
+            } catch (err) {
+                console.error('fetchStudents Error:', err);
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--danger);">فشل الاتصال بالخادم</td></tr>`;
+            }
+        }
+
+        function renderStudentsTable(students) {
+            const tbody = document.getElementById('students-table-body');
+            if (!tbody || !students) return;
+            if (students.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:40px; color:var(--text-muted);">لا يوجد طلاب مسجلون حالياً</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = students.map(s => `
+                <tr>
+                    <td style="font-weight:700;">${s.name}</td>
+                    <td>${s.phone}</td>
+                    <td>${s.tenantId || '—'}</td>
+                    <td>${s.classId || '—'}</td>
+                    <td><span class="badge ${s.status === 'active' ? 'badge-success' : 'badge-danger'}">${s.status === 'active' ? 'نشط' : 'معطل'}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        /** 5. Subscriptions Management */
+        async function fetchSubscriptionInfo() {
+            const tbody = document.getElementById('subs-table-body');
+            if (!tbody) return;
+            try {
+                const res = await fetch(`${API_URL}/organizations?scope=global`);
+                const json = await res.json();
+                if (json.success) {
+                    renderSubsTable(json.data);
+                    // Update sub-summary stats
+                    const activeCount = json.data.filter(o => o.subscriptionStatus === 'active' || o.subscriptionStatus === 'trial').length;
+                    const expiredCount = json.data.filter(o => o.subscriptionStatus === 'expired').length;
+                    if(document.getElementById('total-active-subs')) document.getElementById('total-active-subs').innerText = activeCount;
+                    if(document.getElementById('total-expired-subs')) document.getElementById('total-expired-subs').innerText = expiredCount;
+                }
+            } catch (err) { console.error('fetchSubscriptionInfo error', err); }
+        }
+
+        function renderSubsTable(orgs) {
+            const tbody = document.getElementById('subs-table-body');
+            if (!tbody || !orgs) return;
+            tbody.innerHTML = orgs.map(org => {
+                const expires = org.subscriptionExpiresAt ? new Date(org.subscriptionExpiresAt).toLocaleDateString('ar-EG') : 'غير محدد';
+                const aiUsagePct = Math.min(100, (org.aiUsageCurrentMonth / (org.aiUsageLimitPerMonth || 1)) * 100);
+                const isExpired = org.subscriptionStatus === 'expired' || (org.subscriptionExpiresAt && new Date() > new Date(org.subscriptionExpiresAt));
+                
+                return `
+                    <tr>
+                        <td style="font-weight:700;">${org.name}</td>
+                        <td><span class="badge" style="background:rgba(155,89,182,0.1); color:#9b59b6;">${org.subscriptionPlan.toUpperCase()}</span></td>
+                        <td>${expires}</td>
+                        <td style="width:200px;">
+                            <div style="font-size:11px; margin-bottom:4px;">${org.aiUsageCurrentMonth} / ${org.aiUsageLimitPerMonth}</div>
+                            <div style="width:100%; height:6px; background:rgba(255,255,255,0.05); border-radius:10px; overflow:hidden;">
+                                <div style="width:${aiUsagePct}%; height:100%; background:${aiUsagePct > 90 ? 'var(--danger)' : 'var(--primary)'};"></div>
+                            </div>
+                        </td>
+                        <td><span class="badge ${isExpired ? 'badge-danger' : 'badge-success'}">${isExpired ? 'منتهي' : 'نشط'}</span></td>
+                        <td>
+                            <button class="btn btn-sm" onclick="alert('Stripe Integration Coming Soon!')">تعديل الخطة</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        /** 4. Load Dashboard Summary Stats */
+        async function loadDashboardStats() {
+            try {
+                console.log('Loading Dashboard Stats...');
+                const res = await fetch(`${API_URL}/analytics/platform-overview`);
+                const json = await res.json();
+                console.log('Stats Response:', json);
+                
+                if (json.success) {
+                    const d = json.data;
+                    if (document.getElementById('stats-tenants'))  document.getElementById('stats-tenants').innerText  = d.totalOrganizations || 0;
+                    if (document.getElementById('stats-teachers')) document.getElementById('stats-teachers').innerText = d.totalTeachers || 0;
+                    if (document.getElementById('stats-students')) document.getElementById('stats-students').innerText = d.totalStudents || 0;
+                    if (document.getElementById('stats-ai'))       document.getElementById('stats-ai').innerText       = d.totalAIRequests || 0;
+                    if (document.getElementById('stats-subs'))     document.getElementById('stats-subs').innerText     = d.totalActiveSubs || '---';
+
+                    // Check for expired subscription (Tenant Mode Only)
+                    if (!isSuperAdmin()) {
+                        // For regular admins, we check if the platform data returned an error or expired flag
+                        // Since we are in the dashboard, we can check the organization status via a separate call or if analytics returns it
+                        const subRes = await fetch(`${API_URL}/organizations/${db.tenantId || 'main'}`);
+                        const subJson = await subRes.json();
+                        if (subJson.success && (subJson.data.subscriptionStatus === 'expired' || new Date() > new Date(subJson.data.subscriptionExpiresAt))) {
+                            document.getElementById('subscription-warning-banner').style.display = 'block';
+                            // Disable AI features in UI if needed
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('loadDashboardStats Error:', err);
+            }
+        }
+
+        /** Initialize All Data for Super Admin */
+        async function initSuperAdminDashboard() {
+            if (!isSuperAdmin()) return;
+            console.log('🚀 Initializing Super Admin Dashboard Flow...');
+            await Promise.all([
+                loadDashboardStats(),
+                fetchOrganizations(),
+                fetchTeachers(),
+                fetchStudents()
+            ]);
+        }
+
+        /** 6. Financial Control Center Logic */
+        async function initFinanceCenter() {
+            showSection('financialControlSection');
+            fetchFinanceStats();
+            fetchPayments();
+            fetchExemptions();
+            // Populate org dropdown for exemption
+            fetchOrganizationsForSelect('ex-org-id');
+        }
+
+        async function fetchFinanceStats() {
+            try {
+                const res = await fetch(`${API_URL}/finance/stats`);
+                const json = await res.json();
+                if (json.success) {
+                    const d = json.data;
+                    if(document.getElementById('fin-total-revenue')) document.getElementById('fin-total-revenue').innerText = `${d.totalRevenue.toLocaleString()} EGP`;
+                    if(document.getElementById('fin-active-subs')) document.getElementById('fin-active-subs').innerText = d.activeSubs;
+                    if(document.getElementById('fin-expired-subs')) document.getElementById('fin-expired-subs').innerText = d.expiredSubs;
+                    if(document.getElementById('fin-total-exemptions')) document.getElementById('fin-total-exemptions').innerText = d.totalExemptions;
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        async function fetchPayments() {
+            const status = document.getElementById('pay-filter-status').value;
+            const method = document.getElementById('pay-filter-method').value;
+            const tbody = document.getElementById('payments-table-body');
+            try {
+                const res = await fetch(`${API_URL}/finance/payments?status=${status}&method=${method}`);
+                const json = await res.json();
+                if (json.success) {
+                    tbody.innerHTML = json.data.map(p => `
+                        <tr>
+                            <td>${p.organizationId}</td>
+                            <td style="font-weight:700; color:#27ae60;">${p.amount} EGP</td>
+                            <td><span class="badge" style="background:#eee; color:#333;">${p.method}</span></td>
+                            <td>${p.transactionId || '---'}</td>
+                            <td><span class="badge ${p.status === 'verified' ? 'badge-success' : p.status === 'pending' ? 'badge-warning' : 'badge-danger'}">${p.status}</span></td>
+                            <td>${new Date(p.createdAt).toLocaleString('ar-EG')}</td>
+                            <td>
+                                ${p.status === 'pending' ? `
+                                    <button class="btn btn-sm btn-success" onclick="verifyPayment('${p._id}')">تأكيد</button>
+                                    <button class="btn btn-sm btn-danger" onclick="rejectPayment('${p._id}')">رفض</button>
+                                ` : '---'}
+                            </td>
+                        </tr>
+                    `).join('');
+                    // Update pending count
+                    const pendingCount = json.data.filter(p => p.status === 'pending').length;
+                    if(document.getElementById('fin-pending-payments')) document.getElementById('fin-pending-payments').innerText = pendingCount;
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        async function verifyPayment(id) {
+            if (!confirm('هل أنت متأكد من تأكيد هذا الدفع؟ سيتم تمديد الاشتراك تلقائياً.')) return;
+            try {
+                const res = await fetch(`${API_URL}/finance/payments/${id}/verify`, { method: 'POST' });
+                const json = await res.json();
+                if (json.success) {
+                    showNotif('تم تأكيد الدفع وتحديث الاشتراك بنجاح', 'success');
+                    fetchPayments();
+                    fetchFinanceStats();
+                }
+            } catch (err) { showNotif('خطأ في العملية', 'danger'); }
+        }
+
+        async function rejectPayment(id) {
+            const reason = prompt('يرجى إدخال سبب الرفض:');
+            if (!reason) return;
+            try {
+                const res = await fetch(`${API_URL}/finance/payments/${id}/reject`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason })
+                });
+                const json = await res.json();
+                if (json.success) {
+                    showNotif('تم رفض العملية وإشعار المستخدم', 'info');
+                    fetchPayments();
+                }
+            } catch (err) { showNotif('خطأ في العملية', 'danger'); }
+        }
+
+        async function fetchExemptions() {
+            const tbody = document.getElementById('exemptions-table-body');
+            try {
+                const res = await fetch(`${API_URL}/finance/exemptions`);
+                const json = await res.json();
+                if (json.success) {
+                    tbody.innerHTML = json.data.map(ex => `
+                        <tr>
+                            <td>${ex.organizationId}</td>
+                            <td>${ex.grantedBy}</td>
+                            <td>${ex.type}</td>
+                            <td style="font-size:11px;">${ex.reason}</td>
+                            <td>${new Date(ex.endDate).toLocaleDateString('ar-EG')}</td>
+                            <td><span class="badge ${ex.isActive ? 'badge-success' : 'badge-danger'}">${ex.isActive ? 'ساري' : 'منتهي/ملغي'}</span></td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        async function grantExemption(e) {
+            e.preventDefault();
+            const data = {
+                organizationId: document.getElementById('ex-org-id').value,
+                type: document.getElementById('ex-type').value,
+                endDate: document.getElementById('ex-end-date').value,
+                reason: document.getElementById('ex-reason').value
+            };
+            try {
+                const res = await fetch(`${API_URL}/finance/exemptions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const json = await res.json();
+                if (json.success) {
+                    showNotif('تم منح الإعفاء بنجاح', 'success');
+                    closeModal('exemptionModal');
+                    fetchExemptions();
+                    fetchFinanceStats();
+                }
+            } catch (err) { showNotif('خطأ في العملية', 'danger'); }
+        }
+
+        async function fetchAuditLogs() {
+            showSection('auditLogSection');
+            const action = document.getElementById('audit-filter-action').value;
+            const org = document.getElementById('audit-filter-org').value;
+            const tbody = document.getElementById('audit-table-body');
+            try {
+                const res = await fetch(`${API_URL}/finance/audit?action=${action}&organizationId=${org}`);
+                const json = await res.json();
+                if (json.success) {
+                    tbody.innerHTML = json.data.map(log => `
+                        <tr>
+                            <td><span class="badge" style="background:rgba(230,126,34,0.1); color:#e67e22;">${log.action}</span></td>
+                            <td style="font-weight:700;">${log.performedBy}</td>
+                            <td>${log.targetOrganization || '---'}</td>
+                            <td style="font-size:11px; max-width:300px;">${log.details || '---'}</td>
+                            <td style="color:var(--text-muted); font-size:10px;">${log.ipAddress || '---'}</td>
+                            <td>${new Date(log.createdAt).toLocaleString('ar-EG')}</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        async function fetchOrganizationsForSelect(selectId) {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+            try {
+                const res = await fetch(`${API_URL}/organizations?scope=global`);
+                const json = await res.json();
+                if (json.success) {
+                    select.innerHTML = json.data.map(o => `<option value="${o.id}">${o.name} (${o.id})</option>`).join('');
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        // Hook into window.onload
+        window.addEventListener('load', () => {
+            if (isSuperAdmin()) {
+                initSuperAdminDashboard();
+            }
+        });
+
+        /** Legacy/Supporting Functions */
         async function createOrganization(event) {
             event.preventDefault();
             const submitBtn = document.getElementById('org-submit-btn');
             const name = document.getElementById('org-name').value.trim();
             const type = document.getElementById('org-type').value;
-
             if (!name) return alert('يرجى إدخال اسم المؤسسة');
-
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ الحفظ...';
-
             try {
                 const res = await fetch(`${API_URL}/organizations`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, type })
                 });
-
                 if (res.ok) {
                     showNotif('✅ تم إنشاء المؤسسة بنجاح', 'success');
                     closeModal('organizationModal');
-                    fetchAllOrganizations();
+                    fetchOrganizations();
                 } else {
                     const err = await res.json();
                     alert('خطأ: ' + (err.msg || 'فشل في الحفظ'));
                 }
-            } catch (err) {
-                alert('فشل في الاتصال بالخادم');
-            } finally {
+            } catch (err) { alert('فشل في الاتصال بالخادم'); }
+            finally {
                 submitBtn.disabled = false;
                 submitBtn.innerText = 'حفظ المؤسسة';
             }
         }
 
         async function deleteOrganization(id) {
-            if (!confirm('هل أنت متأكد من حذف هذه المؤسسة؟ سيؤدي ذلك لحذف كافة البيانات المرتبطة بها.')) return;
-
+            if (!confirm('هل أنت متأكد من حذف هذه المؤسسة؟')) return;
             try {
                 const res = await fetch(`${API_URL}/organizations/${id}`, { method: 'DELETE' });
                 if (res.ok) {
                     showNotif('🗑️ تم حذف المؤسسة بنجاح', 'success');
-                    fetchAllOrganizations();
-                } else {
-                    alert('فشل في حذف المؤسسة');
-                }
-            } catch (err) {
-                alert('فشل في الاتصال بالخادم');
-            }
+                    fetchOrganizations();
+                } else { alert('فشل في حذف المؤسسة'); }
+            } catch (err) { alert('فشل في الاتصال بالخادم'); }
         }
 
     </script>

@@ -22,13 +22,28 @@ function renderAdminSidebar() {
                 <a href="#" data-target="platform-management" onclick="loadPlatformManagement()"><i class="fas fa-server" style="color:var(--danger)"></i> إدارة المنصة</a>
             </li>
             <li id="nav-super-admin-orgs" style="display:none;">
-                <a href="#" data-target="superAdminOrganizationsSection" onclick="fetchAllOrganizations()"><i class="fas fa-building" style="color:#f1c40f"></i> إدارة المؤسسات</a>
+                <a href="#" data-target="superAdminOrganizationsSection" onclick="fetchOrganizations()"><i class="fas fa-building" style="color:#f1c40f"></i> إدارة المؤسسات</a>
+            </li>
+            <li id="nav-super-admin-teachers" style="display:none;">
+                <a href="#" data-target="superAdminTeachersSection" onclick="fetchTeachers()"><i class="fas fa-chalkboard-teacher" style="color:#3498db"></i> إدارة المعلمين</a>
+            </li>
+            <li id="nav-super-admin-students" style="display:none;">
+                <a href="#" data-target="superAdminStudentsSection" onclick="fetchStudents()"><i class="fas fa-user-graduate" style="color:#2ecc71"></i> إدارة الطلاب</a>
             </li>
             <li id="nav-super-admin-perms" style="display:none;">
                 <a href="#" data-target="super-admin-perms"><i class="fas fa-key" style="color:#e67e22"></i> الصلاحيات</a>
             </li>
             <li id="nav-super-admin-settings" style="display:none;">
                 <a href="#" data-target="super-admin-settings"><i class="fas fa-cog" style="color:#95a5a6"></i> إعدادات النظام</a>
+            </li>
+            <li id="nav-super-admin-subs" style="display:none;">
+                <a href="#" data-target="superAdminSubsSection" onclick="fetchSubscriptionInfo()"><i class="fas fa-credit-card" style="color:#9b59b6"></i> إدارة الاشتراكات</a>
+            </li>
+            <li id="nav-super-admin-finance" style="display:none;">
+                <a href="#" data-target="financialControlSection" onclick="initFinanceCenter()"><i class="fas fa-file-invoice-dollar" style="color:#27ae60"></i> المركز المالي</a>
+            </li>
+            <li id="nav-super-admin-audit" style="display:none;">
+                <a href="#" data-target="auditLogSection" onclick="fetchAuditLogs()"><i class="fas fa-shield-alt" style="color:#e67e22"></i> سجل العمليات</a>
             </li>
             <li><a href="#" data-target="reports" onclick="initReports()"><i class="fas fa-chart-bar"></i> التقارير والنتائج</a></li>
             <li><a href="#" data-target="question-bank" onclick="renderQuestionBank()"><i class="fas fa-database"></i> بنك الأسئلة</a></li>

@@ -21,7 +21,8 @@ const SUPER_ADMIN_CARDS = [
     ...DASHBOARD_CARDS,
     { id: 'stats-tenants',  title: 'إجمالي المدارس', icon: 'fas fa-school', color: 'var(--warning)', section: 'platform-management' },
     { id: 'stats-teachers', title: 'إجمالي المعلمين', icon: 'fas fa-chalkboard-teacher', color: '#6c5ce7', section: 'platform-management' },
-    { id: 'stats-ai',       title: 'استخدام الذكاء الاصطناعي', icon: 'fas fa-robot', color: '#00cec9', section: 'platform-management' }
+    { id: 'stats-ai',       title: 'استخدام الذكاء الاصطناعي', icon: 'fas fa-robot', color: '#00cec9', section: 'platform-management' },
+    { id: 'stats-subs',     title: 'الاشتراكات النشطة', icon: 'fas fa-credit-card', color: '#9b59b6', section: 'superAdminSubsSection' }
 ];
 
 function renderDashboardCards(isSuperAdmin = false) {
