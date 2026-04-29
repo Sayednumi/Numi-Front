@@ -4024,7 +4024,10 @@
         // ── Students from MongoDB ────────────────────────────────────────────
         let allStudents = [];
 
+        let _isLoadingStudents = false;
         async function loadStudents() {
+            if (_isLoadingStudents) return;
+            _isLoadingStudents = true;
             try {
                 await fetchDB(); // Refresh classes/groups names first
                 // Super Admin fetches ALL students across ALL tenants
@@ -4036,10 +4039,14 @@
                     allStudents = await res.json();
                     renderStudents();
                     const el = document.getElementById('stats-students');
-                    if (el) el.innerText = allStudents.filter(u => u.role === 'student').length;
+                    if (el) el.innerText = (allStudents || []).filter(u => u.role === 'student').length;
                 }
             } catch (err) {
                 console.error('Failed to load students', err);
+                const tbody = document.getElementById('students-list');
+                if (tbody) tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--danger);padding:30px;">فشل تحميل بيانات الطلاب</td></tr>';
+            } finally {
+                _isLoadingStudents = false;
             }
         }
 
@@ -4158,16 +4165,23 @@
         let allTeachers = [];
         let currentViewingTeacherId = null;
 
+        let _isLoadingTeachers = false;
         async function loadTeachers() {
+            if (_isLoadingTeachers) return;
+            _isLoadingTeachers = true;
             try {
                 const res = await fetch(`${API_URL}/users`);
                 if (res.ok) {
                     const allUsers = await res.json();
-                    allTeachers = allUsers.filter(u => u.role === 'teacher');
+                    allTeachers = (allUsers || []).filter(u => u.role === 'teacher');
                     renderTeachersList();
                 }
             } catch (err) {
                 console.error('Failed to load teachers', err);
+                const tbody = document.getElementById('teachers-list');
+                if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--danger);padding:30px;">فشل تحميل بيانات المعلمين</td></tr>';
+            } finally {
+                _isLoadingTeachers = false;
             }
         }
 
@@ -4713,7 +4727,11 @@
             } catch (e) { alert('حدث خطأ: ' + e.message); }
         }
 
+        let _isPlatformDataLoading = false;
         async function loadAllPlatformData() {
+            if (_isPlatformDataLoading) return;
+            _isPlatformDataLoading = true;
+
             const statsEl = {
                 classes:  document.getElementById('stats-classes'),
                 groups:   document.getElementById('stats-groups'),
@@ -4777,17 +4795,22 @@
                         const gCount  = Object.keys(cls.groups || {}).length;
                         let cCount = 0;
                         for (const gid in cls.groups || {}) cCount += Object.keys(cls.groups[gid].courses || {}).length;
-                        const sCount = allUsers.filter(s => s.role === 'student' && s.classId === cls.id).length;
+                        const sCount = (allUsers || []).filter(s => s.role === 'student' && s.classId === cls.id).length;
                         return `<tr><td>${cls.name||'—'}</td><td>${gCount}</td><td>${cCount}</td><td>${sCount}</td></tr>`;
                     }).join('');
                 }
             } catch (e) {
                 console.error('loadAllPlatformData error:', e);
                 Object.values(statsEl).forEach(el => { if (el) el.innerText = '—'; });
+            } finally {
+                _isPlatformDataLoading = false;
             }
         }
 
+        let _isUpdateStatsLoading = false;
         async function updateStats() {
+            if (_isUpdateStatsLoading) return;
+            _isUpdateStatsLoading = true;
             try {
                 if (isSuperAdmin()) {
                     await loadAllPlatformData();
@@ -4824,7 +4847,7 @@
                     }
 
                     if (table) {
-                        const studentCount = allStudents.filter(s => s.classId === cid).length;
+                        const studentCount = (allStudents || []).filter(s => s.classId === cid).length;
                         table.innerHTML += `
                             <tr>
                                 <td>${cls.name}</td>
@@ -4836,14 +4859,18 @@
                     }
                 });
 
-                document.getElementById('stats-classes').innerText = classList.length;
+                if (document.getElementById('stats-classes')) document.getElementById('stats-classes').innerText = classList.length;
                 if (document.getElementById('stats-groups')) document.getElementById('stats-groups').innerText = groupCount;
-                document.getElementById('stats-lessons').innerText = lessonCount;
-                document.getElementById('stats-students').innerText = allStudents.filter(u => u.role === 'student').length;
+                if (document.getElementById('stats-lessons')) document.getElementById('stats-lessons').innerText = lessonCount;
+                if (document.getElementById('stats-students')) document.getElementById('stats-students').innerText = (allStudents || []).filter(u => u.role === 'student').length;
 
                 // Refresh schedule widgets on dashboard
                 loadScheduleWidgets();
-            } catch (e) { console.error("Update Stats Error", e); }
+            } catch (e) { 
+                console.error("Update Stats Error", e); 
+            } finally {
+                _isUpdateStatsLoading = false;
+            }
         }
 
         // Modals Toggle
@@ -4990,10 +5017,12 @@
         function handleClassSubmit(e) {
             e.preventDefault();
             const id = document.getElementById('class-id').value || generateId();
-            const name = document.getElementById('class-name').value;
+            const name = document.getElementById('class-name').value.trim();
+            if (!name) return showNotif('⚠️ يرجى إدخال اسم الصف', 'warning');
             if (!db.classes[id]) db.classes[id] = { groups: {} };
             db.classes[id].name = name;
             saveDB(); renderClasses(); closeModal('classModal');
+            showNotif('✅ تم حفظ الصف بنجاح', 'success');
         }
         function renderClasses() {
             const list = document.getElementById('classes-list');
@@ -5009,15 +5038,24 @@
             }
         }
         function editClass(id) { document.getElementById('class-id').value = id; document.getElementById('class-name').value = db.classes[id].name; document.getElementById('classModalTitle').innerText = "تعديل الصف"; openModal('classModal'); }
-        function deleteClass(id) { if (confirm('هل أنت متأكد؟')) { delete db.classes[id]; saveDB(); renderClasses(); } }
+        function deleteClass(id) { 
+            if (confirm('هل أنت متأكد من حذف هذا الصف وكل ما يحتويه من مجموعات ودروس؟')) { 
+                delete db.classes[id]; 
+                saveDB(); 
+                renderClasses(); 
+                showNotif('🗑️ تم حذف الصف بنجاح', 'success');
+            } 
+        }
 
         // --- Group Management ---
         function handleGroupSubmit(e) {
             e.preventDefault();
             const id = document.getElementById('group-id').value || generateId();
             const classId = document.getElementById('group-class-id').value;
-            const name = document.getElementById('group-name').value;
+            const name = document.getElementById('group-name').value.trim();
             const liveEnabled = document.getElementById('group-live-enabled').checked;
+
+            if (!name) return showNotif('⚠️ يرجى إدخال اسم المجموعة', 'warning');
 
             const currentUser = JSON.parse(localStorage.getItem('numi_session_user') || '{}');
 
@@ -5026,6 +5064,7 @@
             db.classes[classId].groups[id].name = name;
             db.classes[classId].groups[id].liveEnabled = liveEnabled;
             saveDB(); renderGroups(); closeModal('groupModal');
+            showNotif('✅ تم حفظ المجموعة بنجاح', 'success');
         }
         function renderGroups() {
             const list = document.getElementById('groups-list');
@@ -5060,7 +5099,14 @@
             document.getElementById('groupModalTitle').innerText = "تعديل المجموعة";
             openModal('groupModal');
         }
-        function deleteGroup(cid, gid) { if (confirm('هل أنت متأكد؟')) { delete db.classes[cid].groups[gid]; saveDB(); renderGroups(); } }
+        function deleteGroup(cid, gid) { 
+            if (confirm('هل أنت متأكد من حذف هذه المجموعة وكل محتوياتها؟')) { 
+                delete db.classes[cid].groups[gid]; 
+                saveDB(); 
+                renderGroups(); 
+                showNotif('🗑️ تم حذف المجموعة بنجاح', 'success');
+            } 
+        }
 
         // --- Course Management ---
         function handleCourseSubmit(e) {
@@ -5068,11 +5114,13 @@
             const id = document.getElementById('course-id').value || generateId();
             const cid = document.getElementById('course-class-id').value;
             const gid = document.getElementById('course-group-id').value;
-            const name = document.getElementById('course-name').value;
+            const name = document.getElementById('course-name').value.trim();
+            if (!name) return showNotif('⚠️ يرجى إدخال اسم المقرر', 'warning');
             if (!db.classes[cid].groups[gid].courses) db.classes[cid].groups[gid].courses = {};
             if (!db.classes[cid].groups[gid].courses[id]) db.classes[cid].groups[gid].courses[id] = { term1: { units: {} }, term2: { units: {} } };
             db.classes[cid].groups[gid].courses[id].name = name;
             saveDB(); renderCourses(); closeModal('courseModal');
+            showNotif('✅ تم حفظ المقرر بنجاح', 'success');
         }
         function renderCourses() {
             const list = document.getElementById('courses-list');
@@ -5106,7 +5154,14 @@
             document.getElementById('courseModalTitle').innerText = "تعديل المقرر";
             openModal('courseModal');
         }
-        function deleteCourse(cid, gid, csid) { if (confirm('هل أنت متأكد؟')) { delete db.classes[cid].groups[gid].courses[csid]; saveDB(); renderCourses(); } }
+        function deleteCourse(cid, gid, csid) { 
+            if (confirm('هل أنت متأكد من حذف هذا المقرر؟')) { 
+                delete db.classes[cid].groups[gid].courses[csid]; 
+                saveDB(); 
+                renderCourses(); 
+                showNotif('🗑️ تم حذف المقرر بنجاح', 'success');
+            } 
+        }
 
         // --- Unit Management ---
         function handleUnitSubmit(e) {
@@ -5116,10 +5171,12 @@
             const gid = document.getElementById('unit-group-id').value;
             const csid = document.getElementById('unit-course-id').value;
             const term = document.getElementById('unit-term').value;
-            const title = document.getElementById('unit-title').value;
-            const desc = document.getElementById('unit-desc').value;
+            const title = document.getElementById('unit-title').value.trim();
+            const desc = document.getElementById('unit-desc').value.trim();
             const order = document.getElementById('unit-order').value;
             const locked = document.getElementById('unit-locked').checked;
+
+            if (!title) return showNotif('⚠️ يرجى إدخال عنوان الوحدة', 'warning');
 
             let tObj = db.classes[cid].groups[gid].courses[csid][term];
             if (!tObj.units) tObj.units = {};
@@ -5127,6 +5184,7 @@
 
             tObj.units[id] = { ...tObj.units[id], title, desc, order, locked };
             saveDB(); renderUnits(); closeModal('unitModal');
+            showNotif('✅ تم حفظ الوحدة بنجاح', 'success');
         }
         function renderUnits() {
             const list = document.getElementById('units-list');
@@ -5173,7 +5231,14 @@
             document.getElementById('unitModalTitle').innerText = "تعديل الوحدة";
             openModal('unitModal');
         }
-        function deleteUnit(cid, gid, csid, tF, uid) { if (confirm('هل أنت متأكد؟')) { delete db.classes[cid].groups[gid].courses[csid][tF].units[uid]; saveDB(); renderUnits(); } }
+        function deleteUnit(cid, gid, csid, tF, uid) { 
+            if (confirm('هل أنت متأكد من حذف هذه الوحدة؟')) { 
+                delete db.classes[cid].groups[gid].courses[csid][tF].units[uid]; 
+                saveDB(); 
+                renderUnits(); 
+                showNotif('🗑️ تم حذف الوحدة بنجاح', 'success');
+            } 
+        }
 
         // --- Lesson Management ---
         function handleLessonSubmit(e) {
@@ -5185,11 +5250,13 @@
             const term = document.getElementById('lesson-term').value;
             const uid = document.getElementById('lesson-unit-id').value;
 
-            const title = document.getElementById('lesson-title').value;
-            const desc = document.getElementById('lesson-desc').value;
+            const title = document.getElementById('lesson-title').value.trim();
+            const desc = document.getElementById('lesson-desc').value.trim();
             const order = document.getElementById('lesson-order').value;
             const locked = document.getElementById('lesson-locked').checked;
             const isHidden = document.getElementById('lesson-hidden').checked;
+
+            if (!title) return showNotif('⚠️ يرجى إدخال عنوان الدرس', 'warning');
 
             let uObj = db.classes[cid].groups[gid].courses[csid][term].units[uid];
             if (!uObj.lessons) uObj.lessons = {};
@@ -5197,6 +5264,7 @@
 
             uObj.lessons[id] = { ...uObj.lessons[id], title, desc, order, locked, isHidden };
             saveDB(); renderLessons(); closeModal('lessonModal');
+            showNotif('✅ تم حفظ الدرس بنجاح', 'success');
         }
         function renderLessons() {
             const list = document.getElementById('lessons-list');
@@ -5250,7 +5318,14 @@
             document.getElementById('lessonModalTitle').innerText = "تعديل الدرس";
             openModal('lessonModal');
         }
-        function deleteLesson(cid, gid, csid, tF, uid, lid) { if (confirm('هل أنت متأكد؟')) { delete db.classes[cid].groups[gid].courses[csid][tF].units[uid].lessons[lid]; saveDB(); renderLessons(); } }
+        function deleteLesson(cid, gid, csid, tF, uid, lid) { 
+            if (confirm('هل أنت متأكد من حذف هذا الدرس؟')) { 
+                delete db.classes[cid].groups[gid].courses[csid][tF].units[uid].lessons[lid]; 
+                saveDB(); 
+                renderLessons(); 
+                showNotif('🗑️ تم حذف الدرس بنجاح', 'success');
+            } 
+        }
 
         // --- Content Zones ---
         // ── Cascading Class → Group → Lesson selector builder ──
@@ -5944,12 +6019,17 @@
                 alert("⚠️ حدث خطأ أثناء معالجة بيانات المراجعة.");
             }
         }
+        let _isFetchingProgressReport = false;
         async function fetchProgressReport() {
+            if (_isFetchingProgressReport) return;
             const container = document.getElementById('progress-report-container');
             const tbody = document.getElementById('progress-table-body');
+            if (!container || !tbody) return;
+
             const classFilter = document.getElementById('progress-filter-class').value;
             const groupFilter = document.getElementById('progress-filter-group').value;
 
+            _isFetchingProgressReport = true;
             container.style.display = 'block';
             tbody.innerHTML = '<tr><td colspan="5" class="text-center"><i class="fas fa-spinner fa-spin"></i> جارٍ تحميل البيانات...</td></tr>';
             try {
@@ -5974,7 +6054,7 @@
 
                 tbody.innerHTML = '';
                 let hasStudents = false;
-                students.forEach(s => {
+                (students || []).forEach(s => {
                     if (s.role === 'admin') return;
 
                     if (classFilter && s.classId !== classFilter) return;
@@ -6022,6 +6102,8 @@
             } catch (err) {
                 console.error(err);
                 tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">حدث خطأ في جلب البيانات</td></tr>';
+            } finally {
+                _isFetchingProgressReport = false;
             }
         }
         function renderQuestionBank() {
@@ -7245,10 +7327,14 @@
         // Global storage for all fetched live classes
         let _allLiveClasses = [];
 
+        let _isLiveClassesLoading = false;
         async function loadLiveClasses() {
+            if (_isLiveClassesLoading) return;
+            _isLiveClassesLoading = true;
+
             // Fill form groups that have liveEnabled = true
             const sel = document.getElementById('live-group-select');
-            sel.innerHTML = '<option value="">اختر المجموعة...</option>';
+            if (sel) sel.innerHTML = '<option value="">اختر المجموعة...</option>';
 
             // Fill class selector in scheduling form
             const classSel = document.getElementById('live-class-select');
@@ -7264,25 +7350,28 @@
             // Fill filter dropdowns
             const filterClass = document.getElementById('live-filter-class');
             const filterGroup = document.getElementById('live-filter-group');
-            filterClass.innerHTML = '<option value="">جميع الصفوف</option>';
-            filterGroup.innerHTML = '<option value="">جميع المجموعات</option>';
+            if (filterClass) filterClass.innerHTML = '<option value="">جميع الصفوف</option>';
+            if (filterGroup) filterGroup.innerHTML = '<option value="">جميع المجموعات</option>';
 
             if (db && db.classes) {
                 for (let cid in db.classes) {
-                    filterClass.innerHTML += `<option value="${cid}">${db.classes[cid].name}</option>`;
+                    if (filterClass) filterClass.innerHTML += `<option value="${cid}">${db.classes[cid].name}</option>`;
                     let groups = db.classes[cid].groups || {};
                     for (let gid in groups) {
-                        if (groups[gid].liveEnabled) {
+                        if (groups[gid].liveEnabled && sel) {
                             sel.innerHTML += `<option value="${cid}_${gid}">${db.classes[cid].name} • ${groups[gid].name}</option>`;
                         }
-                        filterGroup.innerHTML += `<option value="${cid}_${gid}">${db.classes[cid].name} • ${groups[gid].name}</option>`;
+                        if (filterGroup) filterGroup.innerHTML += `<option value="${cid}_${gid}">${db.classes[cid].name} • ${groups[gid].name}</option>`;
                     }
                 }
             }
 
-            // Fetch admin stats
-            let totalSessions = 0, completedSessions = 0;
+            const container = document.getElementById('live-classes-by-group');
+            if (container) container.innerHTML = '<div style="text-align:center;padding:20px;"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
+
             try {
+                // Fetch admin stats
+                let totalSessions = 0, completedSessions = 0;
                 const uRes = await fetch(`${API_URL}/users/${TEACHER_ID}`);
                 if (uRes.ok) {
                     const uData = await uRes.json();
@@ -7291,24 +7380,28 @@
                         completedSessions = uData.liveStats.completedSessions || 0;
                     }
                 }
-            } catch (e) { }
+                
+                const sTotal = document.getElementById('stats-live-total');
+                const sComp = document.getElementById('stats-live-completed');
+                const sRem = document.getElementById('stats-live-remaining');
+                if (sTotal) sTotal.innerText = totalSessions;
+                if (sComp) sComp.innerText = completedSessions;
+                if (sRem) sRem.innerText = Math.max(0, totalSessions - completedSessions);
 
-            document.getElementById('stats-live-total').innerText = totalSessions;
-            document.getElementById('stats-live-completed').innerText = completedSessions;
-            document.getElementById('stats-live-remaining').innerText = Math.max(0, totalSessions - completedSessions);
-
-            // Fetch live classes
-            const container = document.getElementById('live-classes-by-group');
-            container.innerHTML = '<div style="text-align:center;padding:20px;"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
-            try {
+                // Fetch live classes
                 const res = await fetch(`${API_URL}/live-classes?teacherId=${TEACHER_ID}`);
                 const data = await res.json();
                 if (data.success) {
-                    _allLiveClasses = data.liveClasses;
+                    _allLiveClasses = data.liveClasses || [];
                     renderLiveClassesGrouped(_allLiveClasses);
+                } else {
+                    if (container) container.innerHTML = '<div style="color:var(--warning); text-align:center;">فشل جلب البيانات: ' + (data.msg || '') + '</div>';
                 }
             } catch (e) {
-                container.innerHTML = '<div style="color:var(--danger);"><i class="fas fa-exclamation-triangle"></i> خطأ في جلب البيانات</div>';
+                console.error("loadLiveClasses error:", e);
+                if (container) container.innerHTML = '<div style="color:var(--danger); text-align:center;"><i class="fas fa-exclamation-triangle"></i> خطأ في الاتصال بالخادم</div>';
+            } finally {
+                _isLiveClassesLoading = false;
             }
         }
 
@@ -7533,8 +7626,32 @@
             modal.style.display = 'flex';
         }
         async function saveSingleLiveEdit(id) {
-            const updates = { title: document.getElementById('sedit-title').value.trim(), date: document.getElementById('sedit-date').value, time: document.getElementById('sedit-time').value, duration: parseInt(document.getElementById('sedit-duration').value), link: document.getElementById('sedit-link').value.trim() };
-            try { const r = await fetch(`${API_URL}/live-classes/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) }); const d = await r.json(); if (d.success) { document.getElementById('live-single-edit-modal').style.display = 'none'; loadLiveClasses(); showNotif('✅ تم تعديل الحصة بنجاح', 'success'); } else { alert('فشل التعديل'); } } catch (e) { alert('خطأ في الاتصال'); }
+            const updates = {
+                title: document.getElementById('sedit-title').value.trim(),
+                date: document.getElementById('sedit-date').value,
+                time: document.getElementById('sedit-time').value,
+                duration: parseInt(document.getElementById('sedit-duration').value),
+                link: document.getElementById('sedit-link').value.trim()
+            };
+            
+            try {
+                const res = await fetch(`${API_URL}/live-classes/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updates)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    closeModal('live-single-edit-modal');
+                    await loadLiveClasses();
+                    showNotif('✅ تم تعديل الحصة بنجاح', 'success');
+                } else {
+                    showNotif('❌ فشل التعديل: ' + (data.msg || 'خطأ غير معروف'), 'danger');
+                }
+            } catch (e) {
+                console.error("saveSingleLiveEdit error:", e);
+                showNotif('❌ خطأ في الاتصال بالخادم', 'danger');
+            }
         }
 
         function toggleRecurringOptions() {
@@ -7577,64 +7694,79 @@
         async function handleLiveClassSubmit(e) {
             e.preventDefault();
             const groupVal = document.getElementById('live-group-select').value;
-            if (!groupVal) return alert('يرجى اختيار الصف والمجموعة');
+            if (!groupVal) return showNotif('⚠️ يرجى اختيار الصف والمجموعة', 'warning');
             const [classId, groupId] = groupVal.split('_');
 
             const basePayload = {
                 teacherId: TEACHER_ID,
                 classId,
                 groupId,
-                title: document.getElementById('live-title').value,
-                link: document.getElementById('live-link').value,
+                title: document.getElementById('live-title').value.trim(),
+                link: document.getElementById('live-link').value.trim(),
                 date: document.getElementById('live-date').value,
                 time: document.getElementById('live-time').value,
                 duration: parseInt(document.getElementById('live-duration').value)
             };
 
-            // Always recurring - weeks count from input
-            const isRecurring = true;
             const weeks = Math.max(1, parseInt(document.getElementById('live-weeks').value) || 12);
-
             const btn = document.getElementById('live-submit-btn');
+            if (btn.disabled) return;
+
             btn.disabled = true;
+            const originalHtml = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ الحفظ...';
 
             try {
                 const baseDate = new Date(basePayload.date);
                 let savedCount = 0;
+                let failCount = 0;
 
                 for (let i = 0; i < weeks; i++) {
                     const d = new Date(baseDate);
                     d.setDate(baseDate.getDate() + i * 7);
                     const payload = { ...basePayload, date: d.toISOString().slice(0, 10) };
-                    if (isRecurring) btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> حفظ ${i + 1} من ${weeks}...`;
+                    
+                    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> جاري حفظ ${i + 1} من ${weeks}...`;
 
-                    const res = await fetch(`${API_URL}/live-classes`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    const data = await res.json();
-                    if (data.success) savedCount++;
+                    try {
+                        const res = await fetch(`${API_URL}/live-classes`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        const data = await res.json();
+                        if (data.success) savedCount++;
+                        else failCount++;
+                    } catch (apiErr) {
+                        console.error("Batch save error at index", i, apiErr);
+                        failCount++;
+                    }
                 }
 
-                document.getElementById('liveClassForm').reset();
-                document.getElementById('recurring-preview').innerHTML = '';
-                loadLiveClasses();
-
-                // Show success notification
-                const day = new Date(basePayload.date).toLocaleDateString('ar-EG', { weekday: 'long' });
-                showNotif(`✅ تم جدولة ${savedCount} حصة بنجاح! كل ${day} الساعة ${basePayload.time} لمدة ${weeks} أسابيع`, 'success');
+                if (savedCount > 0) {
+                    document.getElementById('liveClassForm').reset();
+                    document.getElementById('recurring-preview').innerHTML = '';
+                    await loadLiveClasses(); // UI update
+                    
+                    const day = new Date(basePayload.date).toLocaleDateString('ar-EG', { weekday: 'long' });
+                    if (failCount === 0) {
+                        showNotif(`✅ تم جدولة ${savedCount} حصة بنجاح! كل ${day} الساعة ${basePayload.time}`, 'success');
+                    } else {
+                        showNotif(`⚠️ تم حفظ ${savedCount} حصة وفشل ${failCount} حصة.`, 'warning');
+                    }
+                } else {
+                    showNotif('❌ فشل حفظ الحصص المباشرة', 'danger');
+                }
             } catch (err) {
-                alert('خطأ في الحفظ!');
+                console.error("handleLiveClassSubmit error:", err);
+                showNotif('❌ حدث خطأ غير متوقع أثناء الحفظ', 'danger');
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-save"></i> حفظ الحصة';
+                btn.innerHTML = originalHtml;
             }
         }
 
         async function startLiveClass(id) {
-            // When started, increment completedSessions in admin stats
             try {
                 const uRes = await fetch(`${API_URL}/users/${TEACHER_ID}`);
                 if (uRes.ok) {
@@ -7649,58 +7781,88 @@
                     });
                 }
 
-                // Mark class as finished after clicking start
-                await fetch(`${API_URL}/live-classes/${id}`, {
+                const res = await fetch(`${API_URL}/live-classes/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status: 'finished' })
                 });
-
-                loadLiveClasses();
-            } catch (e) { }
+                
+                if (res.ok) {
+                    showNotif('✅ تم بدء الحصة وتحديث الإحصائيات', 'success');
+                    await loadLiveClasses();
+                } else {
+                    showNotif('❌ فشل تحديث حالة الحصة', 'danger');
+                }
+            } catch (e) {
+                console.error("startLiveClass error:", e);
+                showNotif('❌ خطأ في الاتصال بالخادم', 'danger');
+            }
         }
 
         async function deleteLiveClass(id) {
             if (!confirm('هل تريد فعلاً حذف هذه الحصة؟')) return;
             try {
-                await fetch(`${API_URL}/live-classes/${id}`, { method: 'DELETE' });
-                loadLiveClasses();
-            } catch (e) { }
+                const res = await fetch(`${API_URL}/live-classes/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    showNotif('🗑️ تم حذف الحصة بنجاح', 'success');
+                    await loadLiveClasses();
+                } else {
+                    showNotif('❌ فشل حذف الحصة', 'danger');
+                }
+            } catch (e) {
+                showNotif('❌ خطأ في الاتصال بالخادم', 'danger');
+            }
         }
 
         async function resetLiveSessions() {
             const countStr = prompt('كم عدد إجمالي الحصص للدورة الجديدة؟ (سيتم تصفير العداد)');
             if (!countStr) return;
             const total = parseInt(countStr);
-            if (isNaN(total) || total < 1) return alert('رقم غير صحيح!');
+            if (isNaN(total) || total < 1) return showNotif('⚠️ يرجى إدخال رقم صحيح!', 'warning');
 
             if (!confirm(`سيتم بدء دورة جديدة وتحديد الهدف إلى ${total} حصص، وتصفير العداد. استمرار؟`)) return;
 
             try {
-                await fetch(`${API_URL}/users/${TEACHER_ID}`, {
+                const res = await fetch(`${API_URL}/users/${TEACHER_ID}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ liveStats: { totalSessions: total, completedSessions: 0 } })
                 });
-                loadLiveClasses();
-                alert('تم بدء الدورة بنجاح!');
-            } catch (e) { alert('حدث خطأ'); }
+                if (res.ok) {
+                    showNotif('🎯 تم بدء الدورة الجديدة بنجاح!', 'success');
+                    await loadLiveClasses();
+                } else {
+                    showNotif('❌ فشل تحديث الإحصائيات', 'danger');
+                }
+            } catch (e) {
+                showNotif('❌ خطأ في الاتصال بالخادم', 'danger');
+            }
         }
 
         // ─── Schedule Widgets ─────────────────────────────────────────────────────
         let _scheduleWeekOffset = 0;   // 0 = current week, -1 = previous, +1 = next
         let _scheduleClasses = [];   // cached live classes for schedule
 
+        let _isScheduleLoading = false;
         async function loadScheduleWidgets() {
+            if (_isScheduleLoading) return;
+            _isScheduleLoading = true;
             try {
                 const res = await fetch(`${API_URL}/live-classes?teacherId=${TEACHER_ID}`);
                 const data = await res.json();
                 if (data.success) {
-                    _scheduleClasses = data.liveClasses;
-                    renderTodaySchedule();
-                    renderWeeklySchedule();
+                    _scheduleClasses = data.liveClasses || [];
+                } else {
+                    _scheduleClasses = [];
                 }
-            } catch (e) { }
+            } catch (e) {
+                console.error("loadScheduleWidgets error:", e);
+                _scheduleClasses = [];
+            } finally {
+                renderTodaySchedule();
+                renderWeeklySchedule();
+                _isScheduleLoading = false;
+            }
         }
 
         function renderTodaySchedule() {
@@ -8291,14 +8453,18 @@
         // ─── SUPER ADMIN: DATA FLOW & MANAGEMENT ──────────────────────────
         
         /** 1. Fetch & Render Organizations */
+        let _isFetchingOrgs = false;
         async function fetchOrganizations() {
+            if (_isFetchingOrgs) return;
             const tbody = document.getElementById('organizations-table-body');
             if (!tbody) return;
+            
+            _isFetchingOrgs = true;
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:40px;"><i class="fas fa-spinner fa-spin"></i> جارٍ التحميل...</td></tr>';
+
             try {
-                console.log('Fetching Organizations...');
                 const res = await fetch(`${API_URL}/organizations?scope=global`);
                 const json = await res.json();
-                console.log('Organizations Response:', json);
                 
                 if (json.success) {
                     renderOrganizationsTable(json.data);
@@ -8308,6 +8474,8 @@
             } catch (err) {
                 console.error('fetchOrganizations Error:', err);
                 tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--danger);">فشل الاتصال بالخادم</td></tr>`;
+            } finally {
+                _isFetchingOrgs = false;
             }
         }
 
@@ -8333,14 +8501,18 @@
         }
 
         /** 2. Fetch & Render Teachers */
+        let _isFetchingTeachersSuper = false;
         async function fetchTeachers() {
+            if (_isFetchingTeachersSuper) return;
             const tbody = document.getElementById('teachers-table-body');
             if (!tbody) return;
+
+            _isFetchingTeachersSuper = true;
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:40px;"><i class="fas fa-spinner fa-spin"></i> جارٍ التحميل...</td></tr>';
+
             try {
-                console.log('Fetching Teachers...');
                 const res = await fetch(`${API_URL}/users?role=teacher&scope=global`);
                 const json = await res.json();
-                console.log('Teachers Response:', json);
                 
                 if (json.success) {
                     renderTeachersTable(json.data);
@@ -8350,6 +8522,8 @@
             } catch (err) {
                 console.error('fetchTeachers Error:', err);
                 tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--danger);">فشل الاتصال بالخادم</td></tr>`;
+            } finally {
+                _isFetchingTeachersSuper = false;
             }
         }
 
@@ -8371,14 +8545,18 @@
         }
 
         /** 3. Fetch & Render Students */
+        let _isFetchingStudentsSuper = false;
         async function fetchStudents() {
+            if (_isFetchingStudentsSuper) return;
             const tbody = document.getElementById('students-table-body');
             if (!tbody) return;
+
+            _isFetchingStudentsSuper = true;
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:40px;"><i class="fas fa-spinner fa-spin"></i> جارٍ التحميل...</td></tr>';
+
             try {
-                console.log('Fetching Students...');
                 const res = await fetch(`${API_URL}/users?role=student&scope=global`);
                 const json = await res.json();
-                console.log('Students Response:', json);
                 
                 if (json.success) {
                     renderStudentsTable(json.data);
@@ -8388,6 +8566,8 @@
             } catch (err) {
                 console.error('fetchStudents Error:', err);
                 tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--danger);">فشل الاتصال بالخادم</td></tr>`;
+            } finally {
+                _isFetchingStudentsSuper = false;
             }
         }
 
@@ -8633,7 +8813,10 @@
             fetchOrganizationsForSelect('ex-org-id');
         }
 
+        let _isFetchingFinanceStats = false;
         async function fetchFinanceStats() {
+            if (_isFetchingFinanceStats) return;
+            _isFetchingFinanceStats = true;
             try {
                 const res = await fetch(`${API_URL}/finance/stats`);
                 const json = await res.json();
@@ -8644,13 +8827,24 @@
                     if(document.getElementById('fin-expired-subs')) document.getElementById('fin-expired-subs').innerText = d.expiredSubs;
                     if(document.getElementById('fin-total-exemptions')) document.getElementById('fin-total-exemptions').innerText = d.totalExemptions;
                 }
-            } catch (err) { console.error(err); }
+            } catch (err) { 
+                console.error("fetchFinanceStats error:", err); 
+            } finally {
+                _isFetchingFinanceStats = false;
+            }
         }
 
+        let _isFetchingPayments = false;
         async function fetchPayments() {
+            if (_isFetchingPayments) return;
+            const tbody = document.getElementById('payments-table-body');
+            if (!tbody) return;
+
             const status = document.getElementById('pay-filter-status').value;
             const method = document.getElementById('pay-filter-method').value;
-            const tbody = document.getElementById('payments-table-body');
+
+            _isFetchingPayments = true;
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin"></i> جارٍ التحميل...</td></tr>';
             try {
                 const res = await fetch(`${API_URL}/finance/payments?status=${status}&method=${method}`);
                 const json = await res.json();
@@ -8675,7 +8869,12 @@
                     const pendingCount = json.data.filter(p => p.status === 'pending').length;
                     if(document.getElementById('fin-pending-payments')) document.getElementById('fin-pending-payments').innerText = pendingCount;
                 }
-            } catch (err) { console.error(err); }
+            } catch (err) { 
+                console.error("fetchPayments error:", err);
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--danger);">خطأ في تحميل البيانات</td></tr>';
+            } finally {
+                _isFetchingPayments = false;
+            }
         }
 
         async function verifyPayment(id) {
@@ -8708,8 +8907,14 @@
             } catch (err) { showNotif('خطأ في العملية', 'danger'); }
         }
 
+        let _isFetchingExemptions = false;
         async function fetchExemptions() {
+            if (_isFetchingExemptions) return;
             const tbody = document.getElementById('exemptions-table-body');
+            if (!tbody) return;
+
+            _isFetchingExemptions = true;
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin"></i> جارٍ التحميل...</td></tr>';
             try {
                 const res = await fetch(`${API_URL}/finance/exemptions`);
                 const json = await res.json();
@@ -8725,7 +8930,12 @@
                         </tr>
                     `).join('');
                 }
-            } catch (err) { console.error(err); }
+            } catch (err) { 
+                console.error("fetchExemptions error:", err);
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--danger);">خطأ في تحميل البيانات</td></tr>';
+            } finally {
+                _isFetchingExemptions = false;
+            }
         }
 
         async function grantExemption(e) {
@@ -8752,11 +8962,18 @@
             } catch (err) { showNotif('خطأ في العملية', 'danger'); }
         }
 
+        let _isFetchingFinanceAudit = false;
         async function fetchAuditLogs() {
+            if (_isFetchingFinanceAudit) return;
+            const tbody = document.getElementById('audit-table-body');
+            if (!tbody) return;
+
             showSection('auditLogSection');
             const action = document.getElementById('audit-filter-action').value;
             const org = document.getElementById('audit-filter-org').value;
-            const tbody = document.getElementById('audit-table-body');
+
+            _isFetchingFinanceAudit = true;
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin"></i> جارٍ التحميل...</td></tr>';
             try {
                 const res = await fetch(`${API_URL}/finance/audit?action=${action}&organizationId=${org}`);
                 const json = await res.json();
@@ -8771,8 +8988,15 @@
                             <td>${new Date(log.createdAt).toLocaleString('ar-EG')}</td>
                         </tr>
                     `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--danger);">فشل تحميل السجلات</td></tr>';
                 }
-            } catch (err) { console.error(err); }
+            } catch (err) { 
+                console.error("fetchAuditLogs finance error:", err);
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--danger);">خطأ في الاتصال بالخادم</td></tr>';
+            } finally {
+                _isFetchingFinanceAudit = false;
+            }
         }
 
         async function fetchOrganizationsForSelect(selectId) {
@@ -8798,9 +9022,11 @@
         async function createOrganization(event) {
             event.preventDefault();
             const submitBtn = document.getElementById('org-submit-btn');
+            if (!submitBtn) return;
             const name = document.getElementById('org-name').value.trim();
             const type = document.getElementById('org-type').value;
             if (!name) return alert('يرجى إدخال اسم المؤسسة');
+            
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ الحفظ...';
             try {
@@ -8816,11 +9042,26 @@
                 } else {
                     const err = await res.json();
                     alert('خطأ: ' + (err.msg || 'فشل في الحفظ'));
-                async function loadClassIntelligence(groupId) {
-            if (!groupId) {
-                document.getElementById('class-ai-recommendations-card').style.display = 'none';
+                }
+            } catch (e) {
+                console.error("createOrganization error:", e);
+                alert('حدث خطأ في الاتصال بالخادم');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-plus"></i> إنشاء مؤسسة';
+            }
+        }
+        let _isLoadingIntelligence = false;
+        async function loadClassIntelligence(groupId) {
+            if (!groupId || _isLoadingIntelligence) {
+                if (!groupId) document.getElementById('class-ai-recommendations-card').style.display = 'none';
                 return;
             }
+
+            _isLoadingIntelligence = true;
+            const heatmap = document.getElementById('intelligence-heatmap');
+            if (heatmap) heatmap.innerHTML = '<div class="text-center" style="padding:20px;"><i class="fas fa-spinner fa-spin"></i> جارٍ التحليل...</div>';
+
             try {
                 const res = await fetch(`${API_URL}/teacher/class-intelligence/${groupId}`);
                 const data = await res.json();
@@ -8830,58 +9071,64 @@
                 document.getElementById('dist-average').innerText = data.levelDist.average;
                 document.getElementById('dist-advanced').innerText = data.levelDist.advanced;
 
-                const heatmap = document.getElementById('intelligence-heatmap');
-                heatmap.innerHTML = '';
-                
-                const sortedTopics = Object.entries(data.heatmap).sort((a,b) => b[1] - a[1]);
-                if (sortedTopics.length === 0) {
-                    heatmap.innerHTML = '<div class="text-center p-20 text-muted">لا يوجد بيانات كافية حالياً</div>';
-                } else {
-                    sortedTopics.forEach(([topicId, count]) => {
-                        const pct = Math.min(100, (count / data.totalStudents) * 100);
-                        const item = document.createElement('div');
-                        item.style.marginBottom = '12px';
-                        item.innerHTML = `
-                            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
-                                <span>الدرس: ${topicId}</span>
-                                <span class="fw-700">${count} طالب يعاني</span>
-                            </div>
-                            <div class="progress-bar-bg" style="height:6px;">
-                                <div class="progress-bar-fill" style="width:${pct}%; height:100%; background:#ef4444;"></div>
-                            </div>
-                        `;
-                        heatmap.appendChild(item);
-                    });
+                if (heatmap) {
+                    heatmap.innerHTML = '';
+                    const sortedTopics = Object.entries(data.heatmap).sort((a,b) => b[1] - a[1]);
+                    if (sortedTopics.length === 0) {
+                        heatmap.innerHTML = '<div class="text-center p-20 text-muted">لا يوجد بيانات كافية حالياً</div>';
+                    } else {
+                        sortedTopics.forEach(([topicId, count]) => {
+                            const pct = Math.min(100, (count / data.totalStudents) * 100);
+                            const item = document.createElement('div');
+                            item.style.marginBottom = '12px';
+                            item.innerHTML = `
+                                <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+                                    <span>الدرس: ${topicId}</span>
+                                    <span class="fw-700">${count} طالب يعاني</span>
+                                </div>
+                                <div class="progress-bar-bg" style="height:6px;">
+                                    <div class="progress-bar-fill" style="width:${pct}%; height:100%; background:#ef4444;"></div>
+                                </div>
+                            `;
+                            heatmap.appendChild(item);
+                        });
+                    }
                 }
 
                 const recs = document.getElementById('class-ai-recommendations');
-                if (data.levelDist.weak > data.totalStudents * 0.3) {
-                    recs.innerHTML = `💡 <b class="color-danger">تنبيه:</b> هناك نسبة كبيرة من الطلاب (${Math.round((data.levelDist.weak/data.totalStudents)*100)}%) يواجهون صعوبات. نوصي بإعادة شرح المفاهيم الأساسية للمواضيع المذكورة في الخريطة الحرارية.`;
-                } else {
-                    recs.innerHTML = `✅ أداء الفصل مستقر بشكل عام. يمكن التركيز على تقديم تحديات إضافية للطلاب المتقدمين.`;
+                if (recs) {
+                    if (data.levelDist.weak > data.totalStudents * 0.3) {
+                        recs.innerHTML = `💡 <b class="color-danger">تنبيه:</b> هناك نسبة كبيرة من الطلاب (${Math.round((data.levelDist.weak/data.totalStudents)*100)}%) يواجهون صعوبات. نوصي بإعادة شرح المفاهيم الأساسية للمواضيع المذكورة في الخريطة الحرارية.`;
+                    } else {
+                        recs.innerHTML = `✅ أداء الفصل مستقر بشكل عام. يمكن التركيز على تقديم تحديات إضافية للطلاب المتقدمين.`;
+                    }
                 }
-            } catch (err) { console.error('Error loading intelligence:', err); }
+            } catch (err) { 
+                console.error('Error loading intelligence:', err);
+                if (heatmap) heatmap.innerHTML = '<div style="color:var(--danger); text-align:center;">خطأ في تحميل التحليلات الذكية</div>';
+            } finally {
+                _isLoadingIntelligence = false;
+            }
         }
 
         async function initIntelligenceSection() {
             // Populate groups dropdown
             const select = document.getElementById('intelligence-group-select');
+            if (!select) return;
             select.innerHTML = '<option value="">اختر المجموعة...</option>';
             try {
                 const res = await fetch(`${API_URL}/groups`);
                 const groups = await res.json();
-                groups.forEach(g => {
-                    const opt = document.createElement('option');
-                    opt.value = g.id;
-                    opt.innerText = g.name;
-                    select.appendChild(opt);
-                });
-            } catch(e) {}
-        }
-            } catch (err) { alert('فشل في الاتصال بالخادم'); }
-            finally {
-                submitBtn.disabled = false;
-                submitBtn.innerText = 'حفظ المؤسسة';
+                if (Array.isArray(groups)) {
+                    groups.forEach(g => {
+                        const opt = document.createElement('option');
+                        opt.value = g.id;
+                        opt.innerText = g.name;
+                        select.appendChild(opt);
+                    });
+                }
+            } catch(e) {
+                console.error("initIntelligenceSection error:", e);
             }
         }
 
