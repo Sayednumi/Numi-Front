@@ -3867,15 +3867,29 @@
             });
         } catch (e) { console.warn('Socket uninitialized'); }
 
+        // Helper to find 'classes' property in various API response wrappers
+        function resolvePlatformData(data) {
+            if (!data) return null;
+            if (data.classes) return data;
+            if (data.data && data.data.classes) return data.data;
+            if (data.platformData && data.platformData.classes) return data.platformData;
+            if (data.success && data.data && data.data.classes) return data.data;
+            return null;
+        }
+
         async function fetchDB() {
             try {
                 const res = await smartFetch(`${API_URL}/platform-data`);
                 if (res.ok) {
                     const data = await res.json();
-                    // Project standard: handle various wrapping patterns {success, data: {classes}, platformData: {classes}}
-                    const actualData = data.classes ? data : (data.data || data.platformData || data);
-                    if (actualData && actualData.classes) {
+                    const actualData = resolvePlatformData(data);
+                    if (actualData) {
                         db = actualData;
+                        // If we are currently in a structural section, re-render it immediately
+                        const activeSection = document.querySelector('.section.active');
+                        if (activeSection && ['classes', 'groups', 'courses', 'units', 'lessons'].includes(activeSection.id)) {
+                             showSection(activeSection.id);
+                        }
                     }
                 }
             } catch (err) {
@@ -4882,7 +4896,8 @@
             try {
                 // 1. Fetch Global CMS Data (Classes, Groups, Lessons)
                 const res = await smartFetch(`${API_URL}/platform-data`);
-                const globalData = res.ok ? await res.json() : {};
+                const rawData = res.ok ? await res.json() : {};
+                const globalData = resolvePlatformData(rawData) || {};
 
                 let totalClasses = 0, totalGroups = 0, totalLessons = 0;
                 const allClasses = globalData.classes || {};
