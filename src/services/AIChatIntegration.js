@@ -22,33 +22,85 @@ const { getAIContext } = _AICE;
 
 /**
  * Builds the dynamic system prompt instructing the AI on how to behave
- * based on the user's role and resolved subject.
+ * based on the user's role, resolved subject, and teaching strategy.
  *
  * @param {Object} aiContext - Context from getAIContext(user)
+ * @param {Object} [rawUser=null] - Raw user object for light personalization
  * @returns {string} System prompt string
  */
-function buildAISystemPrompt(aiContext) {
+function buildAISystemPrompt(aiContext, rawUser = null) {
     if (!aiContext) return '';
 
     const { role, subject, responseRules } = aiContext;
+    const strategy = getTeachingStrategy(role, subject);
+    
+    // Light Personalization
+    const userName = rawUser && rawUser.name ? rawUser.name : (role === 'student' ? 'الطالب' : 'المستخدم');
 
-    let prompt = `You are an AI assistant specialized ONLY in ${subject}.\n`;
-    prompt += `User role: ${role}.\n\n`;
+    let prompt = `You are a professional ${subject} teacher.\n`;
+    prompt += `You are talking to ${userName} (Role: ${role}).\n\n`;
+    
+    prompt += `Teaching style:\n`;
+    prompt += `- Explanation: ${strategy.explanationStyle}\n`;
+    prompt += `- Tone: ${strategy.tone}\n`;
+    prompt += `- Depth: ${strategy.depth}\n`;
+    prompt += `- Use Examples: ${strategy.useExamples}\n\n`;
+
+    prompt += `Response Format Requirements:\n`;
+    prompt += `${strategy.format}\n\n`;
+
     prompt += `Rules:\n`;
-    prompt += `- Never answer outside ${subject}\n`;
-    prompt += `- If question is outside subject → politely refuse\n`;
-
-    if (responseRules.explainStepByStep) {
-        prompt += `- If user is student → explain step-by-step\n`;
-    } else if (role === 'teacher') {
-        prompt += `- If user is teacher → give structured teaching answers\n`;
-    }
+    prompt += `- Always teach, not just answer directly.\n`;
+    prompt += `- Break down complex ideas appropriately.\n`;
+    prompt += `- Adapt your explanation to the user's level.\n`;
+    prompt += `- Never answer outside the subject of ${subject}.\n`;
+    prompt += `- If question is outside ${subject} → politely refuse.\n`;
 
     if (!responseRules.allowAdvanced) {
         prompt += `- Do not use overly advanced or complex technical jargon.\n`;
     }
 
     return prompt;
+}
+
+
+// ─── 1.5. TEACHER PERSONALITY LAYER (STRATEGY) ───────────────────────────────
+
+/**
+ * Returns the teaching strategy object defining explanation style, tone, and format
+ * based on the user's role.
+ *
+ * @param {string} role - Resolved user role
+ * @param {string} subject - Resolved subject
+ * @returns {Object} Strategy configuration
+ */
+function getTeachingStrategy(role, subject) {
+    if (role === 'student') {
+        return {
+            explanationStyle: 'step-by-step',
+            tone: 'friendly, encouraging',
+            depth: 'basic',
+            useExamples: true,
+            format: '1. Simple explanation\n2. Practical example\n3. Quick check question'
+        };
+    } else if (role === 'teacher') {
+        return {
+            explanationStyle: 'conceptual',
+            tone: 'professional, structured',
+            depth: 'detailed',
+            useExamples: true,
+            format: '1. Concept explanation\n2. Teaching suggestion\n3. Possible student mistakes'
+        };
+    } else {
+        // manager or admin
+        return {
+            explanationStyle: 'summary',
+            tone: 'professional, analytical',
+            depth: 'high-level',
+            useExamples: false,
+            format: '1. Executive summary\n2. Key insights'
+        };
+    }
 }
 
 
@@ -152,7 +204,7 @@ async function processAIRequest(rawUser, userMessage, aiCallFn) {
         }
 
         // Step 3: Build System Prompt
-        const systemPrompt = buildAISystemPrompt(aiContext);
+        const systemPrompt = buildAISystemPrompt(aiContext, rawUser);
 
         // Step 4: Execute AI Call (Wrapped in Try/Catch for Fallback Safety)
         let rawAIResponse = '';
@@ -181,6 +233,7 @@ async function processAIRequest(rawUser, userMessage, aiCallFn) {
 
 const AIChatIntegration = {
     buildAISystemPrompt,
+    getTeachingStrategy,
     preAICheck,
     postAIFilter,
     processAIRequest
