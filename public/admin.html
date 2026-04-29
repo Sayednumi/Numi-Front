@@ -3934,7 +3934,14 @@
             try {
                 if (isStaticEnv && url.includes('/api/')) {
                     console.warn(`[Static Env] Mocking API call to: ${url}`);
-                    return { ok: true, json: async () => ({ success: true, data: [], logs: [], classes: {} }) };
+                    // Return correct data structure based on typical URL patterns
+                    if (url.includes('/users') || url.includes('/logs') || url.includes('/reports')) {
+                        return { ok: true, json: async () => ([]) }; // Array for lists
+                    }
+                    if (url.includes('/platform-data')) {
+                        return { ok: true, json: async () => ({ classes: {} }) }; // Object for DB
+                    }
+                    return { ok: true, json: async () => ({ success: true, data: [] }) };
                 }
                 return await fetch(url, options);
             } catch (e) {
@@ -4002,7 +4009,16 @@
             // 5. Section-specific loaders (Centralized & Protected)
             safeStep(() => {
                 switch(targetId) {
-                    case 'dashboard': updateStats(); break;
+                    case 'dashboard': 
+                        updateStats(); 
+                        renderTodaySchedule();
+                        renderWeeklySchedule();
+                        break;
+                    case 'classes': renderClasses(); break;
+                    case 'groups': renderGroups(); break;
+                    case 'courses': renderCourses(); break;
+                    case 'units': renderUnits(); break;
+                    case 'lessons': renderLessons(); break;
                     case 'students': loadStudents(); break;
                     case 'chat': renderChatHierarchy(); break;
                     case 'teacher-platforms': loadTeacherPlatforms(); break;
