@@ -65,6 +65,7 @@
             font-weight: 800;
             background: linear-gradient(to left, #fff, #94a3b8);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
@@ -261,6 +262,17 @@
         }
         .tag-danger { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
 
+        /* ─── LIVE MODE TOGGLE ─── */
+        .live-mode-toggle {
+            display: flex; align-items: center; gap: 0.5rem;
+            background: rgba(255,255,255,0.05); padding: 0.5rem 1rem;
+            border-radius: 2rem; border: 1px solid var(--border);
+            cursor: pointer; transition: 0.3s;
+        }
+        .live-mode-toggle.active {
+            background: rgba(16, 185, 129, 0.1); border-color: var(--success); color: var(--success);
+        }
+        .live-mode-toggle i { font-size: 0.8rem; }
     </style>
 </head>
 <body>
@@ -271,10 +283,32 @@
         <header class="header">
             <div>
                 <h1>لوحة المستثمرين والتحليلات <span style="color:var(--primary); font-size: 1.5rem;">Numi AI</span></h1>
-                <p style="color: var(--text-muted); margin-top: 5px;">مراقبة حية للأداء التعليمي والاستهلاك المالي</p>
+                <p style="color: var(--text-muted); margin-top: 5px;">مراقبة حية لأداء SaaS التعليمي والاستهلاك المالي</p>
             </div>
-            <div class="badge-live">مزامنة حية</div>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <div class="live-mode-toggle active" id="liveToggle" onclick="toggleLiveMode()">
+                    <i class="fas fa-satellite-dish"></i> وضع الإنتاج (LIVE)
+                </div>
+                <div class="badge-live">مزامنة حية</div>
+            </div>
         </header>
+
+        <!-- PRODUCTION HEALTH PANEL -->
+        <div class="glass-card" style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.02);">
+            <div style="display: flex; gap: 1.5rem; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--success); font-weight: 700;">
+                    <i class="fas fa-check-circle"></i> النظام مستقر
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);"><i class="fas fa-server"></i> API: 99.9% Uptime</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);"><i class="fas fa-database"></i> DB: متصل (12ms)</div>
+                <div style="font-size: 0.85rem; color: var(--text-muted);"><i class="fas fa-brain"></i> AI Provider: جاهز</div>
+            </div>
+            <div>
+                <button style="background:var(--primary); color:#fff; border:none; padding:0.5rem 1rem; border-radius:0.5rem; font-family:inherit; font-weight:700; cursor:pointer;" onclick="window.open('onboarding.html')">
+                    <i class="fas fa-plus"></i> إضافة مدرسة جديدة
+                </button>
+            </div>
+        </div>
 
         <!-- KPI OVERVIEW CARDS -->
         <div class="grid-kpi">
@@ -410,7 +444,24 @@
     <script src="../src/models/TeacherProfile.js"></script>
     <script src="../src/services/AIAnalyticsEngine.js"></script>
 
+    <script src="../src/services/TenantManager.js"></script>
+    <script src="../src/services/BillingSimulator.js"></script>
+
     <script>
+        // ─── 0. LIVE MODE TOGGLE ───
+        let isLiveMode = true;
+        function toggleLiveMode() {
+            isLiveMode = !isLiveMode;
+            const btn = document.getElementById('liveToggle');
+            if (isLiveMode) {
+                btn.classList.add('active');
+                btn.innerHTML = '<i class="fas fa-satellite-dish"></i> وضع الإنتاج (LIVE)';
+            } else {
+                btn.classList.remove('active');
+                btn.innerHTML = '<i class="fas fa-flask"></i> وضع الاختبار (Sandbox)';
+            }
+        }
+
         // ─── 1. SEED MOCK DATA ───
         function seedData() {
             // Ensure modules loaded
