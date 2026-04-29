@@ -7631,7 +7631,7 @@
             if (!_selectedLiveIds.size) return;
             if (!confirm(`هل تريد حذف ${_selectedLiveIds.size} حصة؟ لا يمكن التراجع.`)) return;
             let del = 0; for (const id of _selectedLiveIds) { try { const r = await fetch(`${API_URL}/live-classes/${id}`, { method: 'DELETE' }); const d = await r.json(); if (d.success) del++; } catch (e) { } }
-            _selectedLiveIds.clear(); updateBulkBar(); loadLiveClasses(); showNotif(`🗑️ تم حذف ${del} حصة بنجاح`, 'success');
+            _selectedLiveIds.clear(); updateBulkBar(); await loadLiveClasses(); await loadScheduleWidgets(); showNotif(`🗑️ تم حذف ${del} حصة بنجاح`, 'success');
         }
         function openBulkEditModal() {
             if (!_selectedLiveIds.size) return;
@@ -7654,7 +7654,7 @@
             if (!title && !time && !duration && !link) { alert('يرجى تعبئة حقل واحد على الأقل.'); return; }
             const updates = {}; if (title) updates.title = title; if (time) updates.time = time; if (duration) updates.duration = parseInt(duration); if (link) updates.link = link;
             let upd = 0; for (const id of _selectedLiveIds) { try { const r = await fetch(`${API_URL}/live-classes/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) }); const d = await r.json(); if (d.success) upd++; } catch (e) { } }
-            document.getElementById('live-bulk-edit-modal').style.display = 'none'; clearLiveSelection(); loadLiveClasses(); showNotif(`✅ تم تعديل ${upd} حصة بنجاح`, 'success');
+            document.getElementById('live-bulk-edit-modal').style.display = 'none'; clearLiveSelection(); await loadLiveClasses(); await loadScheduleWidgets(); showNotif(`✅ تم تعديل ${upd} حصة بنجاح`, 'success');
         }
         function openEditLiveModal(id) {
             const session = _allLiveClasses?.find(c => c._id === id); if (!session) return;
@@ -7682,6 +7682,7 @@
                 if (data.success) {
                     closeModal('live-single-edit-modal');
                     await loadLiveClasses();
+                    await loadScheduleWidgets();
                     showNotif('✅ تم تعديل الحصة بنجاح', 'success');
                 } else {
                     showNotif('❌ فشل التعديل: ' + (data.msg || 'خطأ غير معروف'), 'danger');
@@ -7746,7 +7747,8 @@
                 duration: parseInt(document.getElementById('live-duration').value)
             };
 
-            const weeks = Math.max(1, parseInt(document.getElementById('live-weeks').value) || 12);
+            const isRecurring = document.getElementById('live-recurring').checked;
+            const weeks = isRecurring ? Math.max(1, parseInt(document.getElementById('live-weeks').value) || 12) : 1;
             const btn = document.getElementById('live-submit-btn');
             if (btn.disabled) return;
 
@@ -7784,7 +7786,8 @@
                 if (savedCount > 0) {
                     document.getElementById('liveClassForm').reset();
                     document.getElementById('recurring-preview').innerHTML = '';
-                    await loadLiveClasses(); // UI update
+                    await loadLiveClasses(); // UI update for list
+                    await loadScheduleWidgets(); // Update Dashboard Schedule UI immediately
                     
                     const day = new Date(basePayload.date).toLocaleDateString('ar-EG', { weekday: 'long' });
                     if (failCount === 0) {
@@ -7844,6 +7847,7 @@
                 if (res.ok) {
                     showNotif('🗑️ تم حذف الحصة بنجاح', 'success');
                     await loadLiveClasses();
+                    await loadScheduleWidgets();
                 } else {
                     showNotif('❌ فشل حذف الحصة', 'danger');
                 }
@@ -7905,9 +7909,9 @@
                 console.error("loadScheduleWidgets error:", e);
                 _scheduleClasses = [];
             } finally {
-                renderTodaySchedule();
-                renderWeeklySchedule();
                 _isScheduleLoading = false;
+                try { renderTodaySchedule(); } catch(e) { console.error(e); }
+                try { renderWeeklySchedule(); } catch(e) { console.error(e); }
             }
         }
 
@@ -7915,34 +7919,40 @@
             const el = document.getElementById('today-schedule');
             const lbl = document.getElementById('today-date-label');
             if (!el) return;
-            const now = new Date();
-            const todayStr = now.toISOString().slice(0, 10);
-            const days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-            if (lbl) lbl.textContent = `${days[now.getDay()]} ${todayStr}`;
 
-            const todayClasses = _scheduleClasses
-                .filter(c => c.date === todayStr)
-                .sort((a, b) => a.time.localeCompare(b.time));
+            try {
+                const now = new Date();
+                const todayStr = now.toISOString().slice(0, 10);
+                const days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+                if (lbl) lbl.textContent = `${days[now.getDay()]} ${todayStr}`;
 
-            if (todayClasses.length === 0) {
-                el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);"><i class="fas fa-moon fa-2x" style="opacity:0.3;"></i><p style="margin-top:10px;">لا توجد حصص اليوم</p></div>`;
-                return;
+                const todayClasses = (_scheduleClasses || [])
+                    .filter(c => c && c.date === todayStr)
+                    .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+
+                if (todayClasses.length === 0) {
+                    el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);"><i class="fas fa-moon fa-2x" style="opacity:0.3;"></i><p style="margin-top:10px;">لا توجد حصص اليوم</p></div>`;
+                    return;
+                }
+
+                el.innerHTML = todayClasses.map(c => {
+                    const status = computeStatus(c);
+                    const gName = db?.classes?.[c.classId]?.name + ' • ' + (db?.classes?.[c.classId]?.groups?.[c.groupId]?.name || '');
+                    const dotColor = status === 'live' ? 'var(--danger)' : status === 'finished' ? 'var(--success)' : 'var(--warning)';
+                    return `
+                    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+                        <div style="width:10px;height:10px;border-radius:50%;background:${dotColor};flex-shrink:0;${status === 'live' ? 'animation:pulse 1.5s infinite;' : ''}"></div>
+                        <div style="flex:1;">
+                            <div style="font-weight:700;font-size:13px;">${c.title || 'بدون عنوان'}</div>
+                            <div style="font-size:11px;color:var(--text-muted);">${gName} | ${c.time || '—'} (${c.duration || 0} د)</div>
+                        </div>
+                        ${status !== 'finished' ? `<button class="btn btn-sm" onclick="window.open('${c.link || '#'}','_blank'); startLiveClass('${c._id}')" style="background:${status === 'live' ? 'var(--danger)' : 'var(--primary)'}; font-size:11px; padding:4px 10px;"><i class="fas fa-play"></i></button>` : '<i class="fas fa-check-circle" style="color:var(--success);"></i>'}
+                    </div>`;
+                }).join('');
+            } catch (err) {
+                console.error("renderTodaySchedule crash:", err);
+                el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger);"><p>تعذر تحميل الجدول</p></div>`;
             }
-
-            el.innerHTML = todayClasses.map(c => {
-                const status = computeStatus(c);
-                const gName = db?.classes?.[c.classId]?.name + ' • ' + (db?.classes?.[c.classId]?.groups?.[c.groupId]?.name || '');
-                const dotColor = status === 'live' ? 'var(--danger)' : status === 'finished' ? 'var(--success)' : 'var(--warning)';
-                return `
-                <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
-                    <div style="width:10px;height:10px;border-radius:50%;background:${dotColor};flex-shrink:0;${status === 'live' ? 'animation:pulse 1.5s infinite;' : ''}"></div>
-                    <div style="flex:1;">
-                        <div style="font-weight:700;font-size:13px;">${c.title}</div>
-                        <div style="font-size:11px;color:var(--text-muted);">${gName} | ${c.time} (${c.duration} د)</div>
-                    </div>
-                    ${status !== 'finished' ? `<button class="btn btn-sm" onclick="window.open('${c.link}','_blank'); startLiveClass('${c._id}')" style="background:${status === 'live' ? 'var(--danger)' : 'var(--primary)'}; font-size:11px; padding:4px 10px;"><i class="fas fa-play"></i></button>` : '<i class="fas fa-check-circle" style="color:var(--success);"></i>'}
-                </div>`;
-            }).join('');
         }
 
         function renderWeeklySchedule() {
@@ -7950,30 +7960,31 @@
             const lbl = document.getElementById('week-label');
             if (!el) return;
 
-            const now = new Date();
-            const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
-            // We want Saturday to be the first day (0 offset).
-            // Sun (0) -> offset 1, Mon (1) -> offset 2, ..., Sat (6) -> offset 0
-            const offsetToSaturday = (dayOfWeek + 1) % 7;
+            try {
+                const now = new Date();
+                const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+                // We want Saturday to be the first day (0 offset).
+                // Sun (0) -> offset 1, Mon (1) -> offset 2, ..., Sat (6) -> offset 0
+                const offsetToSaturday = (dayOfWeek + 1) % 7;
 
-            const weekStart = new Date(now);
-            weekStart.setDate(now.getDate() - offsetToSaturday + (_scheduleWeekOffset * 7));
-            weekStart.setHours(0, 0, 0, 0);
+                const weekStart = new Date(now);
+                weekStart.setDate(now.getDate() - offsetToSaturday + (_scheduleWeekOffset * 7));
+                weekStart.setHours(0, 0, 0, 0);
 
-            const dayNames = ['سبت', 'أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة'];
-            const days = Array.from({ length: 7 }, (_, i) => {
-                const d = new Date(weekStart);
-                d.setDate(weekStart.getDate() + i);
-                return d;
-            });
+                const dayNames = ['سبت', 'أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة'];
+                const days = Array.from({ length: 7 }, (_, i) => {
+                    const d = new Date(weekStart);
+                    d.setDate(weekStart.getDate() + i);
+                    return d;
+                });
 
-            if (lbl) {
-                const s = days[0].toISOString().slice(0, 10);
-                const e = days[6].toISOString().slice(0, 10);
-                lbl.textContent = `${s} → ${e}`;
-            }
+                if (lbl) {
+                    const s = days[0].toISOString().slice(0, 10);
+                    const e = days[6].toISOString().slice(0, 10);
+                    lbl.textContent = `${s} → ${e}`;
+                }
 
-            const todayStr = now.toISOString().slice(0, 10);
+                const todayStr = now.toISOString().slice(0, 10);
             let html = `<table style="width:100%;border-collapse:collapse;font-size:11px;">
                 <thead><tr>`;
             days.forEach((d, i) => {
@@ -7983,30 +7994,34 @@
             });
             html += `</tr></thead><tbody><tr>`;
 
-            days.forEach(d => {
-                const ds = d.toISOString().slice(0, 10);
-                const dayClasses = _scheduleClasses
-                    .filter(c => c.date === ds)
-                    .sort((a, b) => a.time.localeCompare(b.time));
-                const isToday = ds === todayStr;
-                html += `<td style="padding:4px;vertical-align:top;min-width:85px;background:${isToday ? 'rgba(109,58,238,0.07)' : 'transparent'};">`;
-                if (dayClasses.length === 0) {
-                    html += `<div style="text-align:center;color:rgba(255,255,255,0.15);font-size:18px;padding:8px;">·</div>`;
-                } else {
-                    dayClasses.forEach(c => {
-                        const status = computeStatus(c);
-                        const col = status === 'live' ? 'var(--danger)' : status === 'finished' ? 'var(--success)' : 'var(--primary)';
-                        const gName = db?.classes?.[c.classId]?.groups?.[c.groupId]?.name || '';
-                        html += `<div title="${c.title} | ${gName}" style="background:${col};border-radius:6px;padding:4px 6px;margin-bottom:4px;cursor:pointer;opacity:${status === 'finished' ? '0.5' : '1'};" onclick="window.open('${c.link}','_blank')">
-                            <div style="font-weight:700;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px;">${c.title}</div>
-                            <div style="color:rgba(255,255,255,0.8);font-size:10px;">${c.time} | ${gName}</div>
-                        </div>`;
-                    });
-                }
-                html += `</td>`;
-            });
-            html += `</tr></tbody></table>`;
-            el.innerHTML = html;
+                days.forEach(d => {
+                    const ds = d.toISOString().slice(0, 10);
+                    const dayClasses = (_scheduleClasses || [])
+                        .filter(c => c && c.date === ds)
+                        .sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+                    const isToday = ds === todayStr;
+                    html += `<td style="padding:4px;vertical-align:top;min-width:85px;background:${isToday ? 'rgba(109,58,238,0.07)' : 'transparent'};">`;
+                    if (dayClasses.length === 0) {
+                        html += `<div style="text-align:center;color:rgba(255,255,255,0.15);font-size:18px;padding:8px;">·</div>`;
+                    } else {
+                        dayClasses.forEach(c => {
+                            const status = computeStatus(c);
+                            const col = status === 'live' ? 'var(--danger)' : status === 'finished' ? 'var(--success)' : 'var(--primary)';
+                            const gName = db?.classes?.[c.classId]?.groups?.[c.groupId]?.name || '';
+                            html += `<div title="${c.title || 'بدون عنوان'} | ${gName}" style="background:${col};border-radius:6px;padding:4px 6px;margin-bottom:4px;cursor:pointer;opacity:${status === 'finished' ? '0.5' : '1'};" onclick="window.open('${c.link || '#'}','_blank')">
+                                <div style="font-weight:700;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px;">${c.title || 'بدون عنوان'}</div>
+                                <div style="color:rgba(255,255,255,0.8);font-size:10px;">${c.time || '—'} | ${gName}</div>
+                            </div>`;
+                        });
+                    }
+                    html += `</td>`;
+                });
+                html += `</tr></tbody></table>`;
+                el.innerHTML = html;
+            } catch (err) {
+                console.error("renderWeeklySchedule crash:", err);
+                el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger);"><p>تعذر تحميل جدول الأسبوع</p></div>`;
+            }
         }
 
         function shiftWeek(dir) {
