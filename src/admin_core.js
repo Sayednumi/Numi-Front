@@ -88,22 +88,33 @@ function hasPerm(permName) {
 }
 
 async function fetchDB() {
+    if (GLOBAL_STORE.state.loading.db) return;
+    GLOBAL_STORE.setLoading('db', true);
+
     try {
-        const res = await fetch(`${API_URL}/platform-data`);
-        if (res.ok) {
-            const data = await res.json();
-            if (data && data.classes) {
-                db = data;
-                localStorage.setItem('numi_db_cache', JSON.stringify(db));
-            }
+        const data = await API_CLIENT.get('/platform-data');
+        if (data && data.classes) {
+            db = data;
+            window.db = db;
+            GLOBAL_STORE.setState({ db: data });
+            GLOBAL_STORE.persistCache();
         }
     } catch (err) {
+        console.error('Fetch DB failed, using cache:', err);
         const cache = localStorage.getItem('numi_db_cache');
-        if (cache) db = JSON.parse(cache);
+        if (cache) {
+            db = JSON.parse(cache);
+            window.db = db;
+            GLOBAL_STORE.setState({ db });
+        }
+    } finally {
+        GLOBAL_STORE.setLoading('db', false);
     }
 }
 
-async function saveDB() {
+let _saveDBPromise = null;
+async function saveDB(immediate = false) {
+    // Notify UI of pending changes
     if (typeof refreshAllDropdowns === 'function') refreshAllDropdowns();
     if (typeof buildNavLessonSelectors === 'function') buildNavLessonSelectors();
     
@@ -112,17 +123,37 @@ async function saveDB() {
         if (dashSection && dashSection.style.display !== 'none') updateStats();
     }
 
-    clearTimeout(_saveDBTimer);
-    _saveDBTimer = setTimeout(async () => {
-        localStorage.setItem('numi_db_cache', JSON.stringify(db));
+    if (_saveDBTimer) clearTimeout(_saveDBTimer);
+
+    const performSave = async () => {
+        GLOBAL_STORE.setState({ db });
+        GLOBAL_STORE.persistCache();
+        
         try {
-            await fetch(`${API_URL}/platform-data`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(db)
-            });
-        } catch (err) { console.error('Failed to save DB', err); }
-    }, 1500);
+            await API_CLIENT.post('/platform-data', db);
+            console.log('✅ DB saved successfully');
+            return true;
+        } catch (err) {
+            console.error('❌ Failed to save DB:', err);
+            if (typeof showNotif === 'function') showNotif('⚠️ فشل حفظ البيانات في السحابة', 'danger');
+            throw err;
+        }
+    };
+
+    if (immediate) {
+        return await performSave();
+    }
+
+    return new Promise((resolve, reject) => {
+        _saveDBTimer = setTimeout(async () => {
+            try {
+                const result = await performSave();
+                resolve(result);
+            } catch (err) {
+                reject(err);
+            }
+        }, 1500);
+    });
 }
 
 window.initAdmin = initAdmin;
