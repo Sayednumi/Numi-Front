@@ -1248,6 +1248,125 @@
         <!-- Setup Checklist Component (School Admin Only) -->
         <div id="setup-checklist-placeholder"></div>
 
+        <!-- AI Teacher Settings Section -->
+        <div id="aiTeacherSettingsSection" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-brain" style="color:#00d2ff;"></i> إعدادات المعلم الذكي (Personalized AI Teacher)</h2>
+                    <button class="btn btn-sm" onclick="saveAITeacherSettings()" id="btn-save-ai-settings">حفظ التغييرات</button>
+                </div>
+                
+                <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 30px;">
+                    <div>
+                        <div class="form-group mb-20">
+                            <label>حالة المعلم الذكي</label>
+                            <select id="ai-teacher-enabled" class="form-control">
+                                <option value="true">مفعّل (Active)</option>
+                                <option value="false">معطل (Disabled)</option>
+                            </select>
+                            <p class="fs-xs text-muted mt-8">عند التعطيل، لن يتمكن الطلاب من محادثة الذكاء الاصطناعي.</p>
+                        </div>
+
+                        <div class="form-group mb-20">
+                            <label>نمط الإجابة (Strictness Level)</label>
+                            <select id="ai-teacher-strict" class="form-control">
+                                <option value="true">صارم جداً (فقط من المنهج المرفوع)</option>
+                                <option value="false">مرن (من المنهج + معلومات عامة)</option>
+                            </select>
+                            <p class="fs-xs text-muted mt-8">النمط الصارم يمنع الذكاء الاصطناعي من الإجابة على أي سؤال خارج الدروس المرفوعة.</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="form-group mb-20">
+                            <label>شخصية المعلم الذكي</label>
+                            <select id="ai-teacher-personality" class="form-control">
+                                <option value="professional">مهني وجاد (Professional)</option>
+                                <option value="friendly">ودود ومشجع (Friendly)</option>
+                                <option value="creative">مبدع ومبسط (Creative)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>تعليمات إضافية مخصصة</label>
+                            <textarea id="ai-teacher-instructions" class="form-control" rows="4" placeholder="مثلاً: ركز على تبسيط المصطلحات الفيزيائية الصعبة..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Usage Stats -->
+            <div class="grid" style="grid-template-columns: 1fr 2fr; gap: 20px;">
+                <div class="card">
+                    <div class="card-header"><h3>إحصائيات الاستخدام</h3></div>
+                    <div style="text-align:center; padding: 20px;">
+                        <div class="fs-xl fw-800" id="ai-usage-count">0</div>
+                        <div class="text-muted">محادثة هذا الشهر</div>
+                        <div style="margin-top:15px;">
+                            <div class="progress-bar-bg" style="height:10px; border-radius:5px;">
+                                <div id="ai-usage-progress" class="progress-bar-fill" style="width:0%; height:10px; border-radius:5px; background:var(--primary);"></div>
+                            </div>
+                            <div class="fs-xs mt-8" id="ai-usage-label">0 / 50 محادثة</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><h3>آخر تفاعلات الطلاب</h3></div>
+                    <div style="max-height: 300px; overflow-y: auto;">
+                        <table style="font-size: 13px;">
+                            <thead>
+                                <tr>
+                                    <th>الطالب</th>
+                                    <th>السؤال</th>
+                                    <th>التوقيت</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ai-logs-table">
+                                <!-- Filled by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="classIntelligenceSection" class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-microchip" style="color:#a855f7;"></i> ذكاء الفصل الدراسي (Class Intelligence)</h2>
+                    <select id="intelligence-group-select" class="form-control" style="width: 200px;" onchange="loadClassIntelligence(this.value)">
+                        <option value="">اختر المجموعة...</option>
+                    </select>
+                </div>
+                
+                <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 20px;">
+                    <div class="card" style="background: rgba(168, 85, 247, 0.05); border: 1px solid rgba(168, 85, 247, 0.1);">
+                        <h3>توزيع المستويات</h3>
+                        <div style="display: flex; justify-content: space-around; padding: 20px; text-align: center;">
+                            <div><div class="fs-xl fw-700 color-danger" id="dist-weak">0</div><div class="fs-xs text-muted">ضعيف</div></div>
+                            <div><div class="fs-xl fw-700 color-warning" id="dist-average">0</div><div class="fs-xs text-muted">متوسط</div></div>
+                            <div><div class="fs-xl fw-700 color-success" id="dist-advanced">0</div><div class="fs-xs text-muted">متقدم</div></div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>أكثر المواضيع صعوبة (Heatmap)</h3>
+                        <div id="intelligence-heatmap" style="padding: 15px;">
+                            <!-- Filled by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-20" id="class-ai-recommendations-card" style="display:none;">
+                    <h3>توصيات المعلم الذكي للفصل</h3>
+                    <div id="class-ai-recommendations" class="text-muted fs-sm p-10">
+                        اختر مجموعة لعرض التوصيات المخصصة...
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Dashboard Section -->
         <div id="dashboard" class="section active">
             <!-- Dashboard Cards Component -->
@@ -3788,6 +3907,8 @@
                 case 'reports': initReports(); break;
                 case 'question-bank': renderQuestionBank(); break;
                 case 'game-bank-section': renderGameBankSection(); break;
+                case 'aiTeacherSettingsSection': if (typeof loadAITeacherSettings === 'function') loadAITeacherSettings(); break;
+                case 'classIntelligenceSection': if (typeof initIntelligenceSection === 'function') initIntelligenceSection(); break;
                 case 'financialControlSection': if (typeof initFinanceCenter === 'function') initFinanceCenter(); break;
                 case 'growthAnalyticsSection': if (typeof initGrowthAnalytics === 'function') initGrowthAnalytics(); break;
                 case 'superAdminOrganizationsSection': if (typeof fetchOrganizations === 'function') fetchOrganizations(); break;
@@ -8695,7 +8816,68 @@
                 } else {
                     const err = await res.json();
                     alert('خطأ: ' + (err.msg || 'فشل في الحفظ'));
+                async function loadClassIntelligence(groupId) {
+            if (!groupId) {
+                document.getElementById('class-ai-recommendations-card').style.display = 'none';
+                return;
+            }
+            try {
+                const res = await fetch(`${API_URL}/teacher/class-intelligence/${groupId}`);
+                const data = await res.json();
+                
+                document.getElementById('class-ai-recommendations-card').style.display = 'block';
+                document.getElementById('dist-weak').innerText = data.levelDist.weak;
+                document.getElementById('dist-average').innerText = data.levelDist.average;
+                document.getElementById('dist-advanced').innerText = data.levelDist.advanced;
+
+                const heatmap = document.getElementById('intelligence-heatmap');
+                heatmap.innerHTML = '';
+                
+                const sortedTopics = Object.entries(data.heatmap).sort((a,b) => b[1] - a[1]);
+                if (sortedTopics.length === 0) {
+                    heatmap.innerHTML = '<div class="text-center p-20 text-muted">لا يوجد بيانات كافية حالياً</div>';
+                } else {
+                    sortedTopics.forEach(([topicId, count]) => {
+                        const pct = Math.min(100, (count / data.totalStudents) * 100);
+                        const item = document.createElement('div');
+                        item.style.marginBottom = '12px';
+                        item.innerHTML = `
+                            <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px;">
+                                <span>الدرس: ${topicId}</span>
+                                <span class="fw-700">${count} طالب يعاني</span>
+                            </div>
+                            <div class="progress-bar-bg" style="height:6px;">
+                                <div class="progress-bar-fill" style="width:${pct}%; height:100%; background:#ef4444;"></div>
+                            </div>
+                        `;
+                        heatmap.appendChild(item);
+                    });
                 }
+
+                const recs = document.getElementById('class-ai-recommendations');
+                if (data.levelDist.weak > data.totalStudents * 0.3) {
+                    recs.innerHTML = `💡 <b class="color-danger">تنبيه:</b> هناك نسبة كبيرة من الطلاب (${Math.round((data.levelDist.weak/data.totalStudents)*100)}%) يواجهون صعوبات. نوصي بإعادة شرح المفاهيم الأساسية للمواضيع المذكورة في الخريطة الحرارية.`;
+                } else {
+                    recs.innerHTML = `✅ أداء الفصل مستقر بشكل عام. يمكن التركيز على تقديم تحديات إضافية للطلاب المتقدمين.`;
+                }
+            } catch (err) { console.error('Error loading intelligence:', err); }
+        }
+
+        async function initIntelligenceSection() {
+            // Populate groups dropdown
+            const select = document.getElementById('intelligence-group-select');
+            select.innerHTML = '<option value="">اختر المجموعة...</option>';
+            try {
+                const res = await fetch(`${API_URL}/groups`);
+                const groups = await res.json();
+                groups.forEach(g => {
+                    const opt = document.createElement('option');
+                    opt.value = g.id;
+                    opt.innerText = g.name;
+                    select.appendChild(opt);
+                });
+            } catch(e) {}
+        }
             } catch (err) { alert('فشل في الاتصال بالخادم'); }
             finally {
                 submitBtn.disabled = false;
@@ -8712,6 +8894,75 @@
                     fetchOrganizations();
                 } else { alert('فشل في حذف المؤسسة'); }
             } catch (err) { alert('فشل في الاتصال بالخادم'); }
+        }
+
+        async function loadAITeacherSettings() {
+            try {
+                const tenantId = currentUser.tenantId || 'main';
+                const res = await fetch(`${API_URL}/organizations/${tenantId}`);
+                const data = await res.json();
+                
+                if (data.aiTeacherConfig) {
+                    const cfg = data.aiTeacherConfig;
+                    document.getElementById('ai-teacher-enabled').value = cfg.enabled.toString();
+                    document.getElementById('ai-teacher-strict').value = cfg.strictMode.toString();
+                    document.getElementById('ai-teacher-personality').value = cfg.personality || 'professional';
+                    document.getElementById('ai-teacher-instructions').value = cfg.customInstructions || '';
+                }
+
+                // Load Usage
+                document.getElementById('ai-usage-count').innerText = data.aiUsageCurrentMonth || 0;
+                document.getElementById('ai-usage-label').innerText = `${data.aiUsageCurrentMonth || 0} / ${data.aiUsageLimitPerMonth || 50} محادثة`;
+                const pct = Math.min(100, ((data.aiUsageCurrentMonth || 0) / (data.aiUsageLimitPerMonth || 50)) * 100);
+                document.getElementById('ai-usage-progress').style.width = `${pct}%`;
+
+                // Load Logs
+                const logsRes = await fetch(`${API_URL}/analytics/ai-logs?tenantId=${tenantId}`);
+                const logs = await logsRes.json();
+                const table = document.getElementById('ai-logs-table');
+                table.innerHTML = logs.length ? '' : '<tr><td colspan="3" class="text-center">لا يوجد تفاعلات بعد</td></tr>';
+                logs.forEach(log => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${log.studentId}</td>
+                        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${log.question}</td>
+                        <td>${new Date(log.timestamp).toLocaleString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</td>
+                    `;
+                    table.appendChild(row);
+                });
+            } catch (err) { console.error('Error loading AI settings:', err); }
+        }
+
+        async function saveAITeacherSettings() {
+            const btn = document.getElementById('btn-save-ai-settings');
+            btn.disabled = true;
+            btn.innerText = 'جارٍ الحفظ...';
+            
+            try {
+                const tenantId = currentUser.tenantId || 'main';
+                const config = {
+                    enabled: document.getElementById('ai-teacher-enabled').value === 'true',
+                    strictMode: document.getElementById('ai-teacher-strict').value === 'true',
+                    personality: document.getElementById('ai-teacher-personality').value,
+                    customInstructions: document.getElementById('ai-teacher-instructions').value
+                };
+
+                const res = await fetch(`${API_URL}/organizations/${tenantId}/ai-config`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ aiTeacherConfig: config })
+                });
+
+                if (res.ok) {
+                    showNotif('✅ تم حفظ إعدادات المعلم الذكي بنجاح', 'success');
+                } else {
+                    alert('فشل في حفظ الإعدادات');
+                }
+            } catch (err) { alert('خطأ في الاتصال بالخادم'); }
+            finally {
+                btn.disabled = false;
+                btn.innerText = 'حفظ التغييرات';
+            }
         }
 
     </script>

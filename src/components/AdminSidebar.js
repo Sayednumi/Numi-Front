@@ -48,11 +48,13 @@ function renderAdminSidebar() {
             <li id="nav-super-admin-growth" style="display:none;">
                 <a href="#" data-target="growthAnalyticsSection" onclick="initGrowthAnalytics()"><i class="fas fa-chart-line" style="color:#2ecc71"></i> النمو والنشاط</a>
             </li>
+            <li><a href="#" data-target="classIntelligenceSection" onclick="initIntelligenceSection()"><i class="fas fa-microchip" style="color:#a855f7;"></i> ذكاء الفصل</a></li>
             <li><a href="#" data-target="reports" onclick="initReports()"><i class="fas fa-chart-bar"></i> التقارير والنتائج</a></li>
             <li><a href="#" data-target="question-bank" onclick="renderQuestionBank()"><i class="fas fa-database"></i> بنك الأسئلة</a></li>
             <li><a href="#" data-target="chat" onclick="renderChatHierarchy()"><i class="fas fa-comments"></i> الدردشة</a></li>
             <li><a href="#" data-target="teacher-platforms" onclick="loadTeacherPlatforms()"><i class="fas fa-th-large"></i> المنصات المساعدة</a></li>
             <li><a href="#" data-target="live-classes" onclick="loadLiveClasses()"><i class="fas fa-video"></i> الحصص المباشرة</a></li>
+            <li><a href="#" data-target="aiTeacherSettingsSection" onclick="loadAITeacherSettings()"><i class="fas fa-brain" style="color:#00d2ff;"></i> إعدادات المعلم الذكي</a></li>
             <li style="margin-top: auto; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;">
                 <a href="#" onclick="logoutAdmin()" style="color: var(--danger);">
                     <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
