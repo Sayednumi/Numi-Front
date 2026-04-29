@@ -286,7 +286,7 @@
                 <p style="color: var(--text-muted); margin-top: 5px;">مراقبة حية لأداء SaaS التعليمي والاستهلاك المالي</p>
             </div>
             <div style="display: flex; gap: 1rem; align-items: center;">
-                <div class="live-mode-toggle active" id="liveToggle" onclick="toggleLiveMode()">
+                <div class="live-mode-toggle active" id="liveToggle" onclick="safeFallbackHandler('toggleLiveMode', this)">
                     <i class="fas fa-satellite-dish"></i> وضع الإنتاج (LIVE)
                 </div>
                 <div class="badge-live">مزامنة حية</div>

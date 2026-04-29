@@ -160,7 +160,7 @@ function renderStep() {
                 <label>العنوان (اختياري)</label>
                 <input id="org-address" placeholder="مثال: القاهرة، مصر" value="${state.org.address||''}">
             </div>
-            <div class="btn-row"><button class="btn btn-primary" onclick="step0Next()">التالي <i class="fas fa-arrow-left"></i></button></div>`;
+            <div class="btn-row"><button class="btn btn-primary" onclick="safeFallbackHandler('step0Next', this)">التالي <i class="fas fa-arrow-left"></i></button></div>`;
             break;
 
         case 1: content += `
@@ -178,7 +178,7 @@ function renderStep() {
             </div>
             <div class="btn-row">
                 <button class="btn btn-ghost" onclick="setStep(0)"><i class="fas fa-arrow-right"></i> السابق</button>
-                <button class="btn btn-primary" onclick="step1Next()">التالي <i class="fas fa-arrow-left"></i></button>
+                <button class="btn btn-primary" onclick="safeFallbackHandler('step1Next', this)">التالي <i class="fas fa-arrow-left"></i></button>
             </div>`;
             break;
 
@@ -199,7 +199,7 @@ function renderStep() {
             </div>
             <div class="btn-row">
                 <button class="btn btn-ghost" onclick="setStep(1)"><i class="fas fa-arrow-right"></i> السابق</button>
-                <button class="btn btn-primary" onclick="step2Next()">التالي <i class="fas fa-arrow-left"></i></button>
+                <button class="btn btn-primary" onclick="safeFallbackHandler('step2Next', this)">التالي <i class="fas fa-arrow-left"></i></button>
             </div>`;
             break;
 
@@ -232,7 +232,7 @@ function renderStep() {
             <div class="summary-row"><span class="summary-label">المزايا المفعّلة</span><span class="summary-value" style="color:var(--success)">${featureList}</span></div>
             <div class="btn-row">
                 <button class="btn btn-ghost" onclick="setStep(3)"><i class="fas fa-arrow-right"></i> السابق</button>
-                <button class="btn btn-success" onclick="finishSetup()"><i class="fas fa-check"></i> إنشاء الحساب</button>
+                <button class="btn btn-success" onclick="safeFallbackHandler('finishSetup', this)"><i class="fas fa-check"></i> إنشاء الحساب</button>
             </div>`;
             break;
 

@@ -174,7 +174,7 @@
             <h1>مركز الإشعارات</h1>
             <span class="badge-count" id="unread-badge">0</span>
         </div>
-        <button class="btn-read-all" id="btn-read-all" onclick="markAllRead()">
+        <button class="btn-read-all" id="btn-read-all" onclick="safeFallbackHandler('markAllRead', this)">
             <i class="fas fa-check-double"></i> تعليم الكل كمقروء
         </button>
     </div>

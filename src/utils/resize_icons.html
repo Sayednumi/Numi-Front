@@ -15,7 +15,7 @@
         <p>قم باختيار الصورة التي أرفقتها في المحادثة:</p>
         <input type="file" id="upload" accept="image/png, image/jpeg" style="margin:20px 0;">
         <br>
-        <button class="btn" onclick="generate()">توليد وتحميل الأيقونات</button>
+        <button class="btn" onclick="safeFallbackHandler('generate', this)">توليد وتحميل الأيقونات</button>
     </div>
 
     <script>

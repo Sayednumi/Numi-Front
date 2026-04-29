@@ -84,9 +84,9 @@
     <div class="header">
         <h1><i class="fas fa-stethoscope" style="color:var(--success);"></i> System Health Report Dashboard</h1>
         <div class="header-actions">
-            <button class="btn btn-ghost" onclick="loadReport()"><i class="fas fa-sync-alt"></i> تحديث الفحص</button>
-            <button class="btn btn-warning" onclick="autoFix()"><i class="fas fa-magic"></i> إصلاح تلقائي (Auto Fix)</button>
-            <button class="btn btn-primary" onclick="exportPDF()"><i class="fas fa-file-pdf"></i> تصدير التقرير PDF</button>
+            <button class="btn btn-ghost" onclick="safeFallbackHandler('loadReport', this)"><i class="fas fa-sync-alt"></i> تحديث الفحص</button>
+            <button class="btn btn-warning" onclick="safeFallbackHandler('autoFix', this)"><i class="fas fa-magic"></i> إصلاح تلقائي (Auto Fix)</button>
+            <button class="btn btn-primary" onclick="safeFallbackHandler('exportPDF', this)"><i class="fas fa-file-pdf"></i> تصدير التقرير PDF</button>
         </div>
     </div>
 
