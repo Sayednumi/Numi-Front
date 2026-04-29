@@ -3832,9 +3832,14 @@
 
         let _saveDBTimer = null;
         async function saveDB() {
-            updateStats();
             refreshAllDropdowns();
             buildNavLessonSelectors();
+            // Only update stats if the dashboard section is currently visible.
+            // This prevents cascading loadScheduleWidgets() API calls on every rapid edit.
+            const dashSection = document.getElementById('dashboard');
+            if (dashSection && dashSection.style.display !== 'none') {
+                updateStats();
+            }
             // Debounce the actual network save — prevent flooding on rapid edits
             clearTimeout(_saveDBTimer);
             _saveDBTimer = setTimeout(async () => {
@@ -3928,8 +3933,12 @@
             || hasPerm('manage_teachers')
             || hasPerm('manage_admins');
 
-        // Main initialization
-        window.onload = async () => {
+        // Main initialization — use addEventListener to prevent silent overwrite by external scripts
+        let _appInitialized = false;
+        window.addEventListener('load', async () => {
+            if (_appInitialized) return; // Guard: prevent double-init if multiple load events fire
+            _appInitialized = true;
+
             // Populate header with real user info
             const headerName = document.getElementById('header-user-name');
             if (headerName && currentUser) {
@@ -3956,7 +3965,14 @@
             if (hasPlatformManage || isSuperAdmin()) {
                 loadTeachers();
             }
-        };
+
+            // Super Admin specific bootstrap
+            if (isSuperAdmin()) {
+                initSuperAdminDashboard();
+            } else {
+                checkOnboardingStatus();
+            }
+        });
 
         // ── Platform Management & Audit Logs ─────────────────────────────────
         async function logAudit(action, target, details = '') {
@@ -4029,8 +4045,10 @@
             if (_isLoadingStudents) return;
             _isLoadingStudents = true;
             try {
-                await fetchDB(); // Refresh classes/groups names first
-                // Super Admin fetches ALL students across ALL tenants
+                // NOTE: fetchDB() is intentionally NOT called here.
+                // The correct startup sequence (window.onload) calls fetchDB() before loadStudents().
+                // Calling it here would cause a redundant double network trip on every page load.
+                // If db needs refreshing, call fetchDB() explicitly before calling loadStudents().
                 const url = isSuperAdmin()
                     ? `${API_URL}/users?scope=global`
                     : `${API_URL}/users`;
@@ -6903,7 +6921,7 @@
         }
 
         // Real-time Typing Notification
-        let typingTimeout;
+        let typingTimeout = null; // Initialized to null to avoid clearTimeout(undefined) edge case
         function onAdminTyping() {
             if (!socket || !currentChatId) return;
             const room = currentChatType === 'group' ? currentChatId : ['admin_main', currentChatId].sort().join('_');
@@ -7848,12 +7866,20 @@
             if (_isScheduleLoading) return;
             _isScheduleLoading = true;
             try {
-                const res = await fetch(`${API_URL}/live-classes?teacherId=${TEACHER_ID}`);
-                const data = await res.json();
-                if (data.success) {
-                    _scheduleClasses = data.liveClasses || [];
+                // Reuse the already-fetched live classes cache from loadLiveClasses() to avoid
+                // a redundant duplicate API call to the same endpoint.
+                // Only fetch from network if the shared cache is empty (cold start on dashboard).
+                if (_allLiveClasses && _allLiveClasses.length > 0) {
+                    _scheduleClasses = _allLiveClasses;
                 } else {
-                    _scheduleClasses = [];
+                    const res = await fetch(`${API_URL}/live-classes?teacherId=${TEACHER_ID}`);
+                    const data = await res.json();
+                    if (data.success) {
+                        _scheduleClasses = data.liveClasses || [];
+                        _allLiveClasses = _scheduleClasses; // Sync shared cache
+                    } else {
+                        _scheduleClasses = [];
+                    }
                 }
             } catch (e) {
                 console.error("loadScheduleWidgets error:", e);
@@ -8794,14 +8820,9 @@
             `;
         }
 
-        // Hook into window.onload
-        window.addEventListener('load', () => {
-            if (isSuperAdmin()) {
-                initSuperAdminDashboard();
-            } else {
-                checkOnboardingStatus();
-            }
-        });
+        // NOTE: initSuperAdminDashboard() and checkOnboardingStatus() are called from the
+        // main window.addEventListener('load') handler above (with _appInitialized guard).
+        // This duplicate listener was consolidated to prevent double-initialization.
 
         /** 6. Financial Control Center Logic */
         async function initFinanceCenter() {
@@ -9011,12 +9032,8 @@
             } catch (err) { console.error(err); }
         }
 
-        // Hook into window.onload
-        window.addEventListener('load', () => {
-            if (isSuperAdmin()) {
-                initSuperAdminDashboard();
-            }
-        });
+        // NOTE: Super-admin bootstrap is already handled by the load listener above.
+        // This duplicate listener was removed to prevent initSuperAdminDashboard() from firing twice.
 
         /** Legacy/Supporting Functions */
         async function createOrganization(event) {
@@ -9025,7 +9042,7 @@
             if (!submitBtn) return;
             const name = document.getElementById('org-name').value.trim();
             const type = document.getElementById('org-type').value;
-            if (!name) return alert('يرجى إدخال اسم المؤسسة');
+            if (!name) return showNotif('⚠️ يرجى إدخال اسم المؤسسة', 'warning');
             
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ الحفظ...';
