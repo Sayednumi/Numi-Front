@@ -1,0 +1,11 @@
+{
+  "totalUsersSimulated": 26,
+  "totalRequests": 4,
+  "aiCallsCount": 20,
+  "failureCount": 0,
+  "recoveredFailures": 0,
+  "avgResponseTime": 28,
+  "maxResponseTime": 108,
+  "systemStabilityScore": 100,
+  "productionReady": true
+}
