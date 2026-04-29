@@ -328,7 +328,55 @@ function getAISubjectContext(user) {
 }
 
 
-// ─── 9. EXPORTS ──────────────────────────────────────────────────────────────
+// ─── 9. ORGANIZATION-AWARE PERMISSION GUARD ──────────────────────────────────────
+
+/**
+ * Checks BOTH role permission AND organization membership.
+ * This is the production-safe guard that must be used when
+ * any user tries to access another user's data.
+ *
+ * @param {Object} requestingUser  - The user making the request
+ * @param {string} targetOrgId    - The organization the data belongs to
+ * @param {string} permissionKey  - The PERMISSIONS key required
+ * @returns {{ allowed: boolean, reason: string }}
+ */
+function hasOrgPermission(requestingUser, targetOrgId, permissionKey) {
+    // 1. Check role-based permission first
+    const perms = resolvePermissions(requestingUser);
+    if (!perms[permissionKey]) {
+        return { allowed: false, reason: `Missing permission: ${permissionKey}` };
+    }
+
+    // 2. Check organization membership (admins with no org are system-level)
+    const userOrgId = requestingUser.organizationId || requestingUser.academyId || requestingUser.schoolId;
+    if (requestingUser.role === ROLES.ADMIN && !userOrgId) {
+        return { allowed: true, reason: 'System-level admin' };  // Global admin bypass
+    }
+
+    if (!userOrgId) {
+        return { allowed: false, reason: 'User has no organization assigned' };
+    }
+
+    if (userOrgId !== targetOrgId) {
+        return { allowed: false, reason: `Cross-tenant access denied: user org="${userOrgId}" target="${targetOrgId}"` };
+    }
+
+    return { allowed: true, reason: 'OK' };
+}
+
+/**
+ * Hard-throws if cross-tenant access is attempted.
+ * Use at controller/service boundaries.
+ */
+function assertOrgAccess(requestingUser, targetOrgId, permissionKey) {
+    const result = hasOrgPermission(requestingUser, targetOrgId, permissionKey);
+    if (!result.allowed) {
+        throw new Error(`[PermissionService] Access Denied — ${result.reason}`);
+    }
+    return true;
+}
+
+// ─── 10. EXPORTS ──────────────────────────────────────────────────────────────
 // Supports both CommonJS (Node.js backend) and browser global scope.
 
 const PermissionService = {
@@ -342,7 +390,10 @@ const PermissionService = {
     createRoleGuard,
     Guards,
     getAISubjectContext,
-    DEFAULT_SUBJECT
+    DEFAULT_SUBJECT,
+    // Multi-tenant org enforcement
+    hasOrgPermission,
+    assertOrgAccess
 };
 
 // Node.js / CommonJS export
