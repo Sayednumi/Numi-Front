@@ -41,17 +41,55 @@
         body {
             background-color: var(--bg);
             color: var(--text-main);
-            display: flex;
             min-height: 100vh;
+            overflow-x: hidden;
         }
 
+        /* Single Layout System */
+        .app-container {
+            display: flex;
+            width: 100%;
+            min-height: 100vh;
+            position: relative;
+        }
 
-        /* Main Content */
+        .sidebar {
+            width: 260px;
+            background-color: var(--panel);
+            border-left: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            right: 0;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 1000;
+            transition: var(--transition);
+        }
+
         .main-content {
             flex: 1;
-            margin-right: 280px;
+            margin-right: 260px; /* Sidebar offset */
             padding: 30px;
-            overflow-y: auto;
+            width: calc(100% - 260px);
+            min-height: 100vh;
+            position: relative;
+            transition: var(--transition);
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(100%);
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-right: 0;
+                width: 100%;
+            }
         }
 
 
@@ -1174,12 +1212,21 @@
                 document.getElementById('super-admin-return-banner').style.display = 'block';
             });
         }
-    </script> <!-- Sidebar Component Placeholder -->
-    <div id="admin-sidebar-placeholder"></div>
-    <script src="../src/components/AdminSidebar.js"></script>
-    <script>
-        document.getElementById('admin-sidebar-placeholder').outerHTML = renderAdminSidebar();
     </script>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div id="admin-sidebar-placeholder"></div>
+        <script src="../src/components/AdminSidebar.js"></script>
+        <script>
+            // Idempotent Render: Only render if not already there
+            if (!document.querySelector('.sidebar')) {
+                const placeholder = document.getElementById('admin-sidebar-placeholder');
+                if (placeholder) placeholder.outerHTML = renderAdminSidebar();
+            }
+        </script>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
 
     <!-- Main Content -->
         <!-- Subscription Warning Banner -->
@@ -1188,12 +1235,15 @@
             <button class="btn btn-sm" style="background:white; color:var(--danger); margin-right:15px; border:none;" onclick="showSection('superAdminSubsSection')">تجديد الآن</button>
         </div>
 
-        <!-- Admin Navbar Placeholder -->
-        <div id="admin-navbar-placeholder"></div>
-        <script src="../src/components/AdminNavbar.js"></script>
-        <script>
-            document.getElementById('admin-navbar-placeholder').outerHTML = renderAdminNavbar();
-        </script>
+            <!-- Admin Navbar -->
+            <div id="admin-navbar-placeholder"></div>
+            <script src="../src/components/AdminNavbar.js"></script>
+            <script>
+                if (!document.querySelector('.navbar')) {
+                    const nbPlaceholder = document.getElementById('admin-navbar-placeholder');
+                    if (nbPlaceholder) nbPlaceholder.outerHTML = renderAdminNavbar();
+                }
+            </script>
 
         <!-- Setup Checklist Component (School Admin Only) -->
         <div id="setup-checklist-placeholder"></div>
@@ -3342,6 +3392,8 @@
             </div>
         </div>
     </div>
+    </main> <!-- End of main-content -->
+</div> <!-- End of app-container -->
 
     <!-- Scripts -->
     <script src="https://numi-production-7484.up.railway.app/socket.io/socket.io.js"></script>
