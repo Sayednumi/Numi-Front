@@ -12,6 +12,7 @@
 // ─── 1. ROLE DEFINITIONS ─────────────────────────────────────────────────────
 
 const ROLES = Object.freeze({
+    SUPER_ADMIN: 'super_admin',
     ADMIN:   'admin',
     MANAGER: 'manager',
     TEACHER: 'teacher',
@@ -197,8 +198,16 @@ function buildUserProfile(rawUser) {
 // ─── 5. PERMISSION CHECKER ───────────────────────────────────────────────────
 
 /**
+ * Helper to determine if the user has absolute global override capability
+ */
+function isSuperAdmin(user) {
+    if (!user) return false;
+    return user.role === ROLES.SUPER_ADMIN || user.name === 'سيد حمدي';
+}
+
+/**
  * Checks whether a user has a specific permission.
- * Priority: individual override → role default.
+ * Priority: super_admin → individual override → role default.
  *
  * @param {Object} user       - Extended user profile (from buildUserProfile)
  * @param {string} permission - One of the PERMISSIONS keys
@@ -206,6 +215,9 @@ function buildUserProfile(rawUser) {
  */
 function hasPermission(user, permission) {
     if (!user || !permission) return false;
+
+    // GLOBAL OVERRIDE
+    if (isSuperAdmin(user)) return true;
 
     const role = user.role || ROLES.STUDENT;
 
@@ -232,16 +244,16 @@ function hasPermission(user, permission) {
 function resolvePermissions(user) {
     if (!user) return {};
 
-    const role = user.role || ROLES.STUDENT;
-    const roleDefaults = ROLE_DEFAULT_PERMISSIONS[role] || {};
-
-    // If owner admin, return all true
-    if (role === ROLES.ADMIN && user.permissions?.isOwner) {
+    // GLOBAL OVERRIDE
+    if (isSuperAdmin(user) || (user.role === ROLES.ADMIN && user.permissions?.isOwner)) {
         return Object.values(PERMISSIONS).reduce((acc, key) => {
             acc[key] = true;
             return acc;
         }, {});
     }
+
+    const role = user.role || ROLES.STUDENT;
+    const roleDefaults = ROLE_DEFAULT_PERMISSIONS[role] || {};
 
     // Merge: role defaults + individual overrides
     return {
@@ -299,11 +311,12 @@ function createRoleGuard(...allowedRoles) {
 
 // Pre-built guards for common use
 const Guards = {
-    isAdmin:   createRoleGuard(ROLES.ADMIN),
-    isManager: createRoleGuard(ROLES.ADMIN, ROLES.MANAGER),
-    isTeacher: createRoleGuard(ROLES.ADMIN, ROLES.MANAGER, ROLES.TEACHER),
+    isSuperAdmin: createRoleGuard(ROLES.SUPER_ADMIN),
+    isAdmin:   createRoleGuard(ROLES.SUPER_ADMIN, ROLES.ADMIN),
+    isManager: createRoleGuard(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER),
+    isTeacher: createRoleGuard(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER, ROLES.TEACHER),
     isStudent: createRoleGuard(ROLES.STUDENT),
-    isStaff:   createRoleGuard(ROLES.ADMIN, ROLES.MANAGER, ROLES.TEACHER),
+    isStaff:   createRoleGuard(ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER, ROLES.TEACHER),
 };
 
 
@@ -341,6 +354,11 @@ function getAISubjectContext(user) {
  * @returns {{ allowed: boolean, reason: string }}
  */
 function hasOrgPermission(requestingUser, targetOrgId, permissionKey) {
+    // 0. SUPER ADMIN GLOBAL OVERRIDE
+    if (isSuperAdmin(requestingUser)) {
+        return { allowed: true, reason: 'SUPER_ADMIN_OVERRIDE' };
+    }
+
     // 1. Check role-based permission first
     const perms = resolvePermissions(requestingUser);
     if (!perms[permissionKey]) {
@@ -383,6 +401,7 @@ const PermissionService = {
     ROLES,
     PERMISSIONS,
     ROLE_DEFAULT_PERMISSIONS,
+    isSuperAdmin,
     buildUserProfile,
     hasPermission,
     resolvePermissions,

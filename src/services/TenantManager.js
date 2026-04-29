@@ -16,6 +16,10 @@ const { TeacherProfileManager } = (typeof window !== 'undefined' && window.Teach
     ? { TeacherProfileManager: window.TeacherProfileManager }
     : require('../models/TeacherProfile');
 
+const PermissionService = (typeof window !== 'undefined' && window.PermissionService)
+    ? window.PermissionService
+    : require('./PermissionService');
+
 // ─── 1. TENANT REGISTRY ──────────────────────────────────────────────────────
 
 const _tenants = {};        // { orgId: TenantContext }
@@ -85,7 +89,13 @@ function createTenant({ name, type, adminId, address = '', features = {}, aiUsag
  * Assigns an existing user to an organization.
  * Prevents cross-tenant data access by locking userId → orgId.
  */
-function assignUserToOrganization(userId, organizationId) {
+function assignUserToOrganization(user, organizationId) {
+    const userId = typeof user === 'object' ? user.id : user;
+
+    if (typeof user === 'object' && PermissionService.isSuperAdmin(user)) {
+        return true; // Super Admin bypass
+    }
+
     if (!_tenants[organizationId]) {
         throw new Error(`Organization "${organizationId}" is not a registered tenant.`);
     }
@@ -106,7 +116,13 @@ function assignUserToOrganization(userId, organizationId) {
 /**
  * Returns the TenantContext for a given user, enforcing isolation.
  */
-function getOrganizationContext(userId) {
+function getOrganizationContext(user) {
+    if (typeof user === 'object' && PermissionService.isSuperAdmin(user)) {
+        // Return a global proxy or the first tenant if needed, 
+        // but typically Super Admin bypasses isolation anyway.
+        return { isGlobal: true }; 
+    }
+    const userId = typeof user === 'object' ? user.id : user;
     const orgId = _userOrgMap[userId];
     if (!orgId) return null;
     return _tenants[orgId] || null;
@@ -116,7 +132,12 @@ function getOrganizationContext(userId) {
  * Validates that a user belongs to a given org. Throws if not.
  * Used as a guard in every cross-service call.
  */
-function assertSameOrg(userId, organizationId) {
+function assertSameOrg(user, organizationId) {
+    if (typeof user === 'object' && PermissionService.isSuperAdmin(user)) {
+        return true; // Super Admin absolute bypass
+    }
+    
+    const userId = typeof user === 'object' ? user.id : user;
     const userOrg = _userOrgMap[userId];
     if (!userOrg) throw new Error(`User "${userId}" has no assigned organization.`);
     if (userOrg !== organizationId) {
