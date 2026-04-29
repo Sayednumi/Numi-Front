@@ -4927,6 +4927,17 @@
             });
         }
 
+        // Central UI Sync for CMS Structure
+        function syncCMSUI() {
+            renderClasses();
+            renderGroups();
+            renderCourses();
+            renderUnits();
+            renderLessons();
+            refreshAllDropdowns();
+            updateStats();
+        }
+
         function updateFilterDrop(targetId, classId, type = 'group') {
             const target = document.getElementById(targetId);
             let html = ['<option value="">الكل</option>'];
@@ -5055,7 +5066,7 @@
             if (!name) return showNotif('⚠️ يرجى إدخال اسم الصف', 'warning');
             if (!db.classes[id]) db.classes[id] = { groups: {} };
             db.classes[id].name = name;
-            saveDB(); renderClasses(); closeModal('classModal');
+            saveDB(); syncCMSUI(); closeModal('classModal');
             showNotif('✅ تم حفظ الصف بنجاح', 'success');
         }
         function renderClasses() {
@@ -5077,7 +5088,7 @@
             if (confirm('هل أنت متأكد من حذف هذا الصف وكل ما يحتويه من مجموعات ودروس؟')) { 
                 delete db.classes[id]; 
                 saveDB(); 
-                renderClasses(); 
+                syncCMSUI(); 
                 showNotif('🗑️ تم حذف الصف بنجاح', 'success');
             } 
         }
@@ -5098,7 +5109,7 @@
             if (!db.classes[classId].groups[id]) db.classes[classId].groups[id] = { courses: {}, createdBy: currentUser.id };
             db.classes[classId].groups[id].name = name;
             db.classes[classId].groups[id].liveEnabled = liveEnabled;
-            saveDB(); renderGroups(); closeModal('groupModal');
+            saveDB(); syncCMSUI(); closeModal('groupModal');
             showNotif('✅ تم حفظ المجموعة بنجاح', 'success');
         }
         function renderGroups() {
@@ -5139,7 +5150,7 @@
             if (confirm('هل أنت متأكد من حذف هذه المجموعة وكل محتوياتها؟')) { 
                 delete db.classes[cid].groups[gid]; 
                 saveDB(); 
-                renderGroups(); 
+                syncCMSUI(); 
                 showNotif('🗑️ تم حذف المجموعة بنجاح', 'success');
             } 
         }
@@ -5155,7 +5166,7 @@
             if (!db.classes[cid].groups[gid].courses) db.classes[cid].groups[gid].courses = {};
             if (!db.classes[cid].groups[gid].courses[id]) db.classes[cid].groups[gid].courses[id] = { term1: { units: {} }, term2: { units: {} } };
             db.classes[cid].groups[gid].courses[id].name = name;
-            saveDB(); renderCourses(); closeModal('courseModal');
+            saveDB(); syncCMSUI(); closeModal('courseModal');
             showNotif('✅ تم حفظ المقرر بنجاح', 'success');
         }
         function renderCourses() {
@@ -5195,7 +5206,7 @@
             if (confirm('هل أنت متأكد من حذف هذا المقرر؟')) { 
                 delete db.classes[cid].groups[gid].courses[csid]; 
                 saveDB(); 
-                renderCourses(); 
+                syncCMSUI(); 
                 showNotif('🗑️ تم حذف المقرر بنجاح', 'success');
             } 
         }
@@ -5273,7 +5284,7 @@
             if (confirm('هل أنت متأكد من حذف هذه الوحدة؟')) { 
                 delete db.classes[cid].groups[gid].courses[csid][tF].units[uid]; 
                 saveDB(); 
-                renderUnits(); 
+                syncCMSUI(); 
                 showNotif('🗑️ تم حذف الوحدة بنجاح', 'success');
             } 
         }
@@ -5301,7 +5312,7 @@
             if (!uObj.lessons[id]) uObj.lessons[id] = { videoZone: {}, podcastZone: {}, mindscapeZone: {}, gameZone: {}, quizZone: {} };
 
             uObj.lessons[id] = { ...uObj.lessons[id], title, desc, order, locked, isHidden };
-            saveDB(); renderLessons(); closeModal('lessonModal');
+            saveDB(); syncCMSUI(); closeModal('lessonModal');
             showNotif('✅ تم حفظ الدرس بنجاح', 'success');
         }
         function renderLessons() {
@@ -5361,7 +5372,7 @@
             if (confirm('هل أنت متأكد من حذف هذا الدرس؟')) { 
                 delete db.classes[cid].groups[gid].courses[csid][tF].units[uid].lessons[lid]; 
                 saveDB(); 
-                renderLessons(); 
+                syncCMSUI(); 
                 showNotif('🗑️ تم حذف الدرس بنجاح', 'success');
             } 
         }
@@ -7831,6 +7842,7 @@
                 if (res.ok) {
                     showNotif('✅ تم بدء الحصة وتحديث الإحصائيات', 'success');
                     await loadLiveClasses();
+                    await loadScheduleWidgets();
                 } else {
                     showNotif('❌ فشل تحديث حالة الحصة', 'danger');
                 }
@@ -7889,6 +7901,7 @@
         async function loadScheduleWidgets() {
             if (_isScheduleLoading) return;
             _isScheduleLoading = true;
+            let fetchError = false;
             try {
                 // Reuse the already-fetched live classes cache from loadLiveClasses() to avoid
                 // a redundant duplicate API call to the same endpoint.
@@ -7903,22 +7916,29 @@
                         _allLiveClasses = _scheduleClasses; // Sync shared cache
                     } else {
                         _scheduleClasses = [];
+                        fetchError = true;
                     }
                 }
             } catch (e) {
                 console.error("loadScheduleWidgets error:", e);
                 _scheduleClasses = [];
+                fetchError = true;
             } finally {
                 _isScheduleLoading = false;
-                try { renderTodaySchedule(); } catch(e) { console.error(e); }
-                try { renderWeeklySchedule(); } catch(e) { console.error(e); }
+                try { renderTodaySchedule(fetchError); } catch(e) { console.error(e); }
+                try { renderWeeklySchedule(fetchError); } catch(e) { console.error(e); }
             }
         }
 
-        function renderTodaySchedule() {
+        function renderTodaySchedule(hasError = false) {
             const el = document.getElementById('today-schedule');
             const lbl = document.getElementById('today-date-label');
             if (!el) return;
+
+            if (hasError) {
+                el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger);"><i class="fas fa-exclamation-triangle fa-2x" style="opacity:0.5; margin-bottom:10px;"></i><p>فشل جلب جدول اليوم. يرجى المحاولة لاحقاً.</p></div>`;
+                return;
+            }
 
             try {
                 const now = new Date();
@@ -7955,10 +7975,15 @@
             }
         }
 
-        function renderWeeklySchedule() {
+        function renderWeeklySchedule(hasError = false) {
             const el = document.getElementById('weekly-schedule');
             const lbl = document.getElementById('week-label');
             if (!el) return;
+
+            if (hasError) {
+                el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger);"><i class="fas fa-exclamation-triangle fa-2x" style="opacity:0.5; margin-bottom:10px;"></i><p>فشل جلب جدول الأسبوع. يرجى المحاولة لاحقاً.</p></div>`;
+                return;
+            }
 
             try {
                 const now = new Date();
