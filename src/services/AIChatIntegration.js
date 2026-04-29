@@ -16,6 +16,11 @@ const _AICE = (typeof AIContextEngine !== 'undefined')
     ? AIContextEngine 
     : require('./AIContextEngine');
 
+const _AIUsage = (typeof AIUsageTracker !== 'undefined')
+    ? AIUsageTracker
+    : require('./AIUsageTracker');
+
+
 const { getAIContext } = _AICE;
 
 // ─── 1. DYNAMIC SYSTEM PROMPT BUILDER ────────────────────────────────────────
@@ -39,6 +44,17 @@ function buildAISystemPrompt(aiContext, rawUser = null) {
 
     let prompt = `You are a professional ${subject} teacher.\n`;
     prompt += `You are talking to ${userName} (Role: ${role}).\n\n`;
+    
+    // Inject Teacher Profile if applicable
+    if (aiContext.teacherProfile) {
+        const tp = aiContext.teacherProfile;
+        prompt += `User Identity Information:\n`;
+        prompt += `- Name: ${tp.name}\n`;
+        if (tp.academicDegree) prompt += `- Degree: ${tp.academicDegree}\n`;
+        if (tp.bio) prompt += `- Bio: ${tp.bio}\n`;
+        prompt += `\nPlease adapt your tone and responses to align with this user's identity when assisting them.\n\n`;
+    }
+
     
     prompt += `Teaching style:\n`;
     prompt += `- Explanation: ${strategy.explanationStyle}\n`;
@@ -194,6 +210,9 @@ function postAIFilter(aiResponse, aiContext) {
  */
 async function processAIRequest(rawUser, userMessage, aiCallFn) {
     try {
+        // --- USAGE LIMIT CHECK ---
+        _AIUsage.checkUsageLimits(rawUser);
+
         // Step 1: Connect AI Context
         const aiContext = getAIContext(rawUser);
 
@@ -218,6 +237,15 @@ async function processAIRequest(rawUser, userMessage, aiCallFn) {
 
         // Step 5: Safe Response Filter (Post-AI)
         const safeResponse = postAIFilter(rawAIResponse, aiContext);
+
+        // --- LOG USAGE ---
+        const estimatedTokens = Math.ceil((systemPrompt.length + safeResponse.length) / 4);
+        _AIUsage.logAIUsage({
+            user: rawUser,
+            type: 'chat',
+            tokensUsed: estimatedTokens,
+            metadata: { subject: aiContext.subject }
+        });
 
         return safeResponse;
 

@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Numi - Investor & Analytics Dashboard</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --bg-base: #0f172a;
+            --bg-card: rgba(30, 41, 59, 0.7);
+            --border: rgba(255, 255, 255, 0.08);
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.5);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --font-family: 'Cairo', 'Inter', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: var(--font-family);
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+            overflow-x: hidden;
+        }
+
+        /* ─── LAYOUT ─── */
+        .dashboard-container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(to left, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .badge-live {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.875rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .badge-live::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* ─── GRID SYSTEM ─── */
+        .grid-kpi {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .grid-main {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+        
+        @media (max-width: 1024px) {
+            .grid-main { grid-template-columns: 1fr; }
+        }
+
+        /* ─── CARDS ─── */
+        .glass-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .kpi-card {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 0 15px var(--primary-glow);
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+
+        .kpi-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-title {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .kpi-trend {
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            margin-top: auto;
+        }
+        .trend-up { color: var(--success); }
+        .trend-down { color: var(--danger); }
+
+        /* ─── TABLES ─── */
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .data-table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: right;
+        }
+
+        th {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            font-weight: 600;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            font-size: 0.95rem;
+            vertical-align: middle;
+        }
+
+        tbody tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* ─── PROGRESS BARS ─── */
+        .progress-wrapper {
+            width: 100px;
+            background: rgba(255, 255, 255, 0.1);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 4px;
+        }
+
+        /* ─── REVENUE PANEL ─── */
+        .revenue-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem 0;
+            border-bottom: 1px dashed var(--border);
+        }
+        .revenue-row:last-child { border-bottom: none; }
+        .rev-label { color: var(--text-muted); font-weight: 600; }
+        .rev-value { font-weight: 800; font-size: 1.1rem; font-family: 'Inter', sans-serif;}
+
+        .profit-highlight {
+            color: var(--success);
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+            font-size: 1.5rem !important;
+        }
+
+        /* ─── TAGS ─── */
+        .tag {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            margin-left: 0.25rem;
+        }
+        .tag-danger { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        
+        <!-- HEADER -->
+        <header class="header">
+            <div>
+                <h1>لوحة المستثمرين والتحليلات <span style="color:var(--primary); font-size: 1.5rem;">Numi AI</span></h1>
+                <p style="color: var(--text-muted); margin-top: 5px;">مراقبة حية للأداء التعليمي والاستهلاك المالي</p>
+            </div>
+            <div class="badge-live">مزامنة حية</div>
+        </header>
+
+        <!-- KPI OVERVIEW CARDS -->
+        <div class="grid-kpi">
+            <div class="glass-card kpi-card">
+                <div class="kpi-icon" style="background: rgba(59, 130, 246, 0.1); color: #3b82f6;"><i class="fas fa-users"></i></div>
+                <div class="kpi-title">إجمالي المستخدمين النشطين</div>
+                <div class="kpi-value" id="kpi-users">0</div>
+                <div class="kpi-trend trend-up"><i class="fas fa-arrow-up"></i> +12% هذا الشهر</div>
+            </div>
+            <div class="glass-card kpi-card">
+                <div class="kpi-icon" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6;"><i class="fas fa-school"></i></div>
+                <div class="kpi-title">المدارس والأكاديميات</div>
+                <div class="kpi-value" id="kpi-schools">0</div>
+            </div>
+            <div class="glass-card kpi-card">
+                <div class="kpi-icon" style="background: rgba(236, 72, 153, 0.1); color: #ec4899;"><i class="fas fa-microchip"></i></div>
+                <div class="kpi-title">إجمالي طلبات الذكاء الاصطناعي</div>
+                <div class="kpi-value" id="kpi-requests">0</div>
+            </div>
+            <div class="glass-card kpi-card">
+                <div class="kpi-icon" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b;"><i class="fas fa-coins"></i></div>
+                <div class="kpi-title">الرموز (Tokens) المستهلكة</div>
+                <div class="kpi-value" id="kpi-tokens" style="font-family: 'Inter', sans-serif;">0</div>
+            </div>
+        </div>
+
+        <!-- MAIN LAYOUT -->
+        <div class="grid-main">
+            <!-- LEFT COLUMN -->
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                
+                <!-- CHARTS -->
+                <div class="glass-card">
+                    <div class="section-title"><i class="fas fa-chart-line" style="color:var(--primary)"></i> معدل استهلاك الذكاء الاصطناعي (أسبوعي)</div>
+                    <div style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="usageChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- SCHOOLS PERFORMANCE -->
+                <div class="glass-card">
+                    <div class="section-title"><i class="fas fa-building" style="color:var(--primary)"></i> أداء المنظمات (المدارس والأكاديميات)</div>
+                    <div class="data-table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>المنظمة</th>
+                                    <th>المستخدمين</th>
+                                    <th>نسبة التفاعل</th>
+                                    <th>استهلاك AI ($)</th>
+                                    <th>العائد المتوقع ($)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-schools">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TEACHER PERFORMANCE -->
+                <div class="glass-card">
+                    <div class="section-title"><i class="fas fa-chalkboard-teacher" style="color:var(--primary)"></i> تحليل أداء المعلمين</div>
+                    <div class="data-table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>المعلم</th>
+                                    <th>المادة</th>
+                                    <th>اختبارات AI</th>
+                                    <th>التفاعل (Score)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-teachers">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN -->
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                
+                <!-- REVENUE SIMULATION -->
+                <div class="glass-card">
+                    <div class="section-title"><i class="fas fa-sack-dollar" style="color:var(--success)"></i> التقرير المالي المتوقع</div>
+                    <div class="revenue-row">
+                        <span class="rev-label">التكلفة (API Cost)</span>
+                        <span class="rev-value" style="color: var(--danger);" id="rev-cost">$0.00</span>
+                    </div>
+                    <div class="revenue-row">
+                        <span class="rev-label">الإيرادات (الاشتراكات)</span>
+                        <span class="rev-value" id="rev-gross">$0.00</span>
+                    </div>
+                    <div class="revenue-row" style="margin-top: 10px; background: rgba(16, 185, 129, 0.05); padding: 15px; border-radius: 8px; border: 1px solid rgba(16,185,129,0.2);">
+                        <span class="rev-label">صافي الربح المتوقع</span>
+                        <span class="rev-value profit-highlight" id="rev-profit">$0.00</span>
+                    </div>
+                    <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 15px; text-align: center;">* يتم الحساب بناءً على متوسط $5.00 للمستخدم النشط</p>
+                </div>
+
+                <!-- STUDENT INSIGHTS -->
+                <div class="glass-card">
+                    <div class="section-title"><i class="fas fa-user-graduate" style="color:var(--primary)"></i> تحليلات تفاعل الطلاب</div>
+                    <div id="student-insights-container">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+
+                <!-- PEAK USAGE -->
+                <div class="glass-card" style="text-align: center; padding: 2rem;">
+                    <i class="fas fa-fire" style="font-size: 2.5rem; color: var(--warning); margin-bottom: 1rem;"></i>
+                    <h3 style="font-size: 1rem; color: var(--text-muted);">ساعة الذروة للاستخدام</h3>
+                    <div style="font-size: 2.5rem; font-weight: 800; font-family: 'Inter';" id="kpi-peak">00:00</div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- SCRIPTS -->
+    <script>
+        // MOCK SCRIPTS LOADER FOR DEMO PURPOSES
+        // In a real environment, we'd bundle these or fetch from an API
+    </script>
+    <script src="../src/services/PermissionService.js"></script>
+    <script src="../src/services/AIContextEngine.js"></script>
+    <script src="../src/services/AIUsageTracker.js"></script>
+    <script src="../src/models/Organization.js"></script>
+    <script src="../src/models/TeacherProfile.js"></script>
+    <script src="../src/services/AIAnalyticsEngine.js"></script>
+
+    <script>
+        // ─── 1. SEED MOCK DATA ───
+        function seedData() {
+            // Ensure modules loaded
+            if (!window.OrganizationManager) return console.error("Modules failed to load.");
+
+            // Organizations
+            const school1 = OrganizationManager.createOrganization({ name: "أكاديمية نيومي", type: "academy", adminId: "admin_1", teachers: ["t1", "t2"], students: ["s1", "s2", "s3", "s4", "s5"] });
+            const school2 = OrganizationManager.createOrganization({ name: "مدرسة المتفوقين", type: "school", adminId: "admin_2", teachers: ["t3"], students: ["s6", "s7"] });
+
+            // Teachers
+            TeacherProfileManager.createTeacherProfile({ id: "t1", fullName: "أ. أحمد محمد", subject: "math", schoolId: school1.id });
+            TeacherProfileManager.createTeacherProfile({ id: "t2", fullName: "أ. سارة علي", subject: "science", schoolId: school1.id });
+            TeacherProfileManager.createTeacherProfile({ id: "t3", fullName: "أ. محمود خالد", subject: "english", schoolId: school2.id });
+
+            // Simulate Usage Logs (Time Series)
+            const today = new Date().toISOString();
+            const yesterday = new Date(Date.now() - 86400000).toISOString();
+            const daysAgo2 = new Date(Date.now() - 172800000).toISOString();
+
+            // Seed logs directly
+            const logs = [
+                { timestamp: daysAgo2, userId: 't1', orgId: school1.id, type: 'chat', tokens: 1200 },
+                { timestamp: daysAgo2, userId: 's1', orgId: school1.id, type: 'exam_grading', tokens: 400, metadata: { subject: 'math', weakTopicsDetected: true } },
+                { timestamp: yesterday, userId: 't2', orgId: school1.id, type: 'exam_generation', tokens: 2500 },
+                { timestamp: yesterday, userId: 's2', orgId: school1.id, type: 'exam_grading', tokens: 600, metadata: { subject: 'science' } },
+                { timestamp: today, userId: 't3', orgId: school2.id, type: 'exam_generation', tokens: 1800 },
+                { timestamp: today, userId: 's6', orgId: school2.id, type: 'chat', tokens: 900 },
+                { timestamp: today, userId: 't1', orgId: school1.id, type: 'exam_grading', tokens: 3000 }
+            ];
+
+            // Hack the mock DB to insert
+            const state = AIUsageTracker._getDbState();
+            logs.forEach(l => {
+                state.logsDB.push(l);
+                
+                // Track Org
+                if (!state.usageDB.organizations[l.orgId]) state.usageDB.organizations[l.orgId] = { totalRequests: 0, totalTokens: 0, breakdown: { chat:0, exam_generation:0, exam_grading:0 }};
+                state.usageDB.organizations[l.orgId].totalRequests++;
+                state.usageDB.organizations[l.orgId].totalTokens += l.tokens;
+                state.usageDB.organizations[l.orgId].breakdown[l.type]++;
+
+                // Track Teacher
+                if (l.userId.startsWith('t')) {
+                    if (!state.usageDB.teachers[l.userId]) state.usageDB.teachers[l.userId] = { totalRequests: 0, totalTokens: 0, breakdown: { chat:0, exam_generation:0, exam_grading:0 }};
+                    state.usageDB.teachers[l.userId].totalRequests++;
+                    state.usageDB.teachers[l.userId].totalTokens += l.tokens;
+                    state.usageDB.teachers[l.userId].breakdown[l.type]++;
+                }
+
+                // Track User
+                if (!state.usageDB.users[l.userId]) state.usageDB.users[l.userId] = { totalRequests: 0, totalTokens: 0, breakdown: { chat:0, exam_generation:0, exam_grading:0 }};
+                state.usageDB.users[l.userId].totalRequests++;
+                state.usageDB.users[l.userId].totalTokens += l.tokens;
+            });
+        }
+
+        // ─── 2. RENDER DASHBOARD ───
+        function renderDashboard() {
+            // Get Overview
+            const overview = AIAnalyticsEngine.getPlatformOverview();
+            
+            // KPI Cards
+            document.getElementById('kpi-users').innerText = overview.totalUsers;
+            document.getElementById('kpi-schools').innerText = overview.totalSchools;
+            document.getElementById('kpi-requests').innerText = overview.totalAIRequests;
+            document.getElementById('kpi-tokens').innerText = overview.totalTokensUsed.toLocaleString();
+
+            // Revenue Panel
+            document.getElementById('rev-cost').innerText = `$${overview.financials.estimatedCost.toFixed(3)}`;
+            document.getElementById('rev-gross').innerText = `$${overview.financials.estimatedRevenue.toFixed(2)}`;
+            document.getElementById('rev-profit').innerText = `$${overview.financials.grossMargin.toFixed(2)}`;
+
+            // Render Schools Table
+            const schoolIds = Object.keys(OrganizationManager._db);
+            const schoolsHtml = schoolIds.map(id => {
+                const rep = AIAnalyticsEngine.getOrganizationReport(id);
+                return `
+                    <tr>
+                        <td style="font-weight:700;">${rep.name}</td>
+                        <td>${rep.totalUsers}</td>
+                        <td>
+                            <div class="progress-wrapper"><div class="progress-bar" style="width: ${rep.activeUsersRate};"></div></div>
+                            ${rep.activeUsersRate}
+                        </td>
+                        <td style="color:var(--danger);">$${rep.costPerOrganization.toFixed(3)}</td>
+                        <td style="color:var(--success); font-family:Inter; font-weight:700;">$${rep.estimatedBilling.toFixed(2)}</td>
+                    </tr>
+                `;
+            }).join('');
+            document.getElementById('table-schools').innerHTML = schoolsHtml;
+
+            // Render Teachers Table
+            const teacherIds = Object.keys(TeacherProfileManager._db);
+            const teachersHtml = teacherIds.map(id => {
+                const profile = TeacherProfileManager.getProfile(id);
+                const rep = AIAnalyticsEngine.getTeacherReport(id);
+                return `
+                    <tr>
+                        <td style="font-weight:700; display:flex; align-items:center; gap:8px;">
+                            <div style="width:30px; height:30px; border-radius:50%; background:var(--primary); display:flex; align-items:center; justify-content:center; font-size:12px;">${profile.fullName.charAt(0)}</div>
+                            ${profile.fullName}
+                        </td>
+                        <td><span class="tag">${profile.subject}</span></td>
+                        <td>${rep.examsCreated}</td>
+                        <td>
+                            <div class="progress-wrapper" style="width:60px;"><div class="progress-bar" style="width: ${rep.studentEngagementScore}%; background:${rep.studentEngagementScore > 50 ? 'var(--success)' : 'var(--warning)'};"></div></div>
+                            ${rep.studentEngagementScore}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            document.getElementById('table-teachers').innerHTML = teachersHtml;
+
+            // Render Student Insights
+            // For demo, we just get student_1
+            const sRep = AIAnalyticsEngine.getStudentEngagement('s1');
+            const weakTags = sRep.weakTopics.map(t => `<span class="tag tag-danger"><i class="fas fa-exclamation-circle"></i> ${t}</span>`).join('');
+            
+            document.getElementById('student-insights-container').innerHTML = `
+                <div style="background: rgba(255,255,255,0.03); border-radius: 8px; padding: 15px; margin-bottom:10px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom: 10px;">
+                        <span style="font-weight:700;">طالب عينة (ID: ${sRep.studentId})</span>
+                        <span style="color:var(--success); font-weight:700;">${sRep.averageScore}</span>
+                    </div>
+                    <div style="font-size:0.875rem; color:var(--text-muted); margin-bottom:10px;">
+                        <i class="fas fa-pen"></i> محاولات الاختبار: ${sRep.examAttempts} &bull; تفاعل AI: ${sRep.aiChatUsageFrequency}
+                    </div>
+                    <div>
+                        <span style="font-size:0.8rem; color:var(--text-muted);">نقاط الضعف المكتشفة آلياً:</span>
+                        <div style="margin-top:5px;">${weakTags || '<span class="tag">لا يوجد</span>'}</div>
+                    </div>
+                </div>
+            `;
+
+            // Setup Chart
+            const trends = AIAnalyticsEngine.getUsageTrends('day');
+            document.getElementById('kpi-peak').innerText = trends.peakUsageHour;
+
+            const ctx = document.getElementById('usageChart').getContext('2d');
+            
+            // Format labels for Arabic display
+            const niceLabels = trends.trends.labels.map(l => l.split('-').reverse().slice(0,2).join('/'));
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: niceLabels,
+                    datasets: [
+                        {
+                            label: 'الرموز المستهلكة (Tokens)',
+                            data: trends.trends.tokens,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            borderWidth: 3,
+                            tension: 0.4,
+                            fill: true,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'الطلبات (Requests)',
+                            data: trends.trends.requests,
+                            borderColor: '#10b981',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            tension: 0.4,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8', font: { family: 'Cairo' } } }
+                    },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                        y: { type: 'linear', display: true, position: 'right', grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#3b82f6' } },
+                        y1: { type: 'linear', display: true, position: 'left', grid: { drawOnChartArea: false }, ticks: { color: '#10b981', stepSize: 1 } }
+                    }
+                }
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Need mock require shims for browser if not using bundler
+            // But since the scripts handle typeof module !== undefined gracefully, 
+            // and append to window, we can just call them.
+            
+            setTimeout(() => {
+                seedData();
+                renderDashboard();
+            }, 500); // Wait for scripts to execute and attach to window
+        });
+
+    </script>
+</body>
+</html>

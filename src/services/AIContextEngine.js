@@ -135,12 +135,25 @@ function getAIContext(rawUser) {
     // ── Response Rules ───────────────────────────────────────────────────────
     const responseRules = buildResponseRules(role);
 
+    // ── Teacher Profile Enrichment ───────────────────────────────────────────
+    let teacherProfile = null;
+    if (role === ROLES.TEACHER || role === ROLES.ADMIN || role === ROLES.MANAGER) {
+        teacherProfile = {
+            name: rawUser.fullName || rawUser.name || 'المعلم',
+            bio: rawUser.bio || '',
+            academicDegree: rawUser.academicDegree || '',
+            schoolId: rawUser.schoolId || null,
+            academyId: academyId
+        };
+    }
+
     // ── Assemble & return ────────────────────────────────────────────────────
     return Object.freeze({
         role,
         subject,
         subjectSource,
         academyId,
+        teacherProfile,
         permissions,
         mode,
         responseRules,

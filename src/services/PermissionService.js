@@ -267,19 +267,14 @@ const DEFAULT_SUBJECT = 'math';
 function resolveSubject(user) {
     if (!user) return { subject: DEFAULT_SUBJECT, source: 'default' };
 
-    // 1. Manager override (highest priority)
-    if (user.managerSubject) {
-        return { subject: user.managerSubject, source: 'manager' };
-    }
-
-    // Check if it's already been resolved as default to prevent false 'teacher' attribution
-    if (user.subjectSource === 'default' && user.subject === DEFAULT_SUBJECT) {
-        return { subject: DEFAULT_SUBJECT, source: 'default' };
-    }
-
-    // 2. Teacher / self-selected subject
+    // 1. Teacher / self-selected subject (highest priority at login)
     if (user.subject) {
         return { subject: user.subject, source: 'teacher' };
+    }
+
+    // 2. Admin/Manager assigned subject
+    if (user.managerSubject) {
+        return { subject: user.managerSubject, source: 'manager' };
     }
 
     // 3. Default fallback
