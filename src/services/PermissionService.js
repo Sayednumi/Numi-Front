@@ -174,8 +174,8 @@ function buildUserProfile(rawUser) {
         academyId:      rawUser.academyId || null, // Reserved for future multi-school
 
         // Subject system (resolved via resolveSubject below)
-        subject:        rawUser.subject || null,
-        subjectSource:  rawUser.subjectSource || 'default',
+        subject:        resolveSubject(rawUser).subject,
+        subjectSource:  resolveSubject(rawUser).source,
         managerSubject: rawUser.managerSubject || null, // Manager override
 
         // Status & grouping
@@ -267,14 +267,19 @@ const DEFAULT_SUBJECT = 'math';
 function resolveSubject(user) {
     if (!user) return { subject: DEFAULT_SUBJECT, source: 'default' };
 
-    // 1. Manager override (set by a manager role, stored on the user object)
+    // 1. Manager override (highest priority)
     if (user.managerSubject) {
         return { subject: user.managerSubject, source: 'manager' };
     }
 
+    // Check if it's already been resolved as default to prevent false 'teacher' attribution
+    if (user.subjectSource === 'default' && user.subject === DEFAULT_SUBJECT) {
+        return { subject: DEFAULT_SUBJECT, source: 'default' };
+    }
+
     // 2. Teacher / self-selected subject
     if (user.subject) {
-        return { subject: user.subject, source: user.subjectSource || 'teacher' };
+        return { subject: user.subject, source: 'teacher' };
     }
 
     // 3. Default fallback
