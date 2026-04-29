@@ -4188,11 +4188,17 @@
             if (_isLoadingTeachers) return;
             _isLoadingTeachers = true;
             try {
-                const res = await fetch(`${API_URL}/users`);
-                if (res.ok) {
-                    const allUsers = await res.json();
-                    allTeachers = (allUsers || []).filter(u => u.role === 'teacher');
+                // Reuse global users cache (allStudents) if available to prevent redundant API calls
+                if (allStudents && allStudents.length > 0) {
+                    allTeachers = allStudents.filter(u => u.role === 'teacher');
                     renderTeachersList();
+                } else {
+                    const res = await fetch(`${API_URL}/users`);
+                    if (res.ok) {
+                        const allUsers = await res.json();
+                        allTeachers = (allUsers || []).filter(u => u.role === 'teacher');
+                        renderTeachersList();
+                    }
                 }
             } catch (err) {
                 console.error('Failed to load teachers', err);
@@ -4793,9 +4799,8 @@
                 const overviewRes = await fetch(`${API_URL}/analytics/platform-overview`);
                 const overview = overviewRes.ok ? await overviewRes.json() : {};
 
-                // 3. Fetch All Users for table breakdown
-                const usersRes = await fetch(`${API_URL}/users`);
-                const allUsers = usersRes.ok ? await usersRes.json() : [];
+                // 3. Use cached users for table breakdown to avoid redundant fetch
+                const allUsers = allStudents || [];
 
                 // 4. Update Cards
                 if (statsEl.classes)  statsEl.classes.innerText  = totalClasses;
@@ -4907,37 +4912,42 @@
         // Helpers for Dropdowns
         function refreshAllDropdowns() {
             const classSelects = document.querySelectorAll('.fill-classes, .filter-select');
+            
+            // Build options string once
+            const optionsHtml = Object.keys(db.classes || {}).map(id => 
+                `<option value="${id}">${db.classes[id].name}</option>`
+            ).join('');
+
             classSelects.forEach(select => {
                 const pre = select.value;
-                select.innerHTML = select.classList.contains('filter-select') ? '<option value="">اختر الصف...</option>' : '<option value="" disabled selected>اختر الصف...</option>';
-                for (let id in db.classes) {
-                    select.innerHTML += `<option value="${id}">${db.classes[id].name}</option>`;
-                }
+                const defaultOpt = select.classList.contains('filter-select') ? '<option value="">اختر الصف...</option>' : '<option value="" disabled selected>اختر الصف...</option>';
+                
+                select.innerHTML = defaultOpt + optionsHtml;
                 if (pre && db.classes[pre]) select.value = pre;
             });
         }
 
         function updateFilterDrop(targetId, classId, type = 'group') {
             const target = document.getElementById(targetId);
-            target.innerHTML = '<option value="">الكل</option>';
+            let html = ['<option value="">الكل</option>'];
 
             const currentUser = JSON.parse(localStorage.getItem('numi_session_user') || '{}');
             const canManageAll = currentUser.permissions && (currentUser.permissions.manage_all_groups || currentUser.permissions.manage_admins || Object.keys(currentUser.permissions).length === 0);
 
             if (type === 'group') {
-                if (!classId || !db.classes[classId] || !db.classes[classId].groups) return;
+                if (!classId || !db.classes[classId] || !db.classes[classId].groups) return target.innerHTML = html.join('');
                 const groups = db.classes[classId].groups;
                 for (let id in groups) {
                     const g = groups[id];
                     if (!canManageAll && g.createdBy !== currentUser.id && !(currentUser.permissions?.allowed_groups || []).includes(id)) continue;
-                    target.innerHTML += `<option value="${id}">${g.name}</option>`;
+                    html.push(`<option value="${id}">${g.name}</option>`);
                 }
             } else if (type === 'unit') {
                 // Here classId is the courseId from previous drop. If empty, get units for all courses in group.
                 const cid = document.getElementById('report-filter-class').value;
                 const gid = document.getElementById('report-filter-group').value;
                 const courseId = classId;
-                if (!cid || !gid || !db.classes[cid].groups[gid]) return;
+                if (!cid || !gid || !db.classes[cid].groups[gid]) return target.innerHTML = html.join('');
                 const grp = db.classes[cid].groups[gid];
 
                 const addUnitsFromCourse = (crid) => {
@@ -4945,7 +4955,7 @@
                     if (!course) return;
                     for (let t of ['term1', 'term2']) {
                         const units = course[t] && course[t].units ? course[t].units : {};
-                        for (let uid in units) target.innerHTML += `<option value="${uid}">${units[uid].title} (${t === 'term1' ? 'ت1' : 'ت2'})</option>`;
+                        for (let uid in units) html.push(`<option value="${uid}">${units[uid].title} (${t === 'term1' ? 'ت1' : 'ت2'})</option>`);
                     }
                 };
 
@@ -4961,7 +4971,7 @@
                 const cid = document.getElementById('report-filter-class').value;
                 const gid = document.getElementById('report-filter-group').value;
                 const courseId = document.getElementById('report-filter-course') ? document.getElementById('report-filter-course').value : null;
-                if (!cid || !gid) return;
+                if (!cid || !gid) return target.innerHTML = html.join('');
                 const grp = db.classes[cid].groups[gid];
 
                 const processCourseForLessons = (crid) => {
@@ -4970,7 +4980,7 @@
                         const units = grp.courses[crid][t] && grp.courses[crid][t].units ? grp.courses[crid][t].units : {};
                         if (units[classId]) {
                             const lessons = units[classId].lessons || {};
-                            for (let lid in lessons) target.innerHTML += `<option value="${lid}">${lessons[lid].title}</option>`;
+                            for (let lid in lessons) html.push(`<option value="${lid}">${lessons[lid].title}</option>`);
                         }
                     }
                 };
@@ -4983,28 +4993,31 @@
                     }
                 }
             }
+            target.innerHTML = html.join('');
         }
 
         function updateFilterDropCourse(targetId, classId, groupId) {
             const target = document.getElementById(targetId);
-            target.innerHTML = '<option value="">الكل</option>';
-            if (!groupId || !db.classes[classId].groups[groupId].courses) return;
+            let html = ['<option value="">الكل</option>'];
+            if (!groupId || !db.classes[classId].groups[groupId].courses) return target.innerHTML = html.join('');
             const courses = db.classes[classId].groups[groupId].courses;
-            for (let id in courses) target.innerHTML += `<option value="${id}">${courses[id].name}</option>`;
+            for (let id in courses) html.push(`<option value="${id}">${courses[id].name}</option>`);
+            target.innerHTML = html.join('');
         }
 
         function updateFilterDropUnit(targetId, classId, groupId, courseId, term) {
             const target = document.getElementById(targetId);
-            target.innerHTML = '<option value="">الكل</option>';
-            if (!courseId || !db.classes[classId].groups[groupId].courses[courseId][term]) return;
+            let html = ['<option value="">الكل</option>'];
+            if (!courseId || !db.classes[classId].groups[groupId].courses[courseId][term]) return target.innerHTML = html.join('');
             const units = db.classes[classId].groups[groupId].courses[courseId][term].units || {};
-            for (let id in units) target.innerHTML += `<option value="${id}">${units[id].title}</option>`;
+            for (let id in units) html.push(`<option value="${id}">${units[id].title}</option>`);
+            target.innerHTML = html.join('');
         }
 
         function updateModalDrop(targetId, classId) {
             const target = document.getElementById(targetId);
-            target.innerHTML = '<option value="" disabled selected>اختر المجموعة...</option>';
-            if (!classId || !db.classes[classId] || !db.classes[classId].groups) return;
+            let html = ['<option value="" disabled selected>اختر المجموعة...</option>'];
+            if (!classId || !db.classes[classId] || !db.classes[classId].groups) return target.innerHTML = html.join('');
             const groups = db.classes[classId].groups;
 
             const currentUser = JSON.parse(localStorage.getItem('numi_session_user') || '{}');
@@ -5013,22 +5026,25 @@
             for (let id in groups) {
                 const g = groups[id];
                 if (!canManageAll && g.createdBy !== currentUser.id && !(currentUser.permissions?.allowed_groups || []).includes(id)) continue;
-                target.innerHTML += `<option value="${id}">${g.name}</option>`;
+                html.push(`<option value="${id}">${g.name}</option>`);
             }
+            target.innerHTML = html.join('');
         }
         function updateModalDropCourse(targetId, classId, groupId) {
             const target = document.getElementById(targetId);
-            target.innerHTML = '<option value="" disabled selected>اختر المقرر...</option>';
-            if (!groupId || !db.classes[classId].groups[groupId].courses) return;
+            let html = ['<option value="" disabled selected>اختر المقرر...</option>'];
+            if (!groupId || !db.classes[classId].groups[groupId].courses) return target.innerHTML = html.join('');
             const courses = db.classes[classId].groups[groupId].courses;
-            for (let id in courses) target.innerHTML += `<option value="${id}">${courses[id].name}</option>`;
+            for (let id in courses) html.push(`<option value="${id}">${courses[id].name}</option>`);
+            target.innerHTML = html.join('');
         }
         function updateModalDropUnit(targetId, classId, groupId, courseId, term) {
             const target = document.getElementById(targetId);
-            target.innerHTML = '<option value="" disabled selected>اختر الوحدة...</option>';
-            if (!courseId || !db.classes[classId].groups[groupId].courses[courseId][term]) return;
+            let html = ['<option value="" disabled selected>اختر الوحدة...</option>'];
+            if (!courseId || !db.classes[classId].groups[groupId].courses[courseId][term]) return target.innerHTML = html.join('');
             const units = db.classes[classId].groups[groupId].courses[courseId][term].units || {};
-            for (let id in units) target.innerHTML += `<option value="${id}">${units[id].title}</option>`;
+            for (let id in units) html.push(`<option value="${id}">${units[id].title}</option>`);
+            target.innerHTML = html.join('');
         }
 
         // --- Class Management ---
@@ -5044,16 +5060,17 @@
         }
         function renderClasses() {
             const list = document.getElementById('classes-list');
-            list.innerHTML = '';
+            let html = [];
             for (let id in db.classes) {
-                list.innerHTML += `<div class="item-row">
+                html.push(`<div class="item-row">
                     <div><strong>${db.classes[id].name}</strong></div>
                     <div class="item-actions">
                         ${hasPerm('manage_structure') ? `<button class="btn btn-sm" onclick="editClass('${id}')"><i class="fas fa-edit"></i></button>
                         <button class="btn btn-sm btn-danger" onclick="deleteClass('${id}')"><i class="fas fa-trash"></i></button>` : ''}
                     </div>
-                </div>`;
+                </div>`);
             }
+            list.innerHTML = html.join('');
         }
         function editClass(id) { document.getElementById('class-id').value = id; document.getElementById('class-name').value = db.classes[id].name; document.getElementById('classModalTitle').innerText = "تعديل الصف"; openModal('classModal'); }
         function deleteClass(id) { 
@@ -5087,7 +5104,7 @@
         function renderGroups() {
             const list = document.getElementById('groups-list');
             const classFilter = document.getElementById('group-filter-class').value;
-            list.innerHTML = '';
+            let html = [];
 
             const currentUser = JSON.parse(localStorage.getItem('numi_session_user') || '{}');
             const canManageAll = currentUser.permissions && (currentUser.permissions.manage_all_groups || currentUser.permissions.manage_admins || Object.keys(currentUser.permissions).length === 0);
@@ -5099,15 +5116,16 @@
                     const g = groups[gid];
                     if (!canManageAll && g.createdBy !== currentUser.id && !(currentUser.permissions?.allowed_groups || []).includes(gid)) continue;
 
-                    list.innerHTML += `<div class="item-row">
+                    html.push(`<div class="item-row">
                         <div><strong>${g.name}</strong> <small style="color:var(--text-muted);">(${db.classes[cid].name})</small></div>
                         <div class="item-actions">
                             ${hasPerm('manage_structure') ? `<button class="btn btn-sm" onclick="editGroup('${cid}','${gid}')"><i class="fas fa-edit"></i></button>
                             <button class="btn btn-sm btn-danger" onclick="deleteGroup('${cid}','${gid}')"><i class="fas fa-trash"></i></button>` : ''}
                         </div>
-                    </div>`;
+                    </div>`);
                 }
             }
+            list.innerHTML = html.join('');
         }
         function editGroup(cid, gid) {
             document.getElementById('group-id').value = gid;
@@ -5144,7 +5162,7 @@
             const list = document.getElementById('courses-list');
             const cFilter = document.getElementById('course-filter-class').value;
             const gFilter = document.getElementById('course-filter-group').value;
-            list.innerHTML = '';
+            let html = [];
             for (let cid in db.classes) {
                 if (cFilter && cFilter !== cid) continue;
                 let groups = db.classes[cid].groups || {};
@@ -5152,16 +5170,17 @@
                     if (gFilter && gFilter !== gid) continue;
                     let courses = groups[gid].courses || {};
                     for (let csid in courses) {
-                        list.innerHTML += `<div class="item-row">
+                        html.push(`<div class="item-row">
                             <div><strong>${courses[csid].name}</strong> <small style="color:var(--text-muted);">(${groups[gid].name} - ${db.classes[cid].name})</small></div>
                             <div class="item-actions">
                                 ${hasPerm('manage_structure') ? `<button class="btn btn-sm" onclick="editCourse('${cid}','${gid}','${csid}')"><i class="fas fa-edit"></i></button>
                                 <button class="btn btn-sm btn-danger" onclick="deleteCourse('${cid}','${gid}','${csid}')"><i class="fas fa-trash"></i></button>` : ''}
                             </div>
-                        </div>`;
+                        </div>`);
                     }
                 }
             }
+            list.innerHTML = html.join('');
         }
         function editCourse(cid, gid, csid) {
             document.getElementById('course-id').value = csid;
@@ -5210,7 +5229,7 @@
             const gF = document.getElementById('unit-filter-group').value;
             const csF = document.getElementById('unit-filter-course').value;
             const tF = document.getElementById('unit-filter-term').value;
-            list.innerHTML = '';
+            let html = [];
 
             for (let cid in db.classes) {
                 if (cF && cF !== cid) continue;
@@ -5222,17 +5241,18 @@
                         if (!tObj || !tObj.units) continue;
                         for (let uid in tObj.units) {
                             let u = tObj.units[uid];
-                            list.innerHTML += `<div class="item-row">
+                            html.push(`<div class="item-row">
                                 <div><strong>${u.title}</strong> <small style="color:var(--text-muted);">(ترتيب: ${u.order} | قفل: ${u.locked ? 'نعم' : 'لا'})</small></div>
                                 <div class="item-actions">
                                     ${hasPerm('manage_structure') ? `<button class="btn btn-sm" onclick="editUnit('${cid}','${gid}','${csid}','${tF}','${uid}')"><i class="fas fa-edit"></i></button>
                                     <button class="btn btn-sm btn-danger" onclick="deleteUnit('${cid}','${gid}','${csid}','${tF}','${uid}')"><i class="fas fa-trash"></i></button>` : ''}
                                 </div>
-                            </div>`;
+                            </div>`);
                         }
                     }
                 }
             }
+            list.innerHTML = html.join('');
         }
         function editUnit(cid, gid, csid, tF, uid) {
             document.getElementById('unit-id').value = uid;
@@ -5291,7 +5311,7 @@
             const csF = document.getElementById('lesson-filter-course').value;
             const tF = document.getElementById('lesson-filter-term').value;
             const uF = document.getElementById('lesson-filter-unit').value;
-            list.innerHTML = '';
+            let html = [];
 
             for (let cid in db.classes) {
                 if (cF && cF !== cid) continue;
@@ -5306,18 +5326,19 @@
                             let lessons = tObj.units[uid].lessons || {};
                             for (let lid in lessons) {
                                 let l = lessons[lid];
-                                list.innerHTML += `<div class="item-row">
+                                html.push(`<div class="item-row">
                                     <div><strong>${l.title}</strong> <small style="color:var(--text-muted);">(ترتيب: ${l.order} | قفل: ${l.locked ? 'نعم' : 'لا'} | إخفاء: <span style="color:${l.isHidden ? 'var(--danger)' : 'var(--success)'}">${l.isHidden ? 'مخفي' : 'ظاهر'}</span>)</small></div>
                                     <div class="item-actions">
                                         ${hasPerm('manage_lessons') ? `<button class="btn btn-sm" onclick="editLesson('${cid}','${gid}','${csid}','${tF}','${uid}','${lid}')"><i class="fas fa-edit"></i></button>
                                         <button class="btn btn-sm btn-danger" onclick="deleteLesson('${cid}','${gid}','${csid}','${tF}','${uid}','${lid}')"><i class="fas fa-trash"></i></button>` : ''}
                                     </div>
-                                </div>`;
+                                </div>`);
                             }
                         }
                     }
                 }
             }
+            list.innerHTML = html.join('');
         }
         function editLesson(cid, gid, csid, tF, uid, lid) {
             document.getElementById('lesson-id').value = lid;
@@ -6051,8 +6072,7 @@
             container.style.display = 'block';
             tbody.innerHTML = '<tr><td colspan="5" class="text-center"><i class="fas fa-spinner fa-spin"></i> جارٍ تحميل البيانات...</td></tr>';
             try {
-                const res = await fetch(`${API_URL}/users`);
-                const students = await res.json();
+                const students = allStudents || []; // Reuse global cache instead of redundant fetch
 
                 const allLessons = [];
                 for (let cid in db.classes) {
