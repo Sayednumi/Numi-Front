@@ -3851,7 +3851,7 @@
                     resource = urlObj.toString();
                 } catch (e) { }
             }
-            return originalsmartFetch(resource, config);
+            return originalFetch(resource, config);
         };
 
         let db = { classes: {} };
@@ -3873,7 +3873,9 @@
                 const res = await smartFetch(`${API_URL}/platform-data`);
                 if (res.ok) {
                     const data = await res.json();
+                    // Project standard: data might be wrapped in { success, classes/data }
                     if (data && data.classes) db = data;
+                    else if (data && data.success && data.platformData) db = data.platformData;
                 }
             } catch (err) {
                 console.error("Failed to load DB from backend, falling back to empty/cache", err);
@@ -3936,10 +3938,10 @@
                     console.warn(`[Static Env] Mocking API call to: ${url}`);
                     // Return correct data structure based on typical URL patterns
                     if (url.includes('/users') || url.includes('/logs') || url.includes('/reports')) {
-                        return { ok: true, json: async () => ([]) }; // Array for lists
+                        return { ok: true, json: async () => ({ success: true, users: [], logs: [], data: [] }) }; 
                     }
                     if (url.includes('/platform-data')) {
-                        return { ok: true, json: async () => ({ classes: {} }) }; // Object for DB
+                        return { ok: true, json: async () => ({ success: true, classes: {} }) }; 
                     }
                     return { ok: true, json: async () => ({ success: true, data: [] }) };
                 }
@@ -4174,13 +4176,14 @@
         async function loadStudents() {
             try {
                 await fetchDB(); // Refresh classes/groups names first
-                // Super Admin fetches ALL students across ALL tenants
                 const url = isSuperAdmin()
                     ? `${API_URL}/users?scope=global`
                     : `${API_URL}/users`;
                 const res = await smartFetch(url);
                 if (res.ok) {
-                    allStudents = await res.json();
+                    const data = await res.json();
+                    // Handle project standard { success, users }
+                    allStudents = Array.isArray(data) ? data : (data.users || data.data || []);
                     renderStudents();
                     const el = document.getElementById('stats-students');
                     if (el) el.innerText = allStudents.filter(u => u.role === 'student').length;
@@ -4309,8 +4312,9 @@
             try {
                 const res = await smartFetch(`${API_URL}/users`);
                 if (res.ok) {
-                    const allUsers = await res.json();
-                    allTeachers = allUsers.filter(u => u.role === 'teacher');
+                    const data = await res.json();
+                    const users = Array.isArray(data) ? data : (data.users || data.data || []);
+                    allTeachers = users.filter(u => u.role === 'teacher');
                     renderTeachersList();
                 }
             } catch (err) {
