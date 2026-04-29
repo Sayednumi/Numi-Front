@@ -3740,37 +3740,65 @@
         menuLinks.forEach(link => {
             link.addEventListener('click', (e) => {
                 const target = link.getAttribute('data-target');
-                showSection(target);
+                if (target) {
+                    e.preventDefault();
+                    showSection(target);
+                }
             });
         });
 
         function showSection(targetId) {
+            if (!targetId) return;
+            
+            // 1. Sidebar active state
             menuLinks.forEach(l => l.classList.remove('active'));
             const link = document.querySelector(`.menu a[data-target="${targetId}"]`);
             if (link) link.classList.add('active');
 
-            sections.forEach(s => s.classList.remove('active'));
+            // 2. Section visibility with fade-in
+            sections.forEach(s => {
+                s.classList.remove('active');
+                s.style.display = 'none';
+            });
             const targetSection = document.getElementById(targetId);
-            if (targetSection) targetSection.classList.add('active');
+            if (targetSection) {
+                targetSection.style.display = 'block';
+                // Trigger reflow for animation
+                void targetSection.offsetWidth;
+                targetSection.classList.add('active');
+            }
 
-            // Strip icon characters for clean page title
+            // 3. Update page title
             const rawTitle = link ? (link.textContent || link.innerText) : 'لوحة التحكم';
-            pageTitle.innerText = rawTitle.trim();
+            if (pageTitle) pageTitle.innerText = rawTitle.trim();
 
+            // 4. Mobile sidebar behavior
             if (window.innerWidth <= 1024) {
                 document.getElementById('sidebar')?.classList.remove('show');
             }
 
-            // Section-specific loaders
-            if (targetId === 'dashboard') updateStats();
-            if (targetId === 'students') loadStudents();
-            if (targetId === 'chat') renderChatHierarchy();
-            if (targetId === 'teacher-platforms') loadTeacherPlatforms();
-            if (targetId === 'live-classes') loadLiveClasses();
-            if (targetId === 'platform-management') loadPlatformManagement();
-            if (targetId === 'reports') initReports();
-            if (targetId === 'question-bank') renderQuestionBank();
-            if (targetId === 'game-bank-section') renderGameBankSection();
+            // 5. Section-specific loaders (Centralized)
+            switch(targetId) {
+                case 'dashboard': updateStats(); break;
+                case 'students': loadStudents(); break;
+                case 'chat': renderChatHierarchy(); break;
+                case 'teacher-platforms': loadTeacherPlatforms(); break;
+                case 'live-classes': loadLiveClasses(); break;
+                case 'platform-management': loadPlatformManagement(); break;
+                case 'reports': initReports(); break;
+                case 'question-bank': renderQuestionBank(); break;
+                case 'game-bank-section': renderGameBankSection(); break;
+                case 'financialControlSection': if (typeof initFinanceCenter === 'function') initFinanceCenter(); break;
+                case 'growthAnalyticsSection': if (typeof initGrowthAnalytics === 'function') initGrowthAnalytics(); break;
+                case 'superAdminOrganizationsSection': if (typeof fetchOrganizations === 'function') fetchOrganizations(); break;
+                case 'superAdminTeachersSection': if (typeof fetchTeachers === 'function') fetchTeachers(); break;
+                case 'superAdminStudentsSection': if (typeof fetchStudents === 'function') fetchStudents(); break;
+                case 'superAdminSubsSection': if (typeof fetchSubscriptionInfo === 'function') fetchSubscriptionInfo(); break;
+                case 'auditLogSection': if (typeof fetchAuditLogs === 'function') fetchAuditLogs(); break;
+            }
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         // hasPlatformManage: true if user can access platform management section
