@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  backend:
+    build: 
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: numi_backend_prod
+    environment:
+      - NODE_ENV=production
+      - TENANT_ENFORCEMENT_MODE=true
+      - AI_USAGE_TRACKING=true
+    env_file:
+      - .env.production
+    ports:
+      - "3000:3000"
+    depends_on:
+      - redis
+    restart: always
+    networks:
+      - numi_network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: numi_frontend_prod
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+    restart: always
+    networks:
+      - numi_network
+
+  redis:
+    image: redis:alpine
+    container_name: numi_redis_prod
+    ports:
+      - "6379:6379"
+    restart: always
+    volumes:
+      - redis_data:/data
+    networks:
+      - numi_network
+
+  analytics_worker:
+    build: 
+      context: .
+      dockerfile: backend/Dockerfile.worker
+    container_name: numi_analytics_worker
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - .env.production
+    depends_on:
+      - redis
+    restart: always
+    networks:
+      - numi_network
+
+volumes:
+  redis_data:
+
+networks:
+  numi_network:
+    driver: bridge
