@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Numi - ملف الطالب التفاعلي</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #0f172a; --card: rgba(30,41,59,0.85); --border: rgba(255,255,255,0.08);
+            --primary: #3b82f6; --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+            --purple: #8b5cf6; --text: #f8fafc; --muted: #94a3b8;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Cairo',sans-serif; }
+        body { background: var(--bg); color: var(--text); min-height: 100vh; padding: 2rem;
+            background-image: radial-gradient(at 0% 0%, rgba(139,92,246,0.12) 0, transparent 50%),
+                              radial-gradient(at 100% 100%, rgba(59,130,246,0.08) 0, transparent 50%);
+        }
+
+        .container { max-width: 1000px; margin: 0 auto; }
+        
+        /* Profile Header */
+        .profile-header { display: flex; align-items: center; gap: 2rem; background: var(--card); border: 1px solid var(--border); border-radius: 1.5rem; padding: 2rem; margin-bottom: 2rem; backdrop-filter: blur(10px); }
+        .avatar { width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--purple)); display: flex; align-items: center; justify-content: center; font-size: 3rem; box-shadow: 0 0 20px rgba(139,92,246,0.4); }
+        .user-info flex { flex-direction: column; }
+        .user-name { font-size: 1.8rem; font-weight: 800; margin-bottom: 0.2rem; }
+        .rank-badge { display: inline-block; background: rgba(245,158,11,0.15); color: var(--warning); padding: 0.3rem 1rem; border-radius: 999px; font-weight: 700; font-size: 0.9rem; border: 1px solid rgba(245,158,11,0.3); }
+
+        /* Level Progress */
+        .level-section { flex: 1; text-align: left; }
+        .level-text { font-size: 1.2rem; font-weight: 800; margin-bottom: 0.5rem; color: var(--primary); }
+        .progress-bg { background: rgba(255,255,255,0.1); height: 12px; border-radius: 999px; overflow: hidden; position: relative; margin-bottom: 0.5rem; }
+        .progress-bar { background: linear-gradient(90deg, var(--primary), var(--purple)); height: 100%; border-radius: 999px; transition: width 1s ease-in-out; }
+        .xp-text { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+
+        /* Layout Grid */
+        .grid-layout { display: grid; grid-template-columns: 1fr 300px; gap: 1.5rem; }
+
+        /* Panel */
+        .panel { background: var(--card); border: 1px solid var(--border); border-radius: 1.25rem; padding: 1.5rem; backdrop-filter: blur(10px); }
+        .panel-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
+
+        /* Stats */
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        .stat-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 1rem; padding: 1rem; text-align: center; }
+        .stat-val { font-size: 1.5rem; font-weight: 800; color: var(--text); }
+        .stat-label { font-size: 0.85rem; color: var(--muted); }
+        .stat-icon { font-size: 1.2rem; margin-bottom: 0.5rem; color: var(--primary); }
+
+        /* Badges */
+        .badge-list { display: flex; gap: 1rem; flex-wrap: wrap; }
+        .badge-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 0.75rem 1rem; border-radius: 1rem; display: flex; align-items: center; gap: 0.75rem; transition: transform 0.2s; }
+        .badge-item:hover { transform: translateY(-3px); background: rgba(255,255,255,0.06); }
+        .badge-icon { font-size: 1.5rem; background: rgba(255,255,255,0.1); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+        .badge-name { font-weight: 700; font-size: 0.9rem; }
+        .badge-date { font-size: 0.7rem; color: var(--muted); }
+
+        /* Challenges */
+        .chal-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        .chal-item { background: rgba(59,130,246,0.05); border: 1px dashed rgba(59,130,246,0.3); padding: 1rem; border-radius: 1rem; display: flex; justify-content: space-between; align-items: center; }
+        .chal-title { font-weight: 700; margin-bottom: 0.2rem; color: var(--primary); }
+        .chal-desc { font-size: 0.85rem; color: var(--muted); }
+        .chal-reward { background: rgba(16,185,129,0.15); color: var(--success); padding: 0.3rem 0.8rem; border-radius: 999px; font-weight: 800; font-size: 0.85rem; }
+
+        /* Leaderboard */
+        .lb-item { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .lb-item:last-child { border-bottom: none; }
+        .lb-rank { width: 30px; font-weight: 800; color: var(--muted); }
+        .lb-name { flex: 1; font-weight: 700; }
+        .lb-xp { font-weight: 800; color: var(--primary); }
+        .lb-1st { color: #fbbf24; }
+        .lb-2nd { color: #94a3b8; }
+        .lb-3rd { color: #b45309; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="app"></div>
+</div>
+
+<script src="../src/services/NotificationService.js"></script>
+<script src="../src/services/GamificationEngine.js"></script>
+
+<script>
+    const engine = window.GamificationEngine;
+    const orgId = 'academy_demo';
+    const studentId = 'student_1';
+
+    // 1. Seed Data
+    engine.updateDailyStreak(studentId, orgId);
+    engine.onLiveClassJoined(studentId, orgId);
+    engine.onLiveClassJoined(studentId, orgId);
+    engine.onExamGraded(studentId, orgId, 100); // 50 XP + Perfect Score Badge
+    engine.awardXP(studentId, orgId, 250, 'مكافأة ترحيبية'); // Level up to 3
+    engine.generateAIChallenges(studentId, orgId, ['الكسور العشرية']);
+
+    // Seed competitors
+    engine.awardXP('student_2', orgId, 100, 'Test');
+    engine.awardXP('student_3', orgId, 500, 'Test');
+
+    // 2. Render
+    const p = engine.getPlayerProfile(studentId);
+    const lb = engine.getLeaderboard(orgId);
+    
+    // Calculate progress
+    const thresholds = window.LEVEL_THRESHOLDS || [
+        { level: 1, xpRequired: 0 }, { level: 2, xpRequired: 100 }, { level: 3, xpRequired: 300 },
+        { level: 4, xpRequired: 700 }, { level: 5, xpRequired: 1500 }, { level: 6, xpRequired: 3000 }
+    ];
+    
+    const currLevelConfig = thresholds.find(t => t.level === p.level) || thresholds[0];
+    const nextLevelConfig = thresholds.find(t => t.level === p.level + 1) || thresholds[thresholds.length-1];
+    
+    const xpInCurrLevel = p.xp - currLevelConfig.xpRequired;
+    const xpNeededForNext = nextLevelConfig.xpRequired - currLevelConfig.xpRequired;
+    const progressPct = xpNeededForNext > 0 ? (xpInCurrLevel / xpNeededForNext) * 100 : 100;
+
+    document.getElementById('app').innerHTML = `
+        <div class="profile-header">
+            <div class="avatar"><i class="fas fa-user-astronaut"></i></div>
+            <div class="user-info">
+                <div class="user-name">أحمد خالد</div>
+                <div class="rank-badge"><i class="fas fa-star"></i> الرتبة: ${p.rankName}</div>
+            </div>
+            <div class="level-section">
+                <div class="level-text">المستوى ${p.level}</div>
+                <div class="progress-bg">
+                    <div class="progress-bar" style="width: ${progressPct}%"></div>
+                </div>
+                <div class="xp-text">${p.xp} / ${nextLevelConfig.xpRequired} XP للوصول للمستوى التالي</div>
+            </div>
+        </div>
+
+        <div class="grid-layout">
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <!-- Challenges -->
+                <div class="panel">
+                    <div class="panel-title"><i class="fas fa-bullseye" style="color:var(--primary);"></i> مهام اليوم المقترحة من AI</div>
+                    <div class="chal-list">
+                        ${p.challenges.map(c => `
+                            <div class="chal-item">
+                                <div>
+                                    <div class="chal-title">${c.title}</div>
+                                    <div class="chal-desc">${c.description}</div>
+                                </div>
+                                <div class="chal-reward">+${c.rewardXp} XP</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <!-- Badges -->
+                <div class="panel">
+                    <div class="panel-title"><i class="fas fa-medal" style="color:var(--warning);"></i> الشارات المكتسبة</div>
+                    <div class="badge-list">
+                        ${p.badges.length > 0 ? p.badges.map(b => `
+                            <div class="badge-item">
+                                <div class="badge-icon">${b.icon}</div>
+                                <div>
+                                    <div class="badge-name">${b.name}</div>
+                                    <div class="badge-date">تم الحصول عليها للتو</div>
+                                </div>
+                            </div>
+                        `).join('') : '<span style="color:var(--muted)">لم تحصل على شارات بعد.</span>'}
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <!-- Stats -->
+                <div class="panel">
+                    <div class="panel-title"><i class="fas fa-chart-line" style="color:var(--success);"></i> الإحصائيات</div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-fire" style="color:#ef4444;"></i></div>
+                            <div class="stat-val">${p.streak}</div>
+                            <div class="stat-label">أيام متتالية</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-file-alt"></i></div>
+                            <div class="stat-val">${p.stats.examsPassed}</div>
+                            <div class="stat-label">اختبار مجتاز</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-video"></i></div>
+                            <div class="stat-val">${p.stats.liveClassesAttended}</div>
+                            <div class="stat-label">حصة مباشرة</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon"><i class="fas fa-robot"></i></div>
+                            <div class="stat-val">${p.stats.aiUsage}</div>
+                            <div class="stat-label">استخدام AI</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Leaderboard -->
+                <div class="panel">
+                    <div class="panel-title"><i class="fas fa-trophy" style="color:var(--warning);"></i> لوحة الصدارة</div>
+                    <div>
+                        ${lb.map((player, idx) => {
+                            let rClass = idx===0?'lb-1st':idx===1?'lb-2nd':idx===2?'lb-3rd':'';
+                            return `
+                            <div class="lb-item">
+                                <div class="lb-rank ${rClass}">#${idx+1}</div>
+                                <div class="lb-name ${player.id===studentId?'lb-1st':''}">${player.id===studentId?'أنت':player.id}</div>
+                                <div class="lb-xp">${player.xp} XP</div>
+                            </div>
+                        `}).join('')}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+</script>
+
+</body>
+</html>

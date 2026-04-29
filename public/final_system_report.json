@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-04-29T10:56:03.737Z",
+  "totalIssuesFound": 0,
+  "criticalIssues": 0,
+  "uiBrokenElements": 0,
+  "securityIssues": 0,
+  "integrationScore": 100,
+  "readinessForProduction": true,
+  "issues": []
+}
