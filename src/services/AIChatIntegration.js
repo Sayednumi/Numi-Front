@@ -20,6 +20,11 @@ const _AIUsage = (typeof AIUsageTracker !== 'undefined')
     ? AIUsageTracker
     : require('./AIUsageTracker');
 
+const _RAGEngine = (typeof RAGEngine !== 'undefined')
+    ? RAGEngine
+    : require('./RAGEngine');
+
+
 
 const { getAIContext } = _AICE;
 
@@ -223,7 +228,19 @@ async function processAIRequest(rawUser, userMessage, aiCallFn) {
         }
 
         // Step 3: Build System Prompt
-        const systemPrompt = buildAISystemPrompt(aiContext, rawUser);
+        let systemPrompt = buildAISystemPrompt(aiContext, rawUser);
+
+        // Step 3b: RAG Hook — inject teacher materials if RAG mode is active
+        let ragSources = [];
+        const teacherId = rawUser.id || rawUser._id;
+        if (rawUser.ragEnabled && teacherId) {
+            const ragResult = _RAGEngine.queryRAG(teacherId, userMessage, {
+                subject: aiContext.subject,
+                rawUser
+            });
+            systemPrompt += ragResult.contextPrompt;
+            ragSources = ragResult.sources;
+        }
 
         // Step 4: Execute AI Call (Wrapped in Try/Catch for Fallback Safety)
         let rawAIResponse = '';

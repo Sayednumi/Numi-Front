@@ -17,6 +17,11 @@ const _AIUsage = (typeof AIUsageTracker !== 'undefined')
     ? AIUsageTracker
     : require('./AIUsageTracker');
 
+const _Notif = (typeof NotificationService !== 'undefined')
+    ? NotificationService
+    : require('./NotificationService');
+
+
 
 // ─── 1. SUBJECT ENFORCEMENT ──────────────────────────────────────────────────
 
@@ -214,7 +219,7 @@ async function gradeExamSubmission(exam, studentAnswers, aiContext, aiCallFn) {
         requiresTeacherReview: results.some(r => r.score === 0 && r.type === 'essay')
     };
 
-    return {
+    const gradingResult = {
         totalScore,
         maxScore,
         percentage: Math.round(percentage),
@@ -223,6 +228,22 @@ async function gradeExamSubmission(exam, studentAnswers, aiContext, aiCallFn) {
         learningSuggestions,
         _futureHooks: futureHooksData
     };
+
+    // ── Notification Hook: emit grading completed ────────────────────────────
+    try {
+        const studentId = aiContext.rawUser ? (aiContext.rawUser.id || aiContext.rawUser._id) : null;
+        const teacherId = aiContext.rawUser ? aiContext.rawUser.teacherId : null;
+        const weakTopics = learningSuggestions.length > 0 ? [aiContext.subject] : [];
+        _Notif.emit(_Notif.EVENTS.GRADING_COMPLETED, {
+            studentId,
+            teacherId,
+            subject: aiContext.subject,
+            percentage: Math.round(percentage),
+            weakTopics
+        });
+    } catch (e) { /* Never break grading because of notifications */ }
+
+    return gradingResult;
 }
 
 

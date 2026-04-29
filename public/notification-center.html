@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Numi - مركز الإشعارات</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #0f172a;
+            --bg-card: rgba(30, 41, 59, 0.8);
+            --border: rgba(255,255,255,0.08);
+            --primary: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --purple: #8b5cf6;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Cairo',sans-serif; }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            background-image: radial-gradient(at 0% 0%, rgba(59,130,246,.12) 0, transparent 50%),
+                              radial-gradient(at 100% 100%, rgba(139,92,246,.08) 0, transparent 50%);
+        }
+
+        /* ── Layout ── */
+        .wrapper { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+        /* ── Header ── */
+        .page-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+        .page-title { display: flex; align-items: center; gap: .75rem; }
+        .page-title h1 { font-size: 1.6rem; font-weight: 800; }
+        .badge-count {
+            background: var(--danger);
+            color: #fff;
+            font-size: .75rem; font-weight: 800;
+            padding: .2rem .55rem;
+            border-radius: 999px;
+            min-width: 22px; text-align: center;
+            display: none;
+        }
+        .badge-count.visible { display: inline-block; }
+        .btn-read-all {
+            background: rgba(59,130,246,.15);
+            color: var(--primary);
+            border: 1px solid rgba(59,130,246,.3);
+            padding: .55rem 1.2rem;
+            border-radius: .6rem;
+            font-family: inherit; font-size: .9rem; font-weight: 700;
+            cursor: pointer; transition: background .2s;
+        }
+        .btn-read-all:hover { background: rgba(59,130,246,.25); }
+
+        /* ── Filter Tabs ── */
+        .filters {
+            display: flex; gap: .6rem; flex-wrap: wrap;
+            margin-bottom: 1.75rem;
+        }
+        .filter-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            padding: .45rem 1rem;
+            border-radius: .6rem;
+            font-family: inherit; font-size: .85rem; font-weight: 600;
+            cursor: pointer; transition: all .2s;
+            display: flex; align-items: center; gap: .4rem;
+        }
+        .filter-btn.active {
+            background: rgba(59,130,246,.15);
+            border-color: rgba(59,130,246,.4);
+            color: var(--primary);
+        }
+        .filter-btn:hover:not(.active) { color: var(--text); border-color: rgba(255,255,255,.15); }
+
+        /* ── Date Group Label ── */
+        .date-group {
+            font-size: .78rem; font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase; letter-spacing: .05em;
+            margin: 1.5rem 0 .75rem;
+        }
+
+        /* ── Notification Card ── */
+        .notif-card {
+            display: flex; gap: 1rem; align-items: flex-start;
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: .9rem;
+            padding: 1.1rem 1.25rem;
+            margin-bottom: .65rem;
+            cursor: pointer;
+            transition: transform .15s, border-color .2s, box-shadow .2s;
+            position: relative;
+        }
+        .notif-card:hover { transform: translateX(-3px); box-shadow: 0 4px 20px rgba(0,0,0,.2); }
+        .notif-card.unread { border-right: 3px solid var(--primary); background: rgba(59,130,246,.05); }
+        .notif-card.priority-high.unread { border-right-color: var(--danger); background: rgba(239,68,68,.05); }
+        .notif-card.priority-medium.unread { border-right-color: var(--warning); }
+
+        /* Icon */
+        .notif-icon {
+            width: 42px; height: 42px; min-width: 42px;
+            border-radius: .75rem;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        /* Body */
+        .notif-body { flex: 1; }
+        .notif-title {
+            font-size: .95rem; font-weight: 700;
+            margin-bottom: .25rem;
+            display: flex; align-items: center; gap: .5rem;
+        }
+        .notif-text { font-size: .875rem; color: var(--muted); line-height: 1.55; }
+        .notif-meta {
+            font-size: .75rem; color: var(--muted);
+            margin-top: .5rem; display: flex; align-items: center; gap: .5rem;
+        }
+        .priority-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+        }
+        .dot-high { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
+        .dot-medium { background: var(--warning); }
+        .dot-low { background: var(--success); }
+
+        /* Unread dot */
+        .unread-marker {
+            width: 9px; height: 9px; min-width: 9px;
+            border-radius: 50%; background: var(--primary);
+            margin-top: .35rem;
+            box-shadow: 0 0 8px var(--primary);
+        }
+        .notif-card:not(.unread) .unread-marker { opacity: 0; }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center; padding: 4rem 2rem;
+            color: var(--muted);
+        }
+        .empty-state i { font-size: 3rem; margin-bottom: 1rem; opacity: .3; }
+        .empty-state p { font-size: 1rem; }
+
+        /* Pulse animation for unread */
+        @keyframes pulse-dot {
+            0% { box-shadow: 0 0 0 0 rgba(59,130,246,.6); }
+            70% { box-shadow: 0 0 0 6px rgba(59,130,246,0); }
+            100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); }
+        }
+        .unread .unread-marker { animation: pulse-dot 2s infinite; }
+
+        /* Scroll reveal */
+        .notif-card { opacity: 0; transform: translateY(8px) translateX(0); transition: opacity .3s, transform .3s; }
+        .notif-card.visible { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+
+    <!-- Header -->
+    <div class="page-header">
+        <div class="page-title">
+            <i class="fas fa-bell" style="color:var(--primary); font-size:1.4rem;"></i>
+            <h1>مركز الإشعارات</h1>
+            <span class="badge-count" id="unread-badge">0</span>
+        </div>
+        <button class="btn-read-all" id="btn-read-all" onclick="markAllRead()">
+            <i class="fas fa-check-double"></i> تعليم الكل كمقروء
+        </button>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="filters">
+        <button class="filter-btn active" data-filter="all" onclick="setFilter('all', this)">
+            <i class="fas fa-layer-group"></i> الكل
+        </button>
+        <button class="filter-btn" data-filter="exam" onclick="setFilter('exam', this)">
+            <i class="fas fa-file-alt"></i> الاختبارات
+        </button>
+        <button class="filter-btn" data-filter="grading" onclick="setFilter('grading', this)">
+            <i class="fas fa-star"></i> التصحيح
+        </button>
+        <button class="filter-btn" data-filter="material" onclick="setFilter('material', this)">
+            <i class="fas fa-book"></i> المواد
+        </button>
+        <button class="filter-btn" data-filter="reminder" onclick="setFilter('reminder', this)">
+            <i class="fas fa-clock"></i> التذكيرات
+        </button>
+        <button class="filter-btn" data-filter="ai_alert" onclick="setFilter('ai_alert', this)">
+            <i class="fas fa-robot"></i> تنبيهات الذكاء
+        </button>
+        <button class="filter-btn" data-filter="message" onclick="setFilter('message', this)">
+            <i class="fas fa-comment-dots"></i> الرسائل
+        </button>
+    </div>
+
+    <!-- Notification List -->
+    <div id="notif-list"></div>
+
+</div>
+
+<!-- Load services -->
+<script src="../src/services/PermissionService.js"></script>
+<script src="../src/services/AIContextEngine.js"></script>
+<script src="../src/services/AIUsageTracker.js"></script>
+<script src="../src/services/NotificationService.js"></script>
+<script src="../src/models/Organization.js"></script>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const CURRENT_USER_ID = 'student_1'; // Swap per session
+let activeFilter = 'all';
+let allNotifications = [];
+
+// ── TYPE META (icon, color) ───────────────────────────────────────────────────
+const TYPE_META = {
+    exam:     { icon: 'fa-file-alt',      color: '#3b82f6', label: 'اختبار'       },
+    grading:  { icon: 'fa-star',          color: '#f59e0b', label: 'تصحيح'        },
+    material: { icon: 'fa-book-open',     color: '#8b5cf6', label: 'محتوى'        },
+    reminder: { icon: 'fa-clock',         color: '#10b981', label: 'تذكير'        },
+    ai_alert: { icon: 'fa-robot',         color: '#ef4444', label: 'تنبيه ذكي'   },
+    message:  { icon: 'fa-comment-dots',  color: '#06b6d4', label: 'رسالة'        },
+    system:   { icon: 'fa-shield-alt',    color: '#94a3b8', label: 'نظام'         },
+    lesson:   { icon: 'fa-chalkboard',    color: '#f97316', label: 'درس'          }
+};
+
+// ── SEED MOCK DATA ────────────────────────────────────────────────────────────
+function seedNotifications() {
+    const NS = window.NotificationService;
+    if (!NS) return;
+
+    // Create org for bulk
+    const org = OrganizationManager.createOrganization({
+        id: 'org_demo',
+        name: 'أكاديمية نيومي',
+        type: 'academy',
+        adminId: 'admin_1',
+        teachers: ['teacher_1'],
+        students: ['student_1', 'student_2']
+    });
+
+    // Direct message
+    NS.sendNotification([CURRENT_USER_ID], {
+        type: 'message', title: 'رسالة من المعلم',
+        body: 'أحسنت في الاختبار الأخير! استمر في هذا المستوى.',
+        senderId: 'teacher_1', priority: 'medium'
+    });
+
+    // Exam notification
+    NS.sendNotification([CURRENT_USER_ID], {
+        type: 'exam', title: 'اختبار جديد في العلوم',
+        body: 'تم إنشاء اختبار يغطي وحدة الضوء والطاقة. الموعد: الأحد القادم.',
+        senderId: 'teacher_1', priority: 'high'
+    });
+
+    // AI Alert
+    NS.sendNotification([CURRENT_USER_ID], {
+        type: 'ai_alert', title: 'تنبيه ذكي: نقطة ضعف مكتشفة',
+        body: 'لاحظ الذكاء الاصطناعي ضعفاً في موضوع الانكسار الضوئي. يُنصح بمراجعة الوحدة الثانية.',
+        senderId: 'ai_system', priority: 'high'
+    });
+
+    // Material
+    NS.sendNotification([CURRENT_USER_ID], {
+        type: 'material', title: 'محتوى جديد: وحدة الحرارة',
+        body: 'أضاف أ. خالد ملف الشرح لوحدة الحرارة والطاقة الحرارية.',
+        senderId: 'teacher_1', priority: 'medium'
+    });
+
+    // Grading done
+    NS.sendNotification([CURRENT_USER_ID], {
+        type: 'grading', title: 'نتيجة الاختبار جاهزة!',
+        body: 'حصلت على 78% في اختبار الفيزياء. راجع الملاحظات لمعرفة نقاط التحسين.',
+        senderId: 'ai_system', priority: 'medium'
+    });
+
+    // Reminder (already read)
+    const r = NS.sendNotification([CURRENT_USER_ID], {
+        type: 'reminder', title: 'تذكير: الجلسة المباشرة بعد 30 دقيقة',
+        body: 'الجلسة المباشرة مع أ. سارة تبدأ في الساعة 5:00 مساءً.',
+        senderId: 'system', priority: 'high'
+    });
+    NS.markAsRead(r.id, CURRENT_USER_ID);
+
+    // System
+    NS.sendNotification([CURRENT_USER_ID], {
+        type: 'system', title: 'تحديث المنصة',
+        body: 'تم إضافة نظام التصحيح بالذكاء الاصطناعي. جرّب المزايا الجديدة الآن!',
+        senderId: 'system', priority: 'low'
+    });
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function formatDate(iso) {
+    const d = new Date(iso);
+    const now = new Date();
+    const diffMs = now - d;
+    const diffMin = Math.floor(diffMs / 60000);
+    const diffHr  = Math.floor(diffMs / 3600000);
+    if (diffMin < 1)  return 'الآن';
+    if (diffMin < 60) return `منذ ${diffMin} دقيقة`;
+    if (diffHr  < 24) return `منذ ${diffHr} ساعة`;
+    return d.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long' });
+}
+
+function getDayLabel(iso) {
+    const d = new Date(iso);
+    const now = new Date();
+    const diffDay = Math.floor((now - d) / 86400000);
+    if (diffDay === 0) return 'اليوم';
+    if (diffDay === 1) return 'أمس';
+    return d.toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+function setFilter(filter, btn) {
+    activeFilter = filter;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderList();
+}
+
+function markRead(notifId, cardEl) {
+    NotificationService.markAsRead(notifId, CURRENT_USER_ID);
+    cardEl.classList.remove('unread');
+    updateBadge();
+}
+
+function markAllRead() {
+    NotificationService.markAllAsRead(CURRENT_USER_ID);
+    document.querySelectorAll('.notif-card.unread').forEach(c => c.classList.remove('unread'));
+    updateBadge();
+}
+
+function updateBadge() {
+    const count = NotificationService.getUnreadCount(CURRENT_USER_ID);
+    const badge = document.getElementById('unread-badge');
+    badge.textContent = count;
+    badge.classList.toggle('visible', count > 0);
+}
+
+function renderList() {
+    const list = document.getElementById('notif-list');
+    const opts = activeFilter === 'all' ? {} : { type: activeFilter };
+    const notifs = NotificationService.getUserNotifications(CURRENT_USER_ID, { ...opts, limit: 100 });
+    allNotifications = notifs;
+
+    if (notifs.length === 0) {
+        list.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-bell-slash"></i>
+                <p>لا توجد إشعارات في هذه الفئة</p>
+            </div>`;
+        return;
+    }
+
+    // Group by day
+    const groups = {};
+    notifs.forEach(n => {
+        const label = getDayLabel(n.createdAt);
+        if (!groups[label]) groups[label] = [];
+        groups[label].push(n);
+    });
+
+    let html = '';
+    Object.entries(groups).forEach(([day, items]) => {
+        html += `<div class="date-group">${day}</div>`;
+        items.forEach(n => {
+            const meta = TYPE_META[n.type] || TYPE_META.system;
+            const isUnread = !n.isRead;
+            html += `
+                <div class="notif-card ${isUnread ? 'unread' : ''} priority-${n.priority}"
+                     id="card-${n.id}"
+                     onclick="markRead('${n.id}', this)">
+                    <div class="unread-marker"></div>
+                    <div class="notif-icon" style="background:${meta.color}22; color:${meta.color}">
+                        <i class="fas ${meta.icon}"></i>
+                    </div>
+                    <div class="notif-body">
+                        <div class="notif-title">
+                            ${n.title}
+                            ${n.priority === 'high' ? '<span style="font-size:.7rem;background:rgba(239,68,68,.15);color:#ef4444;padding:.1rem .5rem;border-radius:999px;font-weight:800;">عاجل</span>' : ''}
+                        </div>
+                        <div class="notif-text">${n.body}</div>
+                        <div class="notif-meta">
+                            <div class="priority-dot dot-${n.priority}"></div>
+                            <span>${meta.label}</span>
+                            <span>·</span>
+                            <span>${formatDate(n.createdAt)}</span>
+                        </div>
+                    </div>
+                </div>`;
+        });
+    });
+
+    list.innerHTML = html;
+
+    // Staggered reveal animation
+    requestAnimationFrame(() => {
+        document.querySelectorAll('.notif-card').forEach((card, i) => {
+            setTimeout(() => card.classList.add('visible'), i * 60);
+        });
+    });
+}
+
+// ── POLLING (every 10s simulated) ─────────────────────────────────────────────
+function startPolling() {
+    setInterval(() => {
+        renderList();
+        updateBadge();
+    }, 10000);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        seedNotifications();
+        renderList();
+        updateBadge();
+        startPolling();
+    }, 300);
+});
+</script>
+</body>
+</html>

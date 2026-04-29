@@ -41,6 +41,9 @@ class TeacherProfile {
         this.schoolId = data.schoolId || null;
         this.academyId = data.academyId || null;
 
+        // RAG Mode: when true, AI answers ONLY from uploaded materials
+        this.ragEnabled = data.ragEnabled === true ? true : false;
+
         // Meta
         this.createdBy = data.createdBy || "system";
         this.createdAt = data.createdAt || new Date().toISOString();
@@ -62,6 +65,7 @@ class TeacherProfile {
             academicDegree: this.academicDegree,
             schoolId: this.schoolId,
             academyId: this.academyId,
+            ragEnabled: this.ragEnabled,
             createdBy: this.createdBy,
             createdAt: this.createdAt
         };
@@ -113,6 +117,10 @@ const TeacherProfileManager = {
     changeTeacherSubject(teacherId, newSubject) {
         // Admin overrides subject via managerSubject property
         return this.updateTeacherProfile(teacherId, { managerSubject: newSubject, subject: null });
+    },
+
+    setRAGMode(teacherId, enabled) {
+        return this.updateTeacherProfile(teacherId, { ragEnabled: enabled });
     },
 
     getProfile(id) {
