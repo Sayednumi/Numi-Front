@@ -21,6 +21,15 @@ function renderAdminSidebar() {
             <li id="nav-platform-management" style="display:none; margin-top:15px; border-top:1px solid rgba(255,255,255,0.05); padding-top:15px;">
                 <a href="#" data-target="platform-management" onclick="loadPlatformManagement()"><i class="fas fa-server" style="color:var(--danger)"></i> إدارة المنصة</a>
             </li>
+            <li id="nav-super-admin-orgs" style="display:none;">
+                <a href="#" data-target="superAdminOrganizationsSection" onclick="fetchAllOrganizations()"><i class="fas fa-building" style="color:#f1c40f"></i> إدارة المؤسسات</a>
+            </li>
+            <li id="nav-super-admin-perms" style="display:none;">
+                <a href="#" data-target="super-admin-perms"><i class="fas fa-key" style="color:#e67e22"></i> الصلاحيات</a>
+            </li>
+            <li id="nav-super-admin-settings" style="display:none;">
+                <a href="#" data-target="super-admin-settings"><i class="fas fa-cog" style="color:#95a5a6"></i> إعدادات النظام</a>
+            </li>
             <li><a href="#" data-target="reports" onclick="initReports()"><i class="fas fa-chart-bar"></i> التقارير والنتائج</a></li>
             <li><a href="#" data-target="question-bank" onclick="renderQuestionBank()"><i class="fas fa-database"></i> بنك الأسئلة</a></li>
             <li><a href="#" data-target="chat" onclick="renderChatHierarchy()"><i class="fas fa-comments"></i> الدردشة</a></li>

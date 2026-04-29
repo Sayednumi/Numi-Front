@@ -1196,7 +1196,7 @@
             <div id="dashboard-cards-placeholder"></div>
             <script src="../src/components/DashboardCards.js"></script>
             <script>
-                document.getElementById('dashboard-cards-placeholder').outerHTML = renderDashboardCards();
+                document.getElementById('dashboard-cards-placeholder').outerHTML = renderDashboardCards(isSuperAdmin());
             </script>
 
             <div class="card" style="margin-top: 30px;">
@@ -2792,12 +2792,72 @@
         </div>
     </div>
 
+    <!-- Organization Modal -->
+    <div class="modal" id="organizationModal">
+        <div class="modal-content" style="max-width:500px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2><i class="fas fa-plus-circle" style="color:var(--success);"></i> إضافة مؤسسة جديدة</h2>
+                <button class="btn btn-sm btn-danger" onclick="closeModal('organizationModal')"><i
+                        class="fas fa-times"></i></button>
+            </div>
+            <form id="organizationForm" onsubmit="createOrganization(event)">
+                <div class="form-group">
+                    <label>اسم المؤسسة</label>
+                    <input type="text" id="org-name" class="form-control" required placeholder="مثلاً: مدرسة النيل الثانوية">
+                </div>
+                <div class="form-group">
+                    <label>النوع</label>
+                    <select id="org-type" class="form-control" required>
+                        <option value="school">مدرسة (School)</option>
+                        <option value="academy">أكاديمية (Academy)</option>
+                    </select>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button type="button" class="btn btn-danger" onclick="closeModal('organizationModal')"
+                        style="flex:1;">إلغاء</button>
+                    <button type="submit" id="org-submit-btn" class="btn btn-success" style="flex:1;">حفظ المؤسسة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Student Modal Placeholder -->
     <div id="student-modal-placeholder"></div>
     <script>
         document.getElementById('student-modal-placeholder').outerHTML = renderModal('studentModal', getStudentModalContent(), '540px');
     </script>
 
+
+    <!-- Super Admin Organizations Section -->
+    <div id="superAdminOrganizationsSection" class="section" style="display:none;">
+        <div class="card-header"
+            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2><i class="fas fa-building" style="color:#f1c40f"></i> إدارة المؤسسات (المدارس والأكاديميات)</h2>
+            <button class="btn btn-success" onclick="openModal('organizationModal')">
+                <i class="fas fa-plus-circle"></i> إضافة مؤسسة جديدة
+            </button>
+        </div>
+
+        <div class="card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>اسم المؤسسة</th>
+                        <th>النوع</th>
+                        <th>كود المؤسسة (Tenant ID)</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="organizations-table-body">
+                    <tr>
+                        <td colspan="4" style="text-align:center; padding:40px; color:var(--text-muted);">
+                            <i class="fas fa-spinner fa-spin"></i> جاري تحميل البيانات...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
     <!-- Admin Account Modal Placeholder -->
     <div id="admin-modal-placeholder"></div>
@@ -3044,8 +3104,11 @@
             // ── SUPER ADMIN: FULL ACCESS — EXIT IMMEDIATELY ───────────────────
             // The platform owner (phone: 01110154093) has zero restrictions.
             if (isSuperAdmin()) {
-                const pmLink = document.getElementById('nav-platform-management');
-                if (pmLink) pmLink.style.display = 'block';
+                const show = (id) => { const el = document.getElementById(id); if (el) el.style.display = 'block'; };
+                show('nav-platform-management');
+                show('nav-super-admin-orgs');
+                show('nav-super-admin-perms');
+                show('nav-super-admin-settings');
                 return;
             }
 
@@ -4096,72 +4159,84 @@
             } catch (e) { alert('حدث خطأ: ' + e.message); }
         }
 
-        async function updateStats() {
+        async function loadAllPlatformData() {
+            const statsEl = {
+                classes:  document.getElementById('stats-classes'),
+                groups:   document.getElementById('stats-groups'),
+                lessons:  document.getElementById('stats-lessons'),
+                students: document.getElementById('stats-students'),
+                tenants:  document.getElementById('stats-tenants'),
+                teachers: document.getElementById('stats-teachers'),
+                ai:       document.getElementById('stats-ai')
+            };
+
+            // Show loading state
+            Object.values(statsEl).forEach(el => { if (el) el.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">جارٍ التحميل…</span>'; });
+
             try {
-                // ── SUPER ADMIN: aggregate across ALL tenants ───────────────
-                if (isSuperAdmin()) {
-                    const statsEl = {
-                        classes:  document.getElementById('stats-classes'),
-                        groups:   document.getElementById('stats-groups'),
-                        lessons:  document.getElementById('stats-lessons'),
-                        students: document.getElementById('stats-students')
-                    };
-                    // Show loading state
-                    Object.values(statsEl).forEach(el => { if (el) el.innerHTML = '<span style="color:var(--text-muted);font-size:14px;">جارٍ التحميل…</span>'; });
+                // 1. Fetch Global CMS Data (Classes, Groups, Lessons)
+                const res = await fetch(`${API_URL}/platform-data`);
+                const globalData = res.ok ? await res.json() : {};
 
-                    try {
-                        const res = await fetch(`${API_URL}/platform-data?scope=global`);
-                        const globalData = res.ok ? await res.json() : {};
+                let totalClasses = 0, totalGroups = 0, totalLessons = 0;
+                const allClasses = globalData.classes || {};
+                totalClasses = Object.keys(allClasses).length;
 
-                        // Aggregate from all tenants (the backend returns merged or we compute)
-                        let totalClasses = 0, totalGroups = 0, totalLessons = 0;
-
-                        const allClasses = globalData.classes || {};
-                        totalClasses = Object.keys(allClasses).length;
-
-                        for (const cid in allClasses) {
-                            const cls = allClasses[cid];
-                            const groups = cls.groups || {};
-                            totalGroups += Object.keys(groups).length;
-                            for (const gid in groups) {
-                                const courses = groups[gid].courses || {};
-                                for (const crid in courses) {
-                                    for (const t of ['term1','term2']) {
-                                        const units = courses[crid][t]?.units || {};
-                                        for (const uid in units) {
-                                            totalLessons += Object.keys(units[uid].lessons || {}).length;
-                                        }
-                                    }
+                for (const cid in allClasses) {
+                    const cls = allClasses[cid];
+                    const groups = cls.groups || {};
+                    totalGroups += Object.keys(groups).length;
+                    for (const gid in groups) {
+                        const courses = groups[gid].courses || {};
+                        for (const crid in courses) {
+                            for (const t of ['term1','term2']) {
+                                const units = courses[crid][t]?.units || {};
+                                for (const uid in units) {
+                                    totalLessons += Object.keys(units[uid].lessons || {}).length;
                                 }
                             }
                         }
-
-                        // Fetch global user count
-                        const usersRes = await fetch(`${API_URL}/users?scope=global`);
-                        const allUsers = usersRes.ok ? await usersRes.json() : allStudents;
-                        const totalStudents = allUsers.filter(u => u.role === 'student').length;
-
-                        if (statsEl.classes)  statsEl.classes.innerText  = totalClasses;
-                        if (statsEl.groups)   statsEl.groups.innerText   = totalGroups;
-                        if (statsEl.lessons)  statsEl.lessons.innerText  = totalLessons;
-                        if (statsEl.students) statsEl.students.innerText = totalStudents;
-
-                        // Update platform-overview-table with global data
-                        const table = document.getElementById('platform-overview-table');
-                        if (table) {
-                            table.innerHTML = Object.values(allClasses).map(cls => {
-                                const groups  = Object.keys(cls.groups || {}).length;
-                                let courses = 0;
-                                for (const gid in cls.groups || {}) courses += Object.keys(cls.groups[gid].courses || {}).length;
-                                const students = allUsers.filter(s => s.classId === cls.id || s.classId === Object.keys(allClasses).find(k => allClasses[k] === cls)).length;
-                                return `<tr><td>${cls.name||'—'}</td><td>${groups}</td><td>${courses}</td><td>${students}</td></tr>`;
-                            }).join('');
-                        }
-                    } catch(fetchErr) {
-                        console.error('Super Admin global stats error:', fetchErr);
-                        Object.values(statsEl).forEach(el => { if (el) el.innerText = '—'; });
                     }
+                }
 
+                // 2. Fetch High-Level Overview (Schools, Teachers, Students, AI)
+                const overviewRes = await fetch(`${API_URL}/analytics/platform-overview`);
+                const overview = overviewRes.ok ? await overviewRes.json() : {};
+
+                // 3. Fetch All Users for table breakdown
+                const usersRes = await fetch(`${API_URL}/users`);
+                const allUsers = usersRes.ok ? await usersRes.json() : [];
+
+                // 4. Update Cards
+                if (statsEl.classes)  statsEl.classes.innerText  = totalClasses;
+                if (statsEl.groups)   statsEl.groups.innerText   = totalGroups;
+                if (statsEl.lessons)  statsEl.lessons.innerText  = totalLessons;
+                if (statsEl.students) statsEl.students.innerText = overview.totalStudents || 0;
+                if (statsEl.tenants)  statsEl.tenants.innerText  = overview.totalSchools || 0;
+                if (statsEl.teachers) statsEl.teachers.innerText = overview.totalTeachers || 0;
+                if (statsEl.ai)       statsEl.ai.innerText       = overview.totalAIRequests || 0;
+
+                // 5. Update platform-overview-table
+                const table = document.getElementById('platform-overview-table');
+                if (table) {
+                    table.innerHTML = Object.values(allClasses).map(cls => {
+                        const gCount  = Object.keys(cls.groups || {}).length;
+                        let cCount = 0;
+                        for (const gid in cls.groups || {}) cCount += Object.keys(cls.groups[gid].courses || {}).length;
+                        const sCount = allUsers.filter(s => s.role === 'student' && s.classId === cls.id).length;
+                        return `<tr><td>${cls.name||'—'}</td><td>${gCount}</td><td>${cCount}</td><td>${sCount}</td></tr>`;
+                    }).join('');
+                }
+            } catch (e) {
+                console.error('loadAllPlatformData error:', e);
+                Object.values(statsEl).forEach(el => { if (el) el.innerText = '—'; });
+            }
+        }
+
+        async function updateStats() {
+            try {
+                if (isSuperAdmin()) {
+                    await loadAllPlatformData();
                     loadScheduleWidgets();
                     return;
                 }
@@ -7658,6 +7733,100 @@
         });
         tableObserver.observe(document.body, { childList: true, subtree: true });
         window.addEventListener('resize', bindTableLabels);
+
+        // ─── SUPER ADMIN: ORGANIZATION MANAGEMENT ──────────────────────────
+        let allOrganizations = [];
+
+        async function fetchAllOrganizations() {
+            const tbody = document.getElementById('organizations-table-body');
+            if (!tbody) return;
+
+            try {
+                const res = await fetch(`${API_URL}/organizations?scope=global`);
+                if (res.ok) {
+                    allOrganizations = await res.json();
+                    renderOrganizationsTable(allOrganizations);
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--danger);">خطأ في تحميل البيانات</td></tr>`;
+                }
+            } catch (err) {
+                console.error('Failed to fetch organizations', err);
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--danger);">فشل الاتصال بالخادم</td></tr>`;
+            }
+        }
+
+        function renderOrganizationsTable(orgs) {
+            const tbody = document.getElementById('organizations-table-body');
+            if (!tbody) return;
+
+            if (orgs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:40px; color:var(--text-muted);">لا توجد مؤسسات مسجلة حالياً</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = orgs.map(org => `
+                <tr>
+                    <td style="font-weight:700;">${org.name}</td>
+                    <td><span class="badge" style="background:rgba(241,196,15,0.15); color:#f1c40f;">${org.type === 'school' ? 'مدرسة' : 'أكاديمية'}</span></td>
+                    <td style="font-family:monospace; font-size:12px;">${org.id}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="deleteOrganization('${org.id}')">
+                            <i class="fas fa-trash"></i> حذف
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function createOrganization(event) {
+            event.preventDefault();
+            const submitBtn = document.getElementById('org-submit-btn');
+            const name = document.getElementById('org-name').value.trim();
+            const type = document.getElementById('org-type').value;
+
+            if (!name) return alert('يرجى إدخال اسم المؤسسة');
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ الحفظ...';
+
+            try {
+                const res = await fetch(`${API_URL}/organizations`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, type })
+                });
+
+                if (res.ok) {
+                    showNotif('✅ تم إنشاء المؤسسة بنجاح', 'success');
+                    closeModal('organizationModal');
+                    fetchAllOrganizations();
+                } else {
+                    const err = await res.json();
+                    alert('خطأ: ' + (err.msg || 'فشل في الحفظ'));
+                }
+            } catch (err) {
+                alert('فشل في الاتصال بالخادم');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'حفظ المؤسسة';
+            }
+        }
+
+        async function deleteOrganization(id) {
+            if (!confirm('هل أنت متأكد من حذف هذه المؤسسة؟ سيؤدي ذلك لحذف كافة البيانات المرتبطة بها.')) return;
+
+            try {
+                const res = await fetch(`${API_URL}/organizations/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    showNotif('🗑️ تم حذف المؤسسة بنجاح', 'success');
+                    fetchAllOrganizations();
+                } else {
+                    alert('فشل في حذف المؤسسة');
+                }
+            } catch (err) {
+                alert('فشل في الاتصال بالخادم');
+            }
+        }
 
     </script>
 </body>

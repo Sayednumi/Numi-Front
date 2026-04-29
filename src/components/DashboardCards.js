@@ -11,38 +11,21 @@
  */
 
 const DASHBOARD_CARDS = [
-    {
-        id:      'stats-classes',
-        title:   'إجمالي الصفوف',
-        icon:    'fas fa-layer-group',
-        color:   'var(--primary)',
-        section: 'classes'
-    },
-    {
-        id:      'stats-groups',
-        title:   'إجمالي المجموعات',
-        icon:    'fas fa-users-rectangle',
-        color:   'var(--accent)',
-        section: 'groups'
-    },
-    {
-        id:      'stats-students',
-        title:   'إجمالي الطلاب',
-        icon:    'fas fa-user-graduate',
-        color:   'var(--success)',
-        section: 'students'
-    },
-    {
-        id:      'stats-lessons',
-        title:   'إجمالي الدروس',
-        icon:    'fas fa-file-video',
-        color:   'var(--danger)',
-        section: 'lessons'
-    }
+    { id: 'stats-classes',  title: 'إجمالي الصفوف', icon: 'fas fa-layer-group', color: 'var(--primary)', section: 'classes' },
+    { id: 'stats-groups',   title: 'إجمالي المجموعات', icon: 'fas fa-users-rectangle', color: 'var(--accent)',  section: 'groups' },
+    { id: 'stats-students', title: 'إجمالي الطلاب', icon: 'fas fa-user-graduate', color: 'var(--success)', section: 'students' },
+    { id: 'stats-lessons',  title: 'إجمالي الدروس', icon: 'fas fa-file-video', color: 'var(--danger)',  section: 'lessons' }
 ];
 
-function renderDashboardCards(cards) {
-    const list = cards || DASHBOARD_CARDS;
+const SUPER_ADMIN_CARDS = [
+    ...DASHBOARD_CARDS,
+    { id: 'stats-tenants',  title: 'إجمالي المدارس', icon: 'fas fa-school', color: 'var(--warning)', section: 'platform-management' },
+    { id: 'stats-teachers', title: 'إجمالي المعلمين', icon: 'fas fa-chalkboard-teacher', color: '#6c5ce7', section: 'platform-management' },
+    { id: 'stats-ai',       title: 'استخدام الذكاء الاصطناعي', icon: 'fas fa-robot', color: '#00cec9', section: 'platform-management' }
+];
+
+function renderDashboardCards(isSuperAdmin = false) {
+    const list = isSuperAdmin ? SUPER_ADMIN_CARDS : DASHBOARD_CARDS;
 
     const cardsHTML = list.map(card => `
         <div class="card clickable" onclick="showSection('${card.section}')">
