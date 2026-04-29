@@ -3899,17 +3899,29 @@
                 }
             }, 1500);
         }
-        // ─── SAFE INITIALIZATION & GLOBAL ERROR HANDLING ─────────────────────────────
+        // ─── ROBUST BOOT STRATEGY & GLOBAL ERROR HANDLING ───────────────────────────
         window.addEventListener("error", (e) => console.error("GLOBAL JS ERROR:", e.message));
         window.addEventListener("unhandledrejection", (e) => console.error("PROMISE ERROR:", e.reason));
 
-        function safeInit(fn, name = "Function") {
+        /** Safe execution wrapper - ensures one failure doesn't break the boot chain */
+        async function safeStep(fn, name = "Task") {
+            console.log(`[Boot] Starting ${name}...`);
             try {
-                if (typeof fn === "function") return fn();
+                if (typeof fn === "function") await fn();
+                console.log(`[Boot] ${name} completed.`);
             } catch (e) {
-                console.error(`[Init Failed] ${name}:`, e);
+                console.error(`[Boot Critical Failure] ${name} failed:`, e);
             }
         }
+
+        // Forced loading recovery - ensures the spinner NEVER stays forever
+        setTimeout(() => {
+            const loader = document.getElementById('global-loader');
+            if (loader && loader.style.display !== 'none') {
+                loader.style.display = 'none';
+                console.warn("⚠️ [Boot] Forced loading recovery triggered after timeout.");
+            }
+        }, 8000);
 
         const isStaticEnv = location.hostname.includes("github.io") || 
                            location.hostname.includes("github.com") ||
@@ -4019,52 +4031,62 @@
             || hasPerm('manage_teachers')
             || hasPerm('manage_admins');
 
-        // Main initialization
-        // Main Safe Initialization Sequence
-        window.onload = async () => {
-            console.log("🚀 Starting Numi Admin Boot Sequence...");
-            
-            // 1. UI Setup (Non-blocking)
-            safeInit(() => {
-                const headerName = document.getElementById('header-user-name');
-                if (headerName && currentUser) {
-                    const roleLabel = getRoleLabel();
-                    headerName.innerHTML = `${currentUser.name || currentUser.id} <span style="background:var(--primary);color:white;font-size:10px;padding:2px 7px;border-radius:10px;margin-right:6px;font-weight:700;">${roleLabel}</span>`;
-                }
-                applyRoleBasedUI();
-            }, "Header & Role UI");
-
-            // 2. Data Loading (Try-Catch Protected)
-            try {
-                await fetchDB();
-                await loadStudents();
-                await initHonorBoard();
-            } catch (e) {
-                console.error("Critical Data Load Failed:", e);
+        // ─── MODULAR INITIALIZATION FUNCTIONS ───────────────────────────────────────
+        
+        async function initAppShell() {
+            const headerName = document.getElementById('header-user-name');
+            if (headerName && currentUser) {
+                const roleLabel = getRoleLabel();
+                headerName.innerHTML = `${currentUser.name || currentUser.id} <span style="background:var(--primary);color:white;font-size:10px;padding:2px 7px;border-radius:10px;margin-right:6px;font-weight:700;">${roleLabel}</span>`;
             }
+            applyRoleBasedUI();
+        }
 
-            // 3. Components Rendering
-            safeInit(() => {
-                updateStats();
-                refreshAllDropdowns();
-                renderClasses();
-                renderGroups();
-                renderCourses();
-                renderUnits();
-                renderLessons();
-                buildNavLessonSelectors();
-                
-                if (hasPlatformManage || isSuperAdmin()) {
-                    loadTeachers();
-                }
-            }, "Core Components Rendering");
+        async function initDataLayer() {
+            // Load essential data, failures here don't stop the UI from rendering
+            await Promise.allSettled([
+                fetchDB(),
+                loadStudents(),
+                initHonorBoard()
+            ]);
+        }
 
-            console.log("✅ Initialization Complete.");
+        async function initUIComponents() {
+            updateStats();
+            refreshAllDropdowns();
+            renderClasses();
+            renderGroups();
+            renderCourses();
+            renderUnits();
+            renderLessons();
+            buildNavLessonSelectors();
             
-            // Final Loading State Clear
+            if (hasPlatformManage || isSuperAdmin()) {
+                loadTeachers();
+            }
+        }
+
+        async function loadDefaultSection() {
+            // Determine initial section (default to dashboard)
+            const hash = window.location.hash.replace('#', '');
+            showSection(hash || 'dashboard');
+        }
+
+        // ─── CONTROLLED BOOT PIPELINE ───────────────────────────────────────────────
+        window.addEventListener("DOMContentLoaded", async () => {
+            console.log("🚀 [Boot] Numi Admin Pipeline Started...");
+            
+            await safeStep(initAppShell, "App Shell & Permissions");
+            await safeStep(initDataLayer, "Data Layer (DB & Students)");
+            await safeStep(initUIComponents, "UI Components & Tables");
+            await safeStep(loadDefaultSection, "Initial Section Selection");
+
+            console.log("✅ [Boot] Numi Admin Fully Initialized.");
+            
+            // Clear loading state
             const loader = document.getElementById('global-loader');
             if (loader) loader.style.display = 'none';
-        };
+        });
 
         // ── Platform Management & Audit Logs ─────────────────────────────────
         async function logAudit(action, target, details = '') {
