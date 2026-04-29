@@ -330,6 +330,7 @@
             max-height: 90vh;
             overflow-y: auto;
         }
+
         .modal-content::-webkit-scrollbar {
             width: 5px;
         }
@@ -337,51 +338,6 @@
         .modal-content::-webkit-scrollbar-thumb {
             background: var(--primary);
             border-radius: 5px;
-        }
-
-        .progress-bar-fill {
-            height: 100%;
-            background: var(--primary);
-            border-radius: 4px;
-            transition: width 0.3s ease;
-        }
-
-        /* Global Loader */
-        #global-loader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--bg);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            transition: opacity 0.5s ease;
-        }
-
-        .loader-spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid rgba(109, 58, 238, 0.1);
-            border-top: 5px solid var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loader-text {
-            color: var(--text-main);
-            font-weight: 800;
-            font-size: 18px;
-            letter-spacing: 1px;
         }
 
         .items-list {
@@ -1233,12 +1189,6 @@
 </head>
 
 <body>
-    <!-- Global Loader Overlay -->
-    <div id="global-loader">
-        <div class="loader-spinner"></div>
-        <div class="loader-text">نُـمي | جارِ التحميل...</div>
-    </div>
-
     <div id="super-admin-return-banner"
         style="display:none; background:var(--warning); color:#000; text-align:center; padding:10px; font-weight:bold; z-index:10000; position:relative;">
         أنت الآن تستعرض المنصة كمعلم. <button onclick="returnToSuperAdmin()"
@@ -3829,8 +3779,9 @@
         // Super Admin gets global scope; regular users are scoped to their own tenant
         const currentTenantId = isSuperAdmin()
             ? 'global'
-            : (currentUser.tenantId || 
-              (((currentUser.permissions && currentUser.permissions.isOwner) || currentUser.id === 'admin') ? 'main' : currentUser.id));
+            : ((currentUser.permissions && currentUser.permissions.isOwner) || currentUser.id === 'admin')
+                ? 'main'
+                : currentUser.id;
 
         const originalFetch = window.fetch;
         window.fetch = function () {
@@ -3867,30 +3818,12 @@
             });
         } catch (e) { console.warn('Socket uninitialized'); }
 
-        // Helper to find 'classes' property in various API response wrappers
-        function resolvePlatformData(data) {
-            if (!data) return null;
-            if (data.classes) return data;
-            if (data.data && data.data.classes) return data.data;
-            if (data.platformData && data.platformData.classes) return data.platformData;
-            if (data.success && data.data && data.data.classes) return data.data;
-            return null;
-        }
-
         async function fetchDB() {
             try {
-                const res = await smartFetch(`${API_URL}/platform-data`);
+                const res = await fetch(`${API_URL}/platform-data`);
                 if (res.ok) {
                     const data = await res.json();
-                    const actualData = resolvePlatformData(data);
-                    if (actualData) {
-                        db = actualData;
-                        // If we are currently in a structural section, re-render it immediately
-                        const activeSection = document.querySelector('.section.active');
-                        if (activeSection && ['classes', 'groups', 'courses', 'units', 'lessons'].includes(activeSection.id)) {
-                             showSection(activeSection.id);
-                        }
-                    }
+                    if (data && data.classes) db = data;
                 }
             } catch (err) {
                 console.error("Failed to load DB from backend, falling back to empty/cache", err);
@@ -3906,7 +3839,7 @@
             clearTimeout(_saveDBTimer);
             _saveDBTimer = setTimeout(async () => {
                 try {
-                    await smartFetch(`${API_URL}/platform-data`, {
+                    await fetch(`${API_URL}/platform-data`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(db)
@@ -3916,57 +3849,6 @@
                 }
             }, 1500);
         }
-        // ─── ROBUST BOOT STRATEGY & GLOBAL ERROR HANDLING ───────────────────────────
-        window.addEventListener("error", (e) => console.error("GLOBAL JS ERROR:", e.message));
-        window.addEventListener("unhandledrejection", (e) => console.error("PROMISE ERROR:", e.reason));
-
-        /** Safe execution wrapper - ensures one failure doesn't break the boot chain */
-        async function safeStep(fn, name = "Task") {
-            console.log(`[Boot] Starting ${name}...`);
-            try {
-                if (typeof fn === "function") await fn();
-                console.log(`[Boot] ${name} completed.`);
-            } catch (e) {
-                console.error(`[Boot Critical Failure] ${name} failed:`, e);
-            }
-        }
-
-        // Forced loading recovery - ensures the spinner NEVER stays forever
-        setTimeout(() => {
-            const loader = document.getElementById('global-loader');
-            if (loader && loader.style.display !== 'none') {
-                loader.style.display = 'none';
-                document.body.classList.remove('loading');
-                console.warn("⚠️ [Boot] Forced loading recovery triggered after 5s timeout.");
-            }
-        }, 5000);
-
-        const isStaticEnv = location.hostname.includes("github.io") || 
-                           location.hostname.includes("github.com") ||
-                           location.protocol === 'file:' ||
-                           location.port === '5500' || 
-                           location.port === '3000';
-        
-        async function smartFetch(url, options = {}) {
-            try {
-                if (isStaticEnv && url.includes('/api/')) {
-                    console.warn(`[Static Env] Mocking API call to: ${url}`);
-                    // Return correct data structure based on typical URL patterns
-                    if (url.includes('/users') || url.includes('/logs') || url.includes('/reports')) {
-                        return { ok: true, json: async () => ({ success: true, users: [], logs: [], data: [] }) }; 
-                    }
-                    if (url.includes('/platform-data')) {
-                        return { ok: true, json: async () => ({ success: true, classes: {} }) }; 
-                    }
-                    return { ok: true, json: async () => ({ success: true, data: [] }) };
-                }
-                return await fetch(url, options);
-            } catch (e) {
-                console.error(`[SmartFetch Error] ${url}:`, e);
-                return { ok: false, json: async () => ({ error: "Network Error" }) };
-            }
-        }
-
         function generateId() { return Date.now().toString(36) + Math.random().toString(36).substr(2); }
 
         // Navigation
@@ -3987,75 +3869,56 @@
         function showSection(targetId) {
             if (!targetId) return;
             
-            const sidebar = document.getElementById('sidebar');
-            const menuLinks = document.querySelectorAll('.menu a');
-            const sections = document.querySelectorAll('.section');
-            const pageTitle = document.getElementById('page-title');
-
             // 1. Sidebar active state
-            if (menuLinks) {
-                menuLinks.forEach(l => l.classList.remove('active'));
-                const link = document.querySelector(`.menu a[data-target="${targetId}"]`);
-                if (link) link.classList.add('active');
-            }
+            menuLinks.forEach(l => l.classList.remove('active'));
+            const link = document.querySelector(`.menu a[data-target="${targetId}"]`);
+            if (link) link.classList.add('active');
 
             // 2. Section visibility with fade-in
-            if (sections) {
-                sections.forEach(s => {
-                    s.classList.remove('active');
-                    s.style.display = 'none';
-                });
-            }
+            sections.forEach(s => {
+                s.classList.remove('active');
+                s.style.display = 'none';
+            });
             const targetSection = document.getElementById(targetId);
             if (targetSection) {
                 targetSection.style.display = 'block';
+                // Trigger reflow for animation
                 void targetSection.offsetWidth;
                 targetSection.classList.add('active');
             }
 
             // 3. Update page title
-            const activeLink = document.querySelector(`.menu a[data-target="${targetId}"]`);
-            const rawTitle = activeLink ? (activeLink.textContent || activeLink.innerText) : 'لوحة التحكم';
+            const rawTitle = link ? (link.textContent || link.innerText) : 'لوحة التحكم';
             if (pageTitle) pageTitle.innerText = rawTitle.trim();
 
             // 4. Mobile sidebar behavior
-            if (window.innerWidth <= 1024 && sidebar) {
-                sidebar.classList.remove('show');
+            if (window.innerWidth <= 1024) {
+                document.getElementById('sidebar')?.classList.remove('show');
             }
 
-            // 5. Section-specific loaders (Centralized & Protected)
-            safeStep(() => {
-                switch(targetId) {
-                    case 'dashboard': 
-                        updateStats(); 
-                        renderTodaySchedule();
-                        renderWeeklySchedule();
-                        break;
-                    case 'classes': renderClasses(); break;
-                    case 'groups': renderGroups(); break;
-                    case 'courses': renderCourses(); break;
-                    case 'units': renderUnits(); break;
-                    case 'lessons': renderLessons(); break;
-                    case 'students': loadStudents(); break;
-                    case 'chat': renderChatHierarchy(); break;
-                    case 'teacher-platforms': loadTeacherPlatforms(); break;
-                    case 'live-classes': loadLiveClasses(); break;
-                    case 'platform-management': loadPlatformManagement(); break;
-                    case 'reports': initReports(); break;
-                    case 'question-bank': renderQuestionBank(); break;
-                    case 'game-bank-section': renderGameBankSection(); break;
-                    case 'aiTeacherSettingsSection': if (typeof loadAITeacherSettings === 'function') loadAITeacherSettings(); break;
-                    case 'classIntelligenceSection': if (typeof initIntelligenceSection === 'function') initIntelligenceSection(); break;
-                    case 'financialControlSection': if (typeof initFinanceCenter === 'function') initFinanceCenter(); break;
-                    case 'growthAnalyticsSection': if (typeof initGrowthAnalytics === 'function') initGrowthAnalytics(); break;
-                    case 'superAdminOrganizationsSection': if (typeof fetchOrganizations === 'function') fetchOrganizations(); break;
-                    case 'superAdminTeachersSection': if (typeof fetchTeachers === 'function') fetchTeachers(); break;
-                    case 'superAdminStudentsSection': if (typeof fetchStudents === 'function') fetchStudents(); break;
-                    case 'superAdminSubsSection': if (typeof fetchSubscriptionInfo === 'function') fetchSubscriptionInfo(); break;
-                    case 'auditLogSection': if (typeof fetchAuditLogs === 'function') fetchAuditLogs(); break;
-                }
-            }, `Loader for ${targetId}`);
+            // 5. Section-specific loaders (Centralized)
+            switch(targetId) {
+                case 'dashboard': updateStats(); break;
+                case 'students': loadStudents(); break;
+                case 'chat': renderChatHierarchy(); break;
+                case 'teacher-platforms': loadTeacherPlatforms(); break;
+                case 'live-classes': loadLiveClasses(); break;
+                case 'platform-management': loadPlatformManagement(); break;
+                case 'reports': initReports(); break;
+                case 'question-bank': renderQuestionBank(); break;
+                case 'game-bank-section': renderGameBankSection(); break;
+                case 'aiTeacherSettingsSection': if (typeof loadAITeacherSettings === 'function') loadAITeacherSettings(); break;
+                case 'classIntelligenceSection': if (typeof initIntelligenceSection === 'function') initIntelligenceSection(); break;
+                case 'financialControlSection': if (typeof initFinanceCenter === 'function') initFinanceCenter(); break;
+                case 'growthAnalyticsSection': if (typeof initGrowthAnalytics === 'function') initGrowthAnalytics(); break;
+                case 'superAdminOrganizationsSection': if (typeof fetchOrganizations === 'function') fetchOrganizations(); break;
+                case 'superAdminTeachersSection': if (typeof fetchTeachers === 'function') fetchTeachers(); break;
+                case 'superAdminStudentsSection': if (typeof fetchStudents === 'function') fetchStudents(); break;
+                case 'superAdminSubsSection': if (typeof fetchSubscriptionInfo === 'function') fetchSubscriptionInfo(); break;
+                case 'auditLogSection': if (typeof fetchAuditLogs === 'function') fetchAuditLogs(); break;
+            }
             
+            // Scroll to top
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -4065,27 +3928,22 @@
             || hasPerm('manage_teachers')
             || hasPerm('manage_admins');
 
-        // ─── MODULAR INITIALIZATION FUNCTIONS ───────────────────────────────────────
-        
-        async function initAppShell() {
+        // Main initialization
+        window.onload = async () => {
+            // Populate header with real user info
             const headerName = document.getElementById('header-user-name');
             if (headerName && currentUser) {
                 const roleLabel = getRoleLabel();
                 headerName.innerHTML = `${currentUser.name || currentUser.id} <span style="background:var(--primary);color:white;font-size:10px;padding:2px 7px;border-radius:10px;margin-right:6px;font-weight:700;">${roleLabel}</span>`;
             }
+
+            // ─── Role-Based UI Application ─────────────────────────────────
             applyRoleBasedUI();
-        }
 
-        async function initDataLayer() {
-            // Load essential data, failures here don't stop the UI from rendering
-            await Promise.allSettled([
-                fetchDB(),
-                loadStudents(),
-                initHonorBoard()
-            ]);
-        }
+            await fetchDB();
 
-        async function initUIComponents() {
+            await loadStudents();
+            await initHonorBoard();
             updateStats();
             refreshAllDropdowns();
             renderClasses();
@@ -4094,38 +3952,16 @@
             renderUnits();
             renderLessons();
             buildNavLessonSelectors();
-            
+            // Super Admin and platform managers always see teacher list
             if (hasPlatformManage || isSuperAdmin()) {
                 loadTeachers();
             }
-        }
-
-        async function loadDefaultSection() {
-            // Determine initial section (default to dashboard)
-            const hash = window.location.hash.replace('#', '');
-            showSection(hash || 'dashboard');
-        }
-
-        // ─── CONTROLLED BOOT PIPELINE ───────────────────────────────────────────────
-        window.addEventListener("DOMContentLoaded", async () => {
-            console.log("🚀 [Boot] Numi Admin Pipeline Started...");
-            
-            await safeStep(initAppShell, "App Shell & Permissions");
-            await safeStep(initDataLayer, "Data Layer (DB & Students)");
-            await safeStep(initUIComponents, "UI Components & Tables");
-            await safeStep(loadDefaultSection, "Initial Section Selection");
-
-            console.log("✅ [Boot] Numi Admin Fully Initialized.");
-            
-            // Clear loading state
-            const loader = document.getElementById('global-loader');
-            if (loader) loader.style.display = 'none';
-        });
+        };
 
         // ── Platform Management & Audit Logs ─────────────────────────────────
         async function logAudit(action, target, details = '') {
             try {
-                await smartFetch(`${API_URL}/audit-logs`, {
+                await fetch(`${API_URL}/audit-logs`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -4141,7 +3977,7 @@
 
         async function loadAuditLogs() {
             try {
-                const res = await smartFetch(`${API_URL}/audit-logs`);
+                const res = await fetch(`${API_URL}/audit-logs`);
                 const data = await res.json();
                 const tbody = document.getElementById('audit-logs-list');
                 if (data.success && data.logs.length) {
@@ -4191,14 +4027,13 @@
         async function loadStudents() {
             try {
                 await fetchDB(); // Refresh classes/groups names first
+                // Super Admin fetches ALL students across ALL tenants
                 const url = isSuperAdmin()
                     ? `${API_URL}/users?scope=global`
                     : `${API_URL}/users`;
-                const res = await smartFetch(url);
+                const res = await fetch(url);
                 if (res.ok) {
-                    const data = await res.json();
-                    // Handle project standard { success, users }
-                    allStudents = Array.isArray(data) ? data : (data.users || data.data || []);
+                    allStudents = await res.json();
                     renderStudents();
                     const el = document.getElementById('stats-students');
                     if (el) el.innerText = allStudents.filter(u => u.role === 'student').length;
@@ -4325,11 +4160,10 @@
 
         async function loadTeachers() {
             try {
-                const res = await smartFetch(`${API_URL}/users`);
+                const res = await fetch(`${API_URL}/users`);
                 if (res.ok) {
-                    const data = await res.json();
-                    const users = Array.isArray(data) ? data : (data.users || data.data || []);
-                    allTeachers = users.filter(u => u.role === 'teacher');
+                    const allUsers = await res.json();
+                    allTeachers = allUsers.filter(u => u.role === 'teacher');
                     renderTeachersList();
                 }
             } catch (err) {
@@ -4417,7 +4251,7 @@
             try {
                 const url = id ? `${API_URL}/users/${id}` : `${API_URL}/users`;
                 const method = id ? 'PUT' : 'POST';
-                const res = await smartFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 const data = await res.json();
                 if (!data.success) throw new Error(data.msg || 'فشل الحفظ');
                 await logAudit(id ? 'edit' : 'create', payload.name, `قام بـ${id ? 'تعديل بيانات' : 'إضافة'} معلم`);
@@ -4430,7 +4264,7 @@
         async function toggleTeacherStatus(id, currentStatus) {
             const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
             try {
-                const res = await smartFetch(`${API_URL}/users/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) });
+                const res = await fetch(`${API_URL}/users/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) });
                 if (!res.ok) throw new Error('فشل التحديث');
                 await loadTeachers();
             } catch (e) { alert('حدث خطأ: ' + e.message); }
@@ -4439,7 +4273,7 @@
         async function deleteTeacher(id, name) {
             if (!confirm(`هل تريد حذف المعلم "${name}" نهائيًا؟ سيتم حذف حساب المعلم، لكن بيانات الطلاب ستبقى مسجلة.`)) return;
             try {
-                await smartFetch(`${API_URL}/users/${id}`, { method: 'DELETE' });
+                await fetch(`${API_URL}/users/${id}`, { method: 'DELETE' });
                 await logAudit('delete', name, 'قام بحذف المعلم من المنصة');
                 await loadTeachers();
                 showNotif('🗑️ تم حذف المعلم', 'success');
@@ -4462,7 +4296,7 @@
 
             try {
                 // Fetch teacher's platform data
-                const res = await smartFetch(`${API_URL}/platform-data?tenantId=${tId}`);
+                const res = await fetch(`${API_URL}/platform-data?tenantId=${tId}`);
                 let gCount = 0;
                 let lCount = 0;
                 if (res.ok) {
@@ -4492,7 +4326,7 @@
                 document.getElementById('td-lessons-count').innerText = lCount;
 
                 // Fetch teacher's live classes
-                const liveRes = await smartFetch(`${API_URL}/live-classes?teacherId=${tId}`);
+                const liveRes = await fetch(`${API_URL}/live-classes?teacherId=${tId}`);
                 let liveClassesHtml = '<div style="text-align:center; color:var(--text-muted); padding:10px;">لا يوجد حصص مجدولة</div>';
                 let liveCount = 0;
                 if (liveRes.ok) {
@@ -4579,7 +4413,7 @@
             // Treat anything not 'active' as a candidate for activation
             const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
             try {
-                const res = await smartFetch(`${API_URL}/users/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) });
+                const res = await fetch(`${API_URL}/users/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) });
                 if (!res.ok) throw new Error('فشل التحديث');
                 await loadStudents();
                 alert(`✅ تم ${newStatus === 'active' ? 'تفعيل' : 'إلغاء تفعيل'} حساب الطالب بنجاح.`);
@@ -4588,7 +4422,7 @@
 
         async function approveStudent(id) {
             try {
-                const res = await smartFetch(`${API_URL}/users/${id}`, {
+                const res = await fetch(`${API_URL}/users/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status: 'active' })
@@ -4603,7 +4437,7 @@
         async function resetDevice(id) {
             if (!confirm('هل تريد إعادة تعيين قفل الجهاز لهذا الطالب؟')) return;
             try {
-                await smartFetch(`${API_URL}/users/${id}/reset-device`, { method: 'PUT' });
+                await fetch(`${API_URL}/users/${id}/reset-device`, { method: 'PUT' });
                 await loadStudents();
                 alert('✅ تم إعادة تعيين قفل الجهاز.');
             } catch (e) { alert('حدث خطأ: ' + e.message); }
@@ -4612,7 +4446,7 @@
         async function deleteStudent(id, name) {
             if (!confirm(`هل تريد حذف الطالب "${name}" نهائيًا؟`)) return;
             try {
-                await smartFetch(`${API_URL}/users/${id}`, { method: 'DELETE' });
+                await fetch(`${API_URL}/users/${id}`, { method: 'DELETE' });
                 await loadStudents();
             } catch (e) { alert('حدث خطأ: ' + e.message); }
         }
@@ -4644,7 +4478,7 @@
 
             try {
                 for (let id of ids) {
-                    await smartFetch(`${API_URL}/users/${id}`, {
+                    await fetch(`${API_URL}/users/${id}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ status })
@@ -4662,7 +4496,7 @@
 
             try {
                 for (let id of ids) {
-                    await smartFetch(`${API_URL}/users/${id}`, { method: 'DELETE' });
+                    await fetch(`${API_URL}/users/${id}`, { method: 'DELETE' });
                 }
                 alert('✅ تم حذف الطلاب المختارين بنجاح.');
                 await loadStudents();
@@ -4672,7 +4506,7 @@
 
         async function toggleDeviceLock(id, locked) {
             try {
-                await smartFetch(`${API_URL}/users/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ deviceId: locked ? '' : '' }) });
+                await fetch(`${API_URL}/users/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ deviceId: locked ? '' : '' }) });
             } catch (e) { }
         }
 
@@ -4766,7 +4600,7 @@
             const url = editId ? `${API_URL}/users/${editId}` : `${API_URL}/users`;
 
             try {
-                const res = await smartFetch(url, {
+                const res = await fetch(url, {
                     method: method,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -4856,7 +4690,7 @@
             const url = editId ? `${API_URL}/users/${editId}` : `${API_URL}/users`;
 
             try {
-                const res = await smartFetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 const data = await res.json();
                 if (data.success) {
                     await logAudit(editId ? 'edit' : 'create', name, `قام بـ${editId ? 'تعديل بيانات' : 'إضافة'} مدير للمنصة`);
@@ -4872,7 +4706,7 @@
         async function deleteAdmin(id, name) {
             if (!confirm(`هل تريد حذف المدير "${name}" نهائيًا من المنصة؟`)) return;
             try {
-                await smartFetch(`${API_URL}/users/${id}`, { method: 'DELETE' });
+                await fetch(`${API_URL}/users/${id}`, { method: 'DELETE' });
                 await logAudit('delete', name, 'قام بحذف مدير من المنصة');
                 await loadStudents();
                 showNotif('🗑️ تم حذف المدير بنجاح', 'success');
@@ -4895,9 +4729,8 @@
 
             try {
                 // 1. Fetch Global CMS Data (Classes, Groups, Lessons)
-                const res = await smartFetch(`${API_URL}/platform-data`);
-                const rawData = res.ok ? await res.json() : {};
-                const globalData = resolvePlatformData(rawData) || {};
+                const res = await fetch(`${API_URL}/platform-data`);
+                const globalData = res.ok ? await res.json() : {};
 
                 let totalClasses = 0, totalGroups = 0, totalLessons = 0;
                 const allClasses = globalData.classes || {};
@@ -4921,11 +4754,11 @@
                 }
 
                 // 2. Fetch High-Level Overview (Schools, Teachers, Students, AI)
-                const overviewRes = await smartFetch(`${API_URL}/analytics/platform-overview`);
+                const overviewRes = await fetch(`${API_URL}/analytics/platform-overview`);
                 const overview = overviewRes.ok ? await overviewRes.json() : {};
 
                 // 3. Fetch All Users for table breakdown
-                const usersRes = await smartFetch(`${API_URL}/users`);
+                const usersRes = await fetch(`${API_URL}/users`);
                 const allUsers = usersRes.ok ? await usersRes.json() : [];
 
                 // 4. Update Cards
@@ -5603,7 +5436,7 @@
             preview.innerHTML = '<div style="padding:20px; text-align:center;"><i class="fas fa-magic fa-spin"></i> أقوم بتحويل أسئلتك إلى اختبار الآن...</div>';
 
             try {
-                const res = await smartFetch(`${API_URL}/quiz/generate`, {
+                const res = await fetch(`${API_URL}/quiz/generate`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ text, language: 'auto' })
@@ -5758,7 +5591,7 @@
                     const groupId = parts[1];
                     let contentTitle = l.title || document.getElementById(`${prefix}-title`)?.value || 'محتوى جديد للدرس';
 
-                    smartFetch(`${API_URL}/notifications/notify-group`, {
+                    fetch(`${API_URL}/notifications/notify-group`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -5914,7 +5747,7 @@
             const body = document.getElementById('reports-table-body');
             body.innerHTML = '<tr><td colspan="6" class="text-center">جارِ تحميل النتائج...</td></tr>';
             try {
-                const res = await smartFetch(`${API_URL}/admin/reports/${lessonId}`);
+                const res = await fetch(`${API_URL}/admin/reports/${lessonId}`);
                 const data = await res.json();
 
                 if (data.error) throw new Error(data.error);
@@ -6013,7 +5846,7 @@
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ...';
             try {
-                const res = await smartFetch(`${API_URL}/admin/reports/${lessonId}/user/${userId}?days=${days}`, { method: 'DELETE' });
+                const res = await fetch(`${API_URL}/admin/reports/${lessonId}/user/${userId}?days=${days}`, { method: 'DELETE' });
                 const data = await res.json();
                 if (data.success) {
                     const dl = data.deadline ? new Date(data.deadline).toLocaleDateString('ar-EG', { weekday: 'long', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : deadlineStr;
@@ -6120,7 +5953,7 @@
             container.style.display = 'block';
             tbody.innerHTML = '<tr><td colspan="5" class="text-center"><i class="fas fa-spinner fa-spin"></i> جارٍ تحميل البيانات...</td></tr>';
             try {
-                const res = await smartFetch(`${API_URL}/users`);
+                const res = await fetch(`${API_URL}/users`);
                 const students = await res.json();
 
                 const allLessons = [];
@@ -6592,7 +6425,7 @@
 
         async function initHonorBoard() {
             try {
-                const res = await smartFetch(`${API_URL}/honor-board`);
+                const res = await fetch(`${API_URL}/honor-board`);
                 const data = await res.json();
                 if (data.success) honorBoardData = data.honorBoard || {};
             } catch (e) { console.warn('honor board load failed', e); }
@@ -6720,7 +6553,7 @@
             }));
 
             try {
-                const res = await smartFetch(`${API_URL}/honor-board`, {
+                const res = await fetch(`${API_URL}/honor-board`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ classId, groupId, students })
@@ -6845,7 +6678,7 @@
                     ? `/chat/group/${currentChatId}`
                     : `/chat/private/admin_main/${currentChatId}`;
 
-                const res = await smartFetch(`${API_URL}${url}`);
+                const res = await fetch(`${API_URL}${url}`);
                 const data = await res.json();
 
                 if (data.success) {
@@ -6972,7 +6805,7 @@
 
             try {
                 const url = currentChatType === 'group' ? '/chat/group' : '/chat/private';
-                const res = await smartFetch(`${API_URL}${url}`, {
+                const res = await fetch(`${API_URL}${url}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -7002,7 +6835,7 @@
 
         async function togglePin(msgId) {
             try {
-                const res = await smartFetch(`${API_URL}/chat/${currentChatType}/${msgId}/pin`, { method: 'PUT' });
+                const res = await fetch(`${API_URL}/chat/${currentChatType}/${msgId}/pin`, { method: 'PUT' });
                 const data = await res.json();
                 if (data.success) {
                     await loadChatMessages();
@@ -7013,7 +6846,7 @@
         async function deleteMessage(msgId) {
             if (!confirm('هل تريد حذف هذه الرسالة نهائياً؟')) return;
             try {
-                const res = await smartFetch(`${API_URL}/chat/${currentChatType}/${msgId}`, { method: 'DELETE' });
+                const res = await fetch(`${API_URL}/chat/${currentChatType}/${msgId}`, { method: 'DELETE' });
                 const data = await res.json();
                 if (data.success) {
                     await loadChatMessages();
@@ -7078,7 +6911,7 @@
             const grid = document.getElementById('platforms-grid');
             if (grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
             try {
-                const res = await smartFetch(`${API_URL}/teacher-platforms?teacherId=${encodeURIComponent(TEACHER_ID)}`);
+                const res = await fetch(`${API_URL}/teacher-platforms?teacherId=${encodeURIComponent(TEACHER_ID)}`);
                 const data = await res.json();
                 const custom = data.success ? data.platforms : [];
                 // Sort custom platforms by order_index (DB order)
@@ -7213,7 +7046,7 @@
 
             if (customIds.length) {
                 try {
-                    await smartFetch(`${API_URL}/teacher-platforms/reorder`, {
+                    await fetch(`${API_URL}/teacher-platforms/reorder`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ orderedIds: customIds })
@@ -7238,7 +7071,7 @@
             const custom = _allPlatforms.filter(p => !p.isDefault);
             if (custom.length) {
                 try {
-                    await smartFetch(`${API_URL}/teacher-platforms/reorder`, {
+                    await fetch(`${API_URL}/teacher-platforms/reorder`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ orderedIds: custom.map(p => p._id) })
@@ -7295,7 +7128,7 @@
                 isVisible: document.getElementById('edit-platform-visible').checked,
             };
             try {
-                const res = await smartFetch(`${API_URL}/teacher-platforms/${id}`, {
+                const res = await fetch(`${API_URL}/teacher-platforms/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
@@ -7318,7 +7151,7 @@
             const isPinned = document.getElementById('platform-pin-input')?.checked || false;
             if (!name || !url) return;
             try {
-                const res = await smartFetch(`${API_URL}/teacher-platforms`, {
+                const res = await fetch(`${API_URL}/teacher-platforms`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, url, teacherId: TEACHER_ID, description: desc, icon, isPinned })
@@ -7336,7 +7169,7 @@
         async function deletePlatform(id) {
             if (!confirm('هل تريد حذف هذه المنصة؟')) return;
             try {
-                const res = await smartFetch(`${API_URL}/teacher-platforms/${id}`, { method: 'DELETE' });
+                const res = await fetch(`${API_URL}/teacher-platforms/${id}`, { method: 'DELETE' });
                 const data = await res.json();
                 if (data.success) { await loadTeacherPlatforms(); showNotif('🗑️ تم حذف المنصة', 'success'); }
                 else alert('خطأ أثناء الحذف.');
@@ -7355,7 +7188,7 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ توليد الدرس... قد يستغرق ذلك دقيقة.';
 
             try {
-                const res = await smartFetch(`${API_URL}/lesson/generate`, {
+                const res = await fetch(`${API_URL}/lesson/generate`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ keywords })
@@ -7450,7 +7283,7 @@
             // Fetch admin stats
             let totalSessions = 0, completedSessions = 0;
             try {
-                const uRes = await smartFetch(`${API_URL}/users/${TEACHER_ID}`);
+                const uRes = await fetch(`${API_URL}/users/${TEACHER_ID}`);
                 if (uRes.ok) {
                     const uData = await uRes.json();
                     if (uData.liveStats) {
@@ -7468,7 +7301,7 @@
             const container = document.getElementById('live-classes-by-group');
             container.innerHTML = '<div style="text-align:center;padding:20px;"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
             try {
-                const res = await smartFetch(`${API_URL}/live-classes?teacherId=${TEACHER_ID}`);
+                const res = await fetch(`${API_URL}/live-classes?teacherId=${TEACHER_ID}`);
                 const data = await res.json();
                 if (data.success) {
                     _allLiveClasses = data.liveClasses;
@@ -7666,7 +7499,7 @@
         async function bulkDeleteLive() {
             if (!_selectedLiveIds.size) return;
             if (!confirm(`هل تريد حذف ${_selectedLiveIds.size} حصة؟ لا يمكن التراجع.`)) return;
-            let del = 0; for (const id of _selectedLiveIds) { try { const r = await smartFetch(`${API_URL}/live-classes/${id}`, { method: 'DELETE' }); const d = await r.json(); if (d.success) del++; } catch (e) { } }
+            let del = 0; for (const id of _selectedLiveIds) { try { const r = await fetch(`${API_URL}/live-classes/${id}`, { method: 'DELETE' }); const d = await r.json(); if (d.success) del++; } catch (e) { } }
             _selectedLiveIds.clear(); updateBulkBar(); loadLiveClasses(); showNotif(`🗑️ تم حذف ${del} حصة بنجاح`, 'success');
         }
         function openBulkEditModal() {
@@ -7689,7 +7522,7 @@
             const link = document.getElementById('bulk-edit-link').value.trim();
             if (!title && !time && !duration && !link) { alert('يرجى تعبئة حقل واحد على الأقل.'); return; }
             const updates = {}; if (title) updates.title = title; if (time) updates.time = time; if (duration) updates.duration = parseInt(duration); if (link) updates.link = link;
-            let upd = 0; for (const id of _selectedLiveIds) { try { const r = await smartFetch(`${API_URL}/live-classes/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) }); const d = await r.json(); if (d.success) upd++; } catch (e) { } }
+            let upd = 0; for (const id of _selectedLiveIds) { try { const r = await fetch(`${API_URL}/live-classes/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) }); const d = await r.json(); if (d.success) upd++; } catch (e) { } }
             document.getElementById('live-bulk-edit-modal').style.display = 'none'; clearLiveSelection(); loadLiveClasses(); showNotif(`✅ تم تعديل ${upd} حصة بنجاح`, 'success');
         }
         function openEditLiveModal(id) {
@@ -7701,7 +7534,7 @@
         }
         async function saveSingleLiveEdit(id) {
             const updates = { title: document.getElementById('sedit-title').value.trim(), date: document.getElementById('sedit-date').value, time: document.getElementById('sedit-time').value, duration: parseInt(document.getElementById('sedit-duration').value), link: document.getElementById('sedit-link').value.trim() };
-            try { const r = await smartFetch(`${API_URL}/live-classes/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) }); const d = await r.json(); if (d.success) { document.getElementById('live-single-edit-modal').style.display = 'none'; loadLiveClasses(); showNotif('✅ تم تعديل الحصة بنجاح', 'success'); } else { alert('فشل التعديل'); } } catch (e) { alert('خطأ في الاتصال'); }
+            try { const r = await fetch(`${API_URL}/live-classes/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) }); const d = await r.json(); if (d.success) { document.getElementById('live-single-edit-modal').style.display = 'none'; loadLiveClasses(); showNotif('✅ تم تعديل الحصة بنجاح', 'success'); } else { alert('فشل التعديل'); } } catch (e) { alert('خطأ في الاتصال'); }
         }
 
         function toggleRecurringOptions() {
@@ -7776,7 +7609,7 @@
                     const payload = { ...basePayload, date: d.toISOString().slice(0, 10) };
                     if (isRecurring) btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> حفظ ${i + 1} من ${weeks}...`;
 
-                    const res = await smartFetch(`${API_URL}/live-classes`, {
+                    const res = await fetch(`${API_URL}/live-classes`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
@@ -7803,13 +7636,13 @@
         async function startLiveClass(id) {
             // When started, increment completedSessions in admin stats
             try {
-                const uRes = await smartFetch(`${API_URL}/users/${TEACHER_ID}`);
+                const uRes = await fetch(`${API_URL}/users/${TEACHER_ID}`);
                 if (uRes.ok) {
                     const adminUser = await uRes.json();
                     let stats = adminUser.liveStats || { totalSessions: 0, completedSessions: 0 };
                     stats.completedSessions++;
 
-                    await smartFetch(`${API_URL}/users/${TEACHER_ID}`, {
+                    await fetch(`${API_URL}/users/${TEACHER_ID}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ liveStats: stats })
@@ -7817,7 +7650,7 @@
                 }
 
                 // Mark class as finished after clicking start
-                await smartFetch(`${API_URL}/live-classes/${id}`, {
+                await fetch(`${API_URL}/live-classes/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status: 'finished' })
@@ -7830,7 +7663,7 @@
         async function deleteLiveClass(id) {
             if (!confirm('هل تريد فعلاً حذف هذه الحصة؟')) return;
             try {
-                await smartFetch(`${API_URL}/live-classes/${id}`, { method: 'DELETE' });
+                await fetch(`${API_URL}/live-classes/${id}`, { method: 'DELETE' });
                 loadLiveClasses();
             } catch (e) { }
         }
@@ -7844,7 +7677,7 @@
             if (!confirm(`سيتم بدء دورة جديدة وتحديد الهدف إلى ${total} حصص، وتصفير العداد. استمرار؟`)) return;
 
             try {
-                await smartFetch(`${API_URL}/users/${TEACHER_ID}`, {
+                await fetch(`${API_URL}/users/${TEACHER_ID}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ liveStats: { totalSessions: total, completedSessions: 0 } })
@@ -7860,7 +7693,7 @@
 
         async function loadScheduleWidgets() {
             try {
-                const res = await smartFetch(`${API_URL}/live-classes?teacherId=${TEACHER_ID}`);
+                const res = await fetch(`${API_URL}/live-classes?teacherId=${TEACHER_ID}`);
                 const data = await res.json();
                 if (data.success) {
                     _scheduleClasses = data.liveClasses;
@@ -8463,7 +8296,7 @@
             if (!tbody) return;
             try {
                 console.log('Fetching Organizations...');
-                const res = await smartFetch(`${API_URL}/organizations?scope=global`);
+                const res = await fetch(`${API_URL}/organizations?scope=global`);
                 const json = await res.json();
                 console.log('Organizations Response:', json);
                 
@@ -8505,7 +8338,7 @@
             if (!tbody) return;
             try {
                 console.log('Fetching Teachers...');
-                const res = await smartFetch(`${API_URL}/users?role=teacher&scope=global`);
+                const res = await fetch(`${API_URL}/users?role=teacher&scope=global`);
                 const json = await res.json();
                 console.log('Teachers Response:', json);
                 
@@ -8543,7 +8376,7 @@
             if (!tbody) return;
             try {
                 console.log('Fetching Students...');
-                const res = await smartFetch(`${API_URL}/users?role=student&scope=global`);
+                const res = await fetch(`${API_URL}/users?role=student&scope=global`);
                 const json = await res.json();
                 console.log('Students Response:', json);
                 
@@ -8581,7 +8414,7 @@
             const tbody = document.getElementById('subs-table-body');
             if (!tbody) return;
             try {
-                const res = await smartFetch(`${API_URL}/organizations?scope=global`);
+                const res = await fetch(`${API_URL}/organizations?scope=global`);
                 const json = await res.json();
                 if (json.success) {
                     renderSubsTable(json.data);
@@ -8626,7 +8459,7 @@
         async function loadDashboardStats() {
             try {
                 console.log('Loading Dashboard Stats...');
-                const res = await smartFetch(`${API_URL}/analytics/platform-overview`);
+                const res = await fetch(`${API_URL}/analytics/platform-overview`);
                 const json = await res.json();
                 console.log('Stats Response:', json);
                 
@@ -8642,7 +8475,7 @@
                     if (!isSuperAdmin()) {
                         // For regular admins, we check if the platform data returned an error or expired flag
                         // Since we are in the dashboard, we can check the organization status via a separate call or if analytics returns it
-                        const subRes = await smartFetch(`${API_URL}/organizations/${db.tenantId || 'main'}`);
+                        const subRes = await fetch(`${API_URL}/organizations/${db.tenantId || 'main'}`);
                         const subJson = await subRes.json();
                         if (subJson.success && (subJson.data.subscriptionStatus === 'expired' || new Date() > new Date(subJson.data.subscriptionExpiresAt))) {
                             document.getElementById('subscription-warning-banner').style.display = 'block';
@@ -8671,7 +8504,7 @@
         async function initGrowthAnalytics() {
             showSection('growthAnalyticsSection');
             try {
-                const res = await smartFetch(`${API_URL}/growth/stats`);
+                const res = await fetch(`${API_URL}/growth/stats`);
                 const json = await res.json();
                 if (json.success) {
                     const d = json.data;
@@ -8705,7 +8538,7 @@
         async function checkOnboardingStatus() {
             if (isSuperAdmin()) return;
             try {
-                const res = await smartFetch(`${API_URL}/organizations/${currentUser.tenantId || 'main'}`);
+                const res = await fetch(`${API_URL}/organizations/${currentUser.tenantId || 'main'}`);
                 const json = await res.json();
                 if (json.success) {
                     const org = json.data;
@@ -8732,7 +8565,7 @@
                 numberOfStudents: document.getElementById('onb-students').value
             };
             try {
-                const res = await smartFetch(`${API_URL}/organizations/${currentUser.tenantId}/onboarding`, {
+                const res = await fetch(`${API_URL}/organizations/${currentUser.tenantId}/onboarding`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -8802,7 +8635,7 @@
 
         async function fetchFinanceStats() {
             try {
-                const res = await smartFetch(`${API_URL}/finance/stats`);
+                const res = await fetch(`${API_URL}/finance/stats`);
                 const json = await res.json();
                 if (json.success) {
                     const d = json.data;
@@ -8819,7 +8652,7 @@
             const method = document.getElementById('pay-filter-method').value;
             const tbody = document.getElementById('payments-table-body');
             try {
-                const res = await smartFetch(`${API_URL}/finance/payments?status=${status}&method=${method}`);
+                const res = await fetch(`${API_URL}/finance/payments?status=${status}&method=${method}`);
                 const json = await res.json();
                 if (json.success) {
                     tbody.innerHTML = json.data.map(p => `
@@ -8848,7 +8681,7 @@
         async function verifyPayment(id) {
             if (!confirm('هل أنت متأكد من تأكيد هذا الدفع؟ سيتم تمديد الاشتراك تلقائياً.')) return;
             try {
-                const res = await smartFetch(`${API_URL}/finance/payments/${id}/verify`, { method: 'POST' });
+                const res = await fetch(`${API_URL}/finance/payments/${id}/verify`, { method: 'POST' });
                 const json = await res.json();
                 if (json.success) {
                     showNotif('تم تأكيد الدفع وتحديث الاشتراك بنجاح', 'success');
@@ -8862,7 +8695,7 @@
             const reason = prompt('يرجى إدخال سبب الرفض:');
             if (!reason) return;
             try {
-                const res = await smartFetch(`${API_URL}/finance/payments/${id}/reject`, {
+                const res = await fetch(`${API_URL}/finance/payments/${id}/reject`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ reason })
@@ -8878,7 +8711,7 @@
         async function fetchExemptions() {
             const tbody = document.getElementById('exemptions-table-body');
             try {
-                const res = await smartFetch(`${API_URL}/finance/exemptions`);
+                const res = await fetch(`${API_URL}/finance/exemptions`);
                 const json = await res.json();
                 if (json.success) {
                     tbody.innerHTML = json.data.map(ex => `
@@ -8904,7 +8737,7 @@
                 reason: document.getElementById('ex-reason').value
             };
             try {
-                const res = await smartFetch(`${API_URL}/finance/exemptions`, {
+                const res = await fetch(`${API_URL}/finance/exemptions`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -8925,7 +8758,7 @@
             const org = document.getElementById('audit-filter-org').value;
             const tbody = document.getElementById('audit-table-body');
             try {
-                const res = await smartFetch(`${API_URL}/finance/audit?action=${action}&organizationId=${org}`);
+                const res = await fetch(`${API_URL}/finance/audit?action=${action}&organizationId=${org}`);
                 const json = await res.json();
                 if (json.success) {
                     tbody.innerHTML = json.data.map(log => `
@@ -8946,7 +8779,7 @@
             const select = document.getElementById(selectId);
             if (!select) return;
             try {
-                const res = await smartFetch(`${API_URL}/organizations?scope=global`);
+                const res = await fetch(`${API_URL}/organizations?scope=global`);
                 const json = await res.json();
                 if (json.success) {
                     select.innerHTML = json.data.map(o => `<option value="${o.id}">${o.name} (${o.id})</option>`).join('');
@@ -8971,7 +8804,7 @@
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارٍ الحفظ...';
             try {
-                const res = await smartFetch(`${API_URL}/organizations`, {
+                const res = await fetch(`${API_URL}/organizations`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, type })
@@ -8983,21 +8816,13 @@
                 } else {
                     const err = await res.json();
                     alert('خطأ: ' + (err.msg || 'فشل في الحفظ'));
-                }
-            } catch (err) { alert('فشل في الاتصال بالخادم'); }
-            finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = 'حفظ المؤسسة';
-            }
-        }
-
-        async function loadClassIntelligence(groupId) {
+                async function loadClassIntelligence(groupId) {
             if (!groupId) {
                 document.getElementById('class-ai-recommendations-card').style.display = 'none';
                 return;
             }
             try {
-                const res = await smartFetch(`${API_URL}/teacher/class-intelligence/${groupId}`);
+                const res = await fetch(`${API_URL}/teacher/class-intelligence/${groupId}`);
                 const data = await res.json();
                 
                 document.getElementById('class-ai-recommendations-card').style.display = 'block';
@@ -9043,7 +8868,7 @@
             const select = document.getElementById('intelligence-group-select');
             select.innerHTML = '<option value="">اختر المجموعة...</option>';
             try {
-                const res = await smartFetch(`${API_URL}/groups`);
+                const res = await fetch(`${API_URL}/groups`);
                 const groups = await res.json();
                 groups.forEach(g => {
                     const opt = document.createElement('option');
@@ -9053,11 +8878,17 @@
                 });
             } catch(e) {}
         }
+            } catch (err) { alert('فشل في الاتصال بالخادم'); }
+            finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'حفظ المؤسسة';
+            }
+        }
 
         async function deleteOrganization(id) {
             if (!confirm('هل أنت متأكد من حذف هذه المؤسسة؟')) return;
             try {
-                const res = await smartFetch(`${API_URL}/organizations/${id}`, { method: 'DELETE' });
+                const res = await fetch(`${API_URL}/organizations/${id}`, { method: 'DELETE' });
                 if (res.ok) {
                     showNotif('🗑️ تم حذف المؤسسة بنجاح', 'success');
                     fetchOrganizations();
@@ -9068,7 +8899,7 @@
         async function loadAITeacherSettings() {
             try {
                 const tenantId = currentUser.tenantId || 'main';
-                const res = await smartFetch(`${API_URL}/organizations/${tenantId}`);
+                const res = await fetch(`${API_URL}/organizations/${tenantId}`);
                 const data = await res.json();
                 
                 if (data.aiTeacherConfig) {
@@ -9086,7 +8917,7 @@
                 document.getElementById('ai-usage-progress').style.width = `${pct}%`;
 
                 // Load Logs
-                const logsRes = await smartFetch(`${API_URL}/analytics/ai-logs?tenantId=${tenantId}`);
+                const logsRes = await fetch(`${API_URL}/analytics/ai-logs?tenantId=${tenantId}`);
                 const logs = await logsRes.json();
                 const table = document.getElementById('ai-logs-table');
                 table.innerHTML = logs.length ? '' : '<tr><td colspan="3" class="text-center">لا يوجد تفاعلات بعد</td></tr>';
@@ -9116,7 +8947,7 @@
                     customInstructions: document.getElementById('ai-teacher-instructions').value
                 };
 
-                const res = await smartFetch(`${API_URL}/organizations/${tenantId}/ai-config`, {
+                const res = await fetch(`${API_URL}/organizations/${tenantId}/ai-config`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ aiTeacherConfig: config })
