@@ -3829,9 +3829,8 @@
         // Super Admin gets global scope; regular users are scoped to their own tenant
         const currentTenantId = isSuperAdmin()
             ? 'global'
-            : ((currentUser.permissions && currentUser.permissions.isOwner) || currentUser.id === 'admin')
-                ? 'main'
-                : currentUser.id;
+            : (currentUser.tenantId || 
+              (((currentUser.permissions && currentUser.permissions.isOwner) || currentUser.id === 'admin') ? 'main' : currentUser.id));
 
         const originalFetch = window.fetch;
         window.fetch = function () {
@@ -3873,9 +3872,11 @@
                 const res = await smartFetch(`${API_URL}/platform-data`);
                 if (res.ok) {
                     const data = await res.json();
-                    // Project standard: data might be wrapped in { success, classes/data }
-                    if (data && data.classes) db = data;
-                    else if (data && data.success && data.platformData) db = data.platformData;
+                    // Project standard: handle various wrapping patterns {success, data: {classes}, platformData: {classes}}
+                    const actualData = data.classes ? data : (data.data || data.platformData || data);
+                    if (actualData && actualData.classes) {
+                        db = actualData;
+                    }
                 }
             } catch (err) {
                 console.error("Failed to load DB from backend, falling back to empty/cache", err);
