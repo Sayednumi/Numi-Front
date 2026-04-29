@@ -2951,8 +2951,8 @@
             window.location.href = 'index.html';
         } else {
             currentUser = JSON.parse(sessionSaved);
-            // Allow admin, manager, and teacher roles into the dashboard
-            const allowedRoles = ['admin', 'manager', 'teacher'];
+            // Allow admin, manager, teacher AND super_admin into the dashboard
+            const allowedRoles = ['admin', 'manager', 'teacher', 'super_admin'];
             if (!allowedRoles.includes(currentUser.role)) {
                 window.location.href = 'index.html';
             }
@@ -2962,6 +2962,15 @@
             }
         }
 
+        /** Quick check — is the current user the platform owner? */
+        function isSuperAdmin() {
+            if (!currentUser) return false;
+            return currentUser.role === 'super_admin'
+                || currentUser.name === 'سيد حمدي'
+                || currentUser.phone === '01110154093'
+                || (currentUser.permissions && currentUser.permissions.isSuperAdmin === true);
+        }
+
         /**
          * hasPerm(permName) — checks if current user has a specific permission.
          * Delegates to PermissionService when available, falls back to legacy check.
@@ -2969,6 +2978,8 @@
          */
         function hasPerm(permName) {
             if (!currentUser) return false;
+            // Super Admin has ALL permissions unconditionally
+            if (isSuperAdmin()) return true;
             // Use PermissionService if available
             if (window.PermissionService && _userProfile) {
                 return window.PermissionService.hasPermission(_userProfile, permName);
@@ -2993,6 +3004,7 @@
          */
         function getRoleLabel() {
             if (!currentUser) return '';
+            if (isSuperAdmin()) return '👑 مالك المنصة';
             const isOwner = currentUser.permissions?.isOwner || currentUser.id === 'admin';
             const map = {
                 admin:   isOwner ? 'مدير عام' : 'مدير',
@@ -3028,6 +3040,14 @@
          */
         function applyRoleBasedUI() {
             const isOwner = currentUser?.permissions?.isOwner || currentUser?.id === 'admin';
+
+            // ── SUPER ADMIN: FULL ACCESS — EXIT IMMEDIATELY ───────────────────
+            // The platform owner (phone: 01110154093) has zero restrictions.
+            if (isSuperAdmin()) {
+                const pmLink = document.getElementById('nav-platform-management');
+                if (pmLink) pmLink.style.display = 'block';
+                return;
+            }
 
             // ── Helpers ──────────────────────────────────────────────────────
             /** Hide all elements matching a CSS selector */
@@ -3169,7 +3189,12 @@
             ? 'http://localhost:5000/api'
             : 'https://numi-production-7484.up.railway.app/api';
 
-        const currentTenantId = ((currentUser.permissions && currentUser.permissions.isOwner) || currentUser.id === 'admin') ? 'main' : currentUser.id;
+        // Super Admin gets global scope; regular users are scoped to their own tenant
+        const currentTenantId = isSuperAdmin()
+            ? 'global'
+            : ((currentUser.permissions && currentUser.permissions.isOwner) || currentUser.id === 'admin')
+                ? 'main'
+                : currentUser.id;
 
         const originalFetch = window.fetch;
         window.fetch = function () {
@@ -3181,7 +3206,11 @@
             if (typeof resource === 'string' && resource.startsWith(API_URL)) {
                 try {
                     const urlObj = new URL(resource);
-                    urlObj.searchParams.set('tenantId', currentTenantId);
+                    if (isSuperAdmin()) {
+                        urlObj.searchParams.set('scope', 'global');
+                    } else {
+                        urlObj.searchParams.set('tenantId', currentTenantId);
+                    }
                     resource = urlObj.toString();
                 } catch (e) { }
             }
@@ -3276,6 +3305,12 @@
             if (targetId === 'game-bank-section') renderGameBankSection();
         }
 
+        // hasPlatformManage: true if user can access platform management section
+        const hasPlatformManage = isSuperAdmin()
+            || hasPerm('manage_platform')
+            || hasPerm('manage_teachers')
+            || hasPerm('manage_admins');
+
         // Main initialization
         window.onload = async () => {
             // Populate header with real user info
@@ -3300,7 +3335,8 @@
             renderUnits();
             renderLessons();
             buildNavLessonSelectors();
-            if (hasPlatformManage) {
+            // Super Admin and platform managers always see teacher list
+            if (hasPlatformManage || isSuperAdmin()) {
                 loadTeachers();
             }
         };
@@ -3346,9 +3382,11 @@
         }
 
         function loadPlatformManagement() {
-            // Stats cards
-            const teacherCount = (allTeachers && allTeachers.length) ||
-                allStudents.filter(u => u.role === 'teacher').length || 0;
+            // Stats cards — Super Admin aggregates globally
+            const teacherCount = isSuperAdmin()
+                ? (allStudents.filter(u => u.role === 'teacher').length || 0)
+                : ((allTeachers && allTeachers.length) || allStudents.filter(u => u.role === 'teacher').length || 0);
+
             const el = document.getElementById('stats-total-teachers');
             if (el) el.innerText = teacherCount;
 
@@ -3356,7 +3394,8 @@
             if (se) se.innerText = allStudents.filter(u => u.role === 'student').length;
 
             let totalG = 0;
-            for (let c in db.classes) totalG += Object.keys(db.classes[c].groups || {}).length;
+            const src = (isSuperAdmin() ? {} : db.classes) || db.classes || {};
+            for (let c in src) totalG += Object.keys(src[c].groups || {}).length;
             const ge = document.getElementById('stats-total-groups');
             if (ge) ge.innerText = totalG;
 
@@ -3371,11 +3410,16 @@
         async function loadStudents() {
             try {
                 await fetchDB(); // Refresh classes/groups names first
-                const res = await fetch(`${API_URL}/users`);
+                // Super Admin fetches ALL students across ALL tenants
+                const url = isSuperAdmin()
+                    ? `${API_URL}/users?scope=global`
+                    : `${API_URL}/users`;
+                const res = await fetch(url);
                 if (res.ok) {
                     allStudents = await res.json();
                     renderStudents();
-                    document.getElementById('stats-students').innerText = allStudents.filter(u => u.role === 'student').length;
+                    const el = document.getElementById('stats-students');
+                    if (el) el.innerText = allStudents.filter(u => u.role === 'student').length;
                 }
             } catch (err) {
                 console.error('Failed to load students', err);
@@ -4054,6 +4098,75 @@
 
         async function updateStats() {
             try {
+                // ── SUPER ADMIN: aggregate across ALL tenants ───────────────
+                if (isSuperAdmin()) {
+                    const statsEl = {
+                        classes:  document.getElementById('stats-classes'),
+                        groups:   document.getElementById('stats-groups'),
+                        lessons:  document.getElementById('stats-lessons'),
+                        students: document.getElementById('stats-students')
+                    };
+                    // Show loading state
+                    Object.values(statsEl).forEach(el => { if (el) el.innerHTML = '<span style="color:var(--text-muted);font-size:14px;">جارٍ التحميل…</span>'; });
+
+                    try {
+                        const res = await fetch(`${API_URL}/platform-data?scope=global`);
+                        const globalData = res.ok ? await res.json() : {};
+
+                        // Aggregate from all tenants (the backend returns merged or we compute)
+                        let totalClasses = 0, totalGroups = 0, totalLessons = 0;
+
+                        const allClasses = globalData.classes || {};
+                        totalClasses = Object.keys(allClasses).length;
+
+                        for (const cid in allClasses) {
+                            const cls = allClasses[cid];
+                            const groups = cls.groups || {};
+                            totalGroups += Object.keys(groups).length;
+                            for (const gid in groups) {
+                                const courses = groups[gid].courses || {};
+                                for (const crid in courses) {
+                                    for (const t of ['term1','term2']) {
+                                        const units = courses[crid][t]?.units || {};
+                                        for (const uid in units) {
+                                            totalLessons += Object.keys(units[uid].lessons || {}).length;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Fetch global user count
+                        const usersRes = await fetch(`${API_URL}/users?scope=global`);
+                        const allUsers = usersRes.ok ? await usersRes.json() : allStudents;
+                        const totalStudents = allUsers.filter(u => u.role === 'student').length;
+
+                        if (statsEl.classes)  statsEl.classes.innerText  = totalClasses;
+                        if (statsEl.groups)   statsEl.groups.innerText   = totalGroups;
+                        if (statsEl.lessons)  statsEl.lessons.innerText  = totalLessons;
+                        if (statsEl.students) statsEl.students.innerText = totalStudents;
+
+                        // Update platform-overview-table with global data
+                        const table = document.getElementById('platform-overview-table');
+                        if (table) {
+                            table.innerHTML = Object.values(allClasses).map(cls => {
+                                const groups  = Object.keys(cls.groups || {}).length;
+                                let courses = 0;
+                                for (const gid in cls.groups || {}) courses += Object.keys(cls.groups[gid].courses || {}).length;
+                                const students = allUsers.filter(s => s.classId === cls.id || s.classId === Object.keys(allClasses).find(k => allClasses[k] === cls)).length;
+                                return `<tr><td>${cls.name||'—'}</td><td>${groups}</td><td>${courses}</td><td>${students}</td></tr>`;
+                            }).join('');
+                        }
+                    } catch(fetchErr) {
+                        console.error('Super Admin global stats error:', fetchErr);
+                        Object.values(statsEl).forEach(el => { if (el) el.innerText = '—'; });
+                    }
+
+                    loadScheduleWidgets();
+                    return;
+                }
+
+                // ── TENANT MODE (regular admin / manager / teacher) ─────────
                 let classList = Object.keys(db.classes || {});
                 let groupCount = 0;
                 let lessonCount = 0;

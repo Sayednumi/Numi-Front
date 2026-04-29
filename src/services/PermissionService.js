@@ -202,7 +202,11 @@ function buildUserProfile(rawUser) {
  */
 function isSuperAdmin(user) {
     if (!user) return false;
-    return user.role === ROLES.SUPER_ADMIN || user.name === 'سيد حمدي';
+    // ABSOLUTE OWNER: By role, by name, or by specific phone number
+    return user.role === ROLES.SUPER_ADMIN 
+        || user.name === 'سيد حمدي' 
+        || user.phone === '01110154093'
+        || (user.permissions && user.permissions.isSuperAdmin === true);
 }
 
 /**
