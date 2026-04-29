@@ -45,6 +45,9 @@ function renderAdminSidebar() {
             <li id="nav-super-admin-audit" style="display:none;">
                 <a href="#" data-target="auditLogSection" onclick="fetchAuditLogs()"><i class="fas fa-shield-alt" style="color:#e67e22"></i> سجل العمليات</a>
             </li>
+            <li id="nav-super-admin-growth" style="display:none;">
+                <a href="#" data-target="growthAnalyticsSection" onclick="initGrowthAnalytics()"><i class="fas fa-chart-line" style="color:#2ecc71"></i> النمو والنشاط</a>
+            </li>
             <li><a href="#" data-target="reports" onclick="initReports()"><i class="fas fa-chart-bar"></i> التقارير والنتائج</a></li>
             <li><a href="#" data-target="question-bank" onclick="renderQuestionBank()"><i class="fas fa-database"></i> بنك الأسئلة</a></li>
             <li><a href="#" data-target="chat" onclick="renderChatHierarchy()"><i class="fas fa-comments"></i> الدردشة</a></li>

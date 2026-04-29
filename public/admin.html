@@ -1195,6 +1195,9 @@
             document.getElementById('admin-navbar-placeholder').outerHTML = renderAdminNavbar();
         </script>
 
+        <!-- Setup Checklist Component (School Admin Only) -->
+        <div id="setup-checklist-placeholder"></div>
+
         <!-- Dashboard Section -->
         <div id="dashboard" class="section active">
             <!-- Dashboard Cards Component -->
@@ -3057,6 +3060,120 @@
         </div>
     </div>
 
+    <!-- Growth Analytics Section (Super Admin) -->
+    <div id="growthAnalyticsSection" class="section" style="display:none;">
+        <div class="card-header" style="margin-bottom:20px;">
+            <h2><i class="fas fa-chart-line" style="color:#2ecc71"></i> تحليلات النمو والتفعيل (Growth Analytics)</h2>
+        </div>
+        <div class="grid" style="grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px;">
+            <div class="card" style="border-left: 4px solid #2ecc71;">
+                <h4 style="color:var(--text-muted); font-size:12px;">مؤسسات جديدة (أسبوع)</h4>
+                <h2 id="growth-new-orgs" style="margin:10px 0;">0</h2>
+            </div>
+            <div class="card" style="border-left: 4px solid #3498db;">
+                <h4 style="color:var(--text-muted); font-size:12px;">مؤسسات نشطة حالياً</h4>
+                <h2 id="growth-active-orgs" style="margin:10px 0;">0</h2>
+            </div>
+            <div class="card" style="border-left: 4px solid #f1c40f;">
+                <h4 style="color:var(--text-muted); font-size:12px;">نسبة إكمال Onboarding</h4>
+                <h2 id="growth-onboarding-rate" style="margin:10px 0;">0%</h2>
+            </div>
+            <div class="card" style="border-left: 4px solid #e74c3c;">
+                <h4 style="color:var(--text-muted); font-size:12px;">مؤسسات خاملة (>7 أيام)</h4>
+                <h2 id="growth-inactive-orgs" style="margin:10px 0;">0</h2>
+            </div>
+        </div>
+        <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="card">
+                <h3><i class="fas fa-bolt"></i> معدلات التفعيل (Activation Rates)</h3>
+                <div style="margin-top:20px;">
+                    <div class="mb-16">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                            <span>أول تسجيل دخول</span>
+                            <span id="act-login-pct">0%</span>
+                        </div>
+                        <div style="width:100%; height:8px; background:rgba(255,255,255,0.05); border-radius:10px; overflow:hidden;">
+                            <div id="act-login-bar" style="width:0%; height:100%; background:#2ecc71;"></div>
+                        </div>
+                    </div>
+                    <div class="mb-16">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                            <span>إنشاء أول فصل</span>
+                            <span id="act-class-pct">0%</span>
+                        </div>
+                        <div style="width:100%; height:8px; background:rgba(255,255,255,0.05); border-radius:10px; overflow:hidden;">
+                            <div id="act-class-bar" style="width:0%; height:100%; background:#3498db;"></div>
+                        </div>
+                    </div>
+                    <div class="mb-16">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                            <span>إضافة أول طالب</span>
+                            <span id="act-student-pct">0%</span>
+                        </div>
+                        <div style="width:100%; height:8px; background:rgba(255,255,255,0.05); border-radius:10px; overflow:hidden;">
+                            <div id="act-student-bar" style="width:0%; height:100%; background:#f1c40f;"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                            <span>أول استخدام للذكاء الاصطناعي</span>
+                            <span id="act-ai-pct">0%</span>
+                        </div>
+                        <div style="width:100%; height:8px; background:rgba(255,255,255,0.05); border-radius:10px; overflow:hidden;">
+                            <div id="act-ai-bar" style="width:0%; height:100%; background:#9b59b6;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <h3><i class="fas fa-info-circle"></i> ملاحظات النمو</h3>
+                <div id="growth-insights" style="margin-top:15px; font-size:13px; line-height:1.6; color:var(--text-muted);">
+                    جاري تحليل البيانات لتقديم اقتراحات تحسين التفعيل...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Onboarding Wizard Modal -->
+    <div id="onboardingWizardModal" class="modal">
+        <div class="modal-content" style="max-width:600px; text-align:center; padding:40px;">
+            <div id="onboarding-step-1">
+                <div style="font-size:50px; margin-bottom:20px;">👋</div>
+                <h2>أهلاً بك في منصة نُـمي!</h2>
+                <p style="color:var(--text-muted); margin-bottom:30px;">نحن سعداء بانضمامك. دعنا نقم بتهيئة المنصة لمؤسستك في ثوانٍ.</p>
+                <div class="form-group" style="text-align:right;">
+                    <label>نوع المؤسسة</label>
+                    <select class="form-control" id="onb-type">
+                        <option value="school">مدرسة (School)</option>
+                        <option value="academy">أكاديمية (Academy)</option>
+                        <option value="individual">معلم مستقل (Individual Teacher)</option>
+                    </select>
+                </div>
+                <div class="form-group" style="text-align:right;">
+                    <label>البلد</label>
+                    <input type="text" class="form-control" id="onb-country" value="مصر">
+                </div>
+                <button class="btn btn-block" onclick="nextOnboardingStep(2)">المتابعة <i class="fas fa-arrow-left"></i></button>
+            </div>
+            <div id="onboarding-step-2" style="display:none;">
+                <div style="font-size:50px; margin-bottom:20px;">📈</div>
+                <h2>أهداف التفعيل</h2>
+                <p style="color:var(--text-muted); margin-bottom:30px;">كم عدد المعلمين والطلاب المتوقع انضمامهم؟</p>
+                <div class="grid" style="grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:25px;">
+                    <div class="form-group" style="text-align:right;">
+                        <label>عدد المعلمين</label>
+                        <input type="number" class="form-control" id="onb-teachers" value="5">
+                    </div>
+                    <div class="form-group" style="text-align:right;">
+                        <label>عدد الطلاب</label>
+                        <input type="number" class="form-control" id="onb-students" value="50">
+                    </div>
+                </div>
+                <button class="btn btn-block" onclick="finishOnboarding()">بدء الاستخدام الآن!</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Exemption Modal -->
     <div id="exemptionModal" class="modal">
         <div class="modal-content">
@@ -3344,6 +3461,7 @@
                 show('nav-super-admin-subs');
                 show('nav-super-admin-finance');
                 show('nav-super-admin-audit');
+                show('nav-super-admin-growth');
                 return;
             }
 
@@ -8180,6 +8298,129 @@
                 fetchStudents()
             ]);
         }
+
+        /** 7. Growth & Onboarding Logic */
+        async function initGrowthAnalytics() {
+            showSection('growthAnalyticsSection');
+            try {
+                const res = await fetch(`${API_URL}/growth/stats`);
+                const json = await res.json();
+                if (json.success) {
+                    const d = json.data;
+                    document.getElementById('growth-new-orgs').innerText = d.newSchoolsThisWeek;
+                    document.getElementById('growth-active-orgs').innerText = d.activeOrgs;
+                    document.getElementById('growth-inactive-orgs').innerText = d.inactiveOrgs;
+                    document.getElementById('growth-onboarding-rate').innerText = `${Math.round(d.onboardingCompletionRate)}%`;
+
+                    const act = d.activationRates;
+                    const total = d.totalOrgs || 1;
+                    updateGrowthBar('act-login', act.firstLogin, total);
+                    updateGrowthBar('act-class', act.firstClass, total);
+                    updateGrowthBar('act-student', act.firstStudent, total);
+                    updateGrowthBar('act-ai', act.firstAI, total);
+                    
+                    // Simple Insights
+                    let insights = [];
+                    if (d.inactiveOrgs > d.activeOrgs) insights.push('⚠️ نسبة الخمول مرتفعة، ننصح بإرسال تنبيهات للمؤسسات غير النشطة.');
+                    if ((act.firstClass / total) < 0.5) insights.push('💡 العديد من المدارس لم تنشئ فصولها الأولى بعد، ربما يحتاجون لدليل تعليمي.');
+                    document.getElementById('growth-insights').innerText = insights.join('\n') || '✅ التفعيل يسير بشكل جيد حسب المؤشرات الحالية.';
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        function updateGrowthBar(id, val, total) {
+            const pct = Math.round((val / total) * 100);
+            if(document.getElementById(`${id}-pct`)) document.getElementById(`${id}-pct`).innerText = `${pct}%`;
+            if(document.getElementById(`${id}-bar`)) document.getElementById(`${id}-bar`).style.width = `${pct}%`;
+        }
+
+        async function checkOnboardingStatus() {
+            if (isSuperAdmin()) return;
+            try {
+                const res = await fetch(`${API_URL}/organizations/${currentUser.tenantId || 'main'}`);
+                const json = await res.json();
+                if (json.success) {
+                    const org = json.data;
+                    if (org.onboardingStatus === 'pending') {
+                        openModal('onboardingWizardModal');
+                    } else {
+                        renderSetupChecklist(org);
+                    }
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        function nextOnboardingStep(step) {
+            document.getElementById('onboarding-step-1').style.display = 'none';
+            document.getElementById('onboarding-step-2').style.display = 'block';
+        }
+
+        async function finishOnboarding() {
+            const data = {
+                status: 'completed',
+                type: document.getElementById('onb-type').value,
+                country: document.getElementById('onb-country').value,
+                numberOfTeachers: document.getElementById('onb-teachers').value,
+                numberOfStudents: document.getElementById('onb-students').value
+            };
+            try {
+                const res = await fetch(`${API_URL}/organizations/${currentUser.tenantId}/onboarding`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    closeModal('onboardingWizardModal');
+                    showNotif('🎉 تم تفعيل المنصة بنجاح! استمتع برحلتك مع نُـمي.', 'success');
+                    window.location.reload();
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        function renderSetupChecklist(org) {
+            const placeholder = document.getElementById('setup-checklist-placeholder');
+            if (!placeholder) return;
+
+            const m = org.activationMetrics || {};
+            const items = [
+                { label: 'تسجيل الدخول للمرة الأولى', done: !!m.firstLoginAt },
+                { label: 'إضافة أول فصل دراسي', done: !!m.firstClassCreatedAt },
+                { label: 'إضافة أول طالب للمنصة', done: !!m.firstStudentAddedAt },
+                { label: 'استخدام الذكاء الاصطناعي', done: !!m.firstAIUsageAt }
+            ];
+
+            const allDone = items.every(i => i.done);
+            if (allDone) {
+                placeholder.innerHTML = '';
+                return;
+            }
+
+            placeholder.innerHTML = `
+                <div class="card" style="margin:15px; border-right: 4px solid var(--primary); background:rgba(var(--primary-rgb), 0.05);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <h3 style="margin:0;"><i class="fas fa-tasks"></i> خطوات تفعيل المنصة</h3>
+                        <span class="badge badge-primary">قيد التنفيذ</span>
+                    </div>
+                    <div class="grid" style="grid-template-columns: repeat(4, 1fr); gap:10px;">
+                        ${items.map(item => `
+                            <div style="display:flex; align-items:center; gap:8px; opacity: ${item.done ? 1 : 0.5};">
+                                <i class="fas ${item.done ? 'fa-check-circle' : 'fa-circle'}" style="color: ${item.done ? '#2ecc71' : '#ccc'};"></i>
+                                <span style="font-size:12px; ${item.done ? 'text-decoration: line-through;' : ''}">${item.label}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Hook into window.onload
+        window.addEventListener('load', () => {
+            if (isSuperAdmin()) {
+                initSuperAdminDashboard();
+            } else {
+                checkOnboardingStatus();
+            }
+        });
 
         /** 6. Financial Control Center Logic */
         async function initFinanceCenter() {
