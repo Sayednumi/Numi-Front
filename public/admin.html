@@ -2471,9 +2471,9 @@
             || hasPerm('manage_teachers')
             || hasPerm('manage_admins');
 
-        // Main initialization — use addEventListener to prevent silent overwrite by external scripts
+        // Main initialization — use DOMContentLoaded for faster startup
         let _appInitialized = false;
-        window.addEventListener('load', async () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             if (_appInitialized) return; 
             _appInitialized = true;
 
@@ -7139,12 +7139,7 @@
         async function initSuperAdminDashboard() {
             if (!isSuperAdmin()) return;
             console.log('🚀 Initializing Super Admin Dashboard Flow...');
-            await Promise.all([
-                loadDashboardStats(),
-                fetchOrganizations(),
-                fetchTeachers(),
-                fetchStudents()
-            ]);
+            await loadDashboardStats();
         }
 
         /** 7. Growth & Onboarding Logic */

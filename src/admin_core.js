@@ -135,6 +135,17 @@ function hasPerm(permName) {
 }
 
 async function fetchDB() {
+    // 1. Immediate Cache Load (SWR Pattern)
+    const cache = localStorage.getItem('numi_db_cache');
+    if (cache) {
+        try {
+            db = JSON.parse(cache);
+            window.db = db;
+            GLOBAL_STORE.setState({ db });
+            console.log('[Core] DB loaded from cache (Instant)');
+        } catch (e) { console.error('Cache parse error', e); }
+    }
+
     if (GLOBAL_STORE.state.loading.db) return;
     GLOBAL_STORE.setLoading('db', true);
 
@@ -145,15 +156,10 @@ async function fetchDB() {
             window.db = db;
             GLOBAL_STORE.setState({ db: data });
             GLOBAL_STORE.persistCache();
+            console.log('[Core] DB synced with server');
         }
     } catch (err) {
-        console.error('Fetch DB failed, using cache:', err);
-        const cache = localStorage.getItem('numi_db_cache');
-        if (cache) {
-            db = JSON.parse(cache);
-            window.db = db;
-            GLOBAL_STORE.setState({ db });
-        }
+        console.error('Fetch DB failed:', err);
     } finally {
         GLOBAL_STORE.setLoading('db', false);
     }
