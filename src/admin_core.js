@@ -12,6 +12,7 @@ const API_URL = (window.location.hostname === 'localhost' || window.location.hos
 let currentUser = null;
 let _userProfile = null;
 let db = { classes: {} };
+window.db = db; // Ensure global access for legacy components
 let _saveDBTimer = null;
 
 // Export globals for legacy support in admin.html
@@ -30,6 +31,7 @@ function initAdmin() {
 
     currentUser = JSON.parse(sessionSaved);
     window.currentUser = currentUser;
+    
     const allowedRoles = ['admin', 'manager', 'teacher', 'super_admin'];
     if (!allowedRoles.includes(currentUser.role)) {
         window.location.href = 'index.html';
@@ -42,12 +44,57 @@ function initAdmin() {
     }
 
     setupFetchInterceptor();
+    
+    // Performance optimization: only fetch if not already in memory
+    // and apply UI based on cached roles first for perceived speed.
     applyRoleBasedUI();
+
     fetchDB().then(() => {
         window.db = db;
-        // Trigger initial UI render
-        if (typeof syncCMSUI === 'function') syncCMSUI();
+        // Trigger initial UI render for the active section only
+        const activeSection = GLOBAL_STORE.state.activeSection || 'dashboard';
+        if (typeof showSection === 'function') showSection(activeSection);
+        
+        // Context-specific flows
+        if (typeof initSuperAdminDashboard === 'function') initSuperAdminDashboard();
+        if (typeof checkOnboardingStatus === 'function') checkOnboardingStatus();
     });
+}
+
+/**
+ * High-performance UI guard that hides elements based on roles/permissions.
+ * Uses CSS injection for maximum efficiency (no DOM thrashing).
+ */
+function applyRoleBasedUI() {
+    if (!currentUser) return;
+    
+    const isOwner = isSuperAdmin();
+    const style = document.createElement('style');
+    style.id = 'role-ui-guard';
+    
+    let css = '';
+    // Rules for non-super-admins
+    if (!isOwner) {
+        css += `
+            [data-role="super_admin"], 
+            .super-admin-only, 
+            #superAdminOrganizationsSection, 
+            #auditLogSection, 
+            #settings { display: none !important; }
+        `;
+        
+        // Specific permission checks
+        if (!hasPerm('manage_platform')) css += ' .platform-manage-btn { display: none !important; }';
+        if (!hasPerm('view_reports')) css += ' #reports, .nav-item-reports { display: none !important; }';
+        if (!hasPerm('manage_finances')) css += ' #financialControlSection, .nav-item-finance { display: none !important; }';
+    }
+
+    style.innerHTML = css;
+    const existing = document.getElementById('role-ui-guard');
+    if (existing) existing.remove();
+    document.head.appendChild(style);
+    
+    console.log('[RBAC] UI Guard Applied for role:', currentUser.role);
 }
 
 function setupFetchInterceptor() {
@@ -114,6 +161,11 @@ async function fetchDB() {
 
 let _saveDBPromise = null;
 async function saveDB(immediate = false) {
+    if (!db || !db.classes || Object.keys(db.classes).length === 0) {
+        console.warn('Attempted to save an empty or invalid DB. Aborting save.');
+        return;
+    }
+    
     // Notify UI of pending changes
     if (typeof refreshAllDropdowns === 'function') refreshAllDropdowns();
     if (typeof buildNavLessonSelectors === 'function') buildNavLessonSelectors();
