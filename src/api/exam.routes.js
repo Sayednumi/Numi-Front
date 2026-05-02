@@ -8,6 +8,7 @@ const AIExamGenerator = require('../services/AIExamGenerator');
 const AIExamGrader = require('../services/AIExamGrader');
 const PermissionService = require('../services/PermissionService');
 const TenantManager = require('../services/TenantManager');
+const AIContextEngine = require('../services/AIContextEngine');
 
 // POST /api/v1/exam/generate
 async function generateExamHandler(req, res) {
@@ -18,7 +19,10 @@ async function generateExamHandler(req, res) {
         PermissionService.assertOrgAccess(user, user.organizationId, 'generate_ai');
         
         // Ensure tenant feature is on
-        const tenant = TenantManager.getOrganizationContext(user.id);
+        const tenant = TenantManager.getOrganizationContext(user);
+        if (!tenant) {
+            throw new Error("User has no active tenant context.");
+        }
         if (!tenant.isFeatureEnabled('examGenerator')) {
             throw new Error("Feature 'examGenerator' is disabled for your school.");
         }
@@ -44,7 +48,6 @@ async function gradeExamHandler(req, res) {
         const mockGradeCall = async () => '{"score":5,"feedback":"Good"}';
         
         // Pass aiContext to grader
-        const AIContextEngine = require('../services/AIContextEngine');
         const aiContext = AIContextEngine.getAIContext(user);
         
         const result = await AIExamGrader.gradeExamSubmission(examDef, answers, aiContext, mockGradeCall);

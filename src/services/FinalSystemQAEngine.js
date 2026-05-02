@@ -16,10 +16,10 @@ class FinalSystemQAEngine {
         this.projectRoot = projectRoot || path.resolve(__dirname, '../../');
         this.report = {
             timestamp: new Date().toISOString(),
+            readinessScore: 100,
             totalIssuesFound: 0,
             criticalIssues: 0,
-            uiBrokenElements: 0,
-            securityIssues: 0,
+            summary: { frontend: 0, backend: 0, permissions: 0, ai: 0 },
             integrationScore: 100,
             readinessForProduction: true,
             issues: []
@@ -50,16 +50,22 @@ class FinalSystemQAEngine {
         this.report.issues.push({ severity, category, message, file, autoFixable, fixAction });
         this.report.totalIssuesFound++;
         
+        // Map category to summary key
+        const catMap = { 'UI': 'frontend', 'SECURITY': 'permissions', 'INTEGRATION': 'backend', 'AI': 'ai' };
+        const summaryKey = catMap[category] || 'frontend';
+        this.report.summary[summaryKey]++;
+
         if (severity === 'CRITICAL') {
             this.report.criticalIssues++;
             this.report.readinessForProduction = false;
             this.report.integrationScore = Math.max(0, this.report.integrationScore - 10);
+            this.report.readinessScore = Math.max(0, this.report.readinessScore - 20);
         } else if (severity === 'HIGH') {
-            if (category === 'UI') this.report.uiBrokenElements++;
-            if (category === 'SECURITY') this.report.securityIssues++;
             this.report.integrationScore = Math.max(0, this.report.integrationScore - 5);
+            this.report.readinessScore = Math.max(0, this.report.readinessScore - 10);
         } else {
             this.report.integrationScore = Math.max(0, this.report.integrationScore - 1);
+            this.report.readinessScore = Math.max(0, this.report.readinessScore - 2);
         }
     }
 
@@ -85,7 +91,7 @@ class FinalSystemQAEngine {
 
             // 1. Check onclick
             const onclickMatches = content.matchAll(/onclick="([a-zA-Z0-9_]+)\(/g);
-            const ignoredFuncs = ['safeFallbackHandler', 'safeFallbackQA', 'loadReport', 'autoFix', 'exportPDF', 'toggleLiveMode', 'mockEmojiPicker', 'mockFileUpload', 'generate'];
+            const ignoredFuncs = ['alert', 'console', 'window', 'localStorage', 'sessionStorage', 'location', 'history', 'safeFallbackHandler', 'safeFallbackQA', 'loadReport', 'autoFix', 'exportPDF', 'toggleLiveMode', 'mockEmojiPicker', 'mockFileUpload', 'generate'];
             for (const match of onclickMatches) {
                 const funcName = match[1];
                 if (!definedFunctions.has(funcName) && !content.includes(`function ${funcName}`) && !ignoredFuncs.includes(funcName)) {
@@ -250,7 +256,11 @@ class FinalSystemQAEngine {
         }
 
         const outPath = path.join(this.projectRoot, 'public/final_system_report.json');
-        fs.writeFileSync(outPath, JSON.stringify(this.report, null, 2));
+        const compatPath = path.join(this.projectRoot, 'public/audit_report.json');
+        const reportJson = JSON.stringify(this.report, null, 2);
+        
+        fs.writeFileSync(outPath, reportJson);
+        fs.writeFileSync(compatPath, reportJson); // Maintain compatibility with system-health.html
 
         return this.report;
     }

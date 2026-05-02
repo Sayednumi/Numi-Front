@@ -117,10 +117,17 @@ function assignUserToOrganization(user, organizationId) {
  * Returns the TenantContext for a given user, enforcing isolation.
  */
 function getOrganizationContext(user) {
-    if (typeof user === 'object' && PermissionService.isSuperAdmin(user)) {
-        // Return a global proxy or the first tenant if needed, 
-        // but typically Super Admin bypasses isolation anyway.
-        return { isGlobal: true }; 
+    const isSuper = typeof user === 'object' ? PermissionService.isSuperAdmin(user) : false;
+    
+    if (isSuper) {
+        // Return a "God Mode" tenant context that has all features enabled
+        return {
+            organizationId: 'system',
+            organization: { name: 'نظام نيومي (المالك)', type: 'system' },
+            isGlobal: true,
+            isFeatureEnabled: () => true, // Super Admin has all features
+            features: { aiChat: true, examGenerator: true, ragMode: true, notifications: true, analytics: true, billing: true }
+        }; 
     }
     const userId = typeof user === 'object' ? user.id : user;
     const orgId = _userOrgMap[userId];

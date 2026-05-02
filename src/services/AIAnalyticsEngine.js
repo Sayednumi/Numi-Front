@@ -20,9 +20,12 @@ const TeacherProfileManager = (typeof window !== 'undefined' && window.TeacherPr
     ? window.TeacherProfileManager
     : require('../models/TeacherProfile').TeacherProfileManager;
 
+const BillingSimulator = (typeof window !== 'undefined' && window.BillingSimulator)
+    ? window.BillingSimulator
+    : require('./BillingSimulator');
+
 // Revenue & Cost Simulation Constants
-const COST_PER_1K_TOKENS = 0.002;
-const AVERAGE_BILLING_PER_ACTIVE_USER = 5.00; // Expected monthly billing per active user in USD
+const COST_PER_1K_TOKENS = BillingSimulator.PRICING.costPer1KTokens;
 
 // ─── 1. PLATFORM OVERVIEW ────────────────────────────────────────────────────
 
@@ -47,7 +50,10 @@ function getPlatformOverview() {
     }
 
     const estimatedCost = (totalTokensUsed / 1000) * COST_PER_1K_TOKENS;
-    const estimatedRevenue = totalUsers * AVERAGE_BILLING_PER_ACTIVE_USER;
+    const estimatedRevenue = BillingSimulator.calcSubscriptionCost({ 
+        studentCount: totalUsers - teachers, 
+        teacherCount: teachers 
+    });
 
     return {
         totalUsers,
@@ -96,7 +102,10 @@ function getOrganizationReport(organizationId) {
         activeUsersRate: `${activeUsersRate.toFixed(1)}%`,
         aiUsageBreakdown: aiUsageReport.breakdown,
         costPerOrganization: aiUsageReport.overview.estimatedCostUsd,
-        estimatedBilling: totalUsers * AVERAGE_BILLING_PER_ACTIVE_USER
+        estimatedBilling: BillingSimulator.calcSubscriptionCost({ 
+            studentCount: totalStudents, 
+            teacherCount: totalTeachers 
+        })
     };
 }
 
