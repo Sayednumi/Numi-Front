@@ -1,7 +1,8 @@
+import API_CLIENT from './api/api-client.js';
+import GLOBAL_STORE from './services/Store.js';
+
 /**
  * Numi Admin Dashboard — Core Initialization
- * This file handles authentication, role-based UI initialization, 
- * and global state management.
  */
 
 const SESSION_KEY = 'numi_session_user';
@@ -58,6 +59,14 @@ function initAdmin() {
         // Context-specific flows
         if (typeof initSuperAdminDashboard === 'function') initSuperAdminDashboard();
         if (typeof checkOnboardingStatus === 'function') checkOnboardingStatus();
+
+        // Non-critical UI components
+        if (window.requestIdleCallback) {
+            requestIdleCallback(() => {
+                if (typeof setupAnimations === 'function') setupAnimations();
+                if (typeof initCharts === 'function') initCharts();
+            });
+        }
     });
 }
 
@@ -223,3 +232,10 @@ window.initAdmin = initAdmin;
 window.hasPerm = hasPerm;
 window.saveDB = saveDB;
 window.fetchDB = fetchDB;
+
+// Auto-initialize when the module loads
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAdmin);
+} else {
+    initAdmin();
+}

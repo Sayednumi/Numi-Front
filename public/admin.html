@@ -2381,7 +2381,7 @@
         window.ScheduleService = ScheduleService;
         window.ScheduleWidgets = ScheduleWidgets;
     </script>
-    <script src="../src/admin_core.js"></script>
+    <script type="module" src="../src/admin_core.js"></script>
     <script>
         let socket = null;
         try {
@@ -2526,20 +2526,6 @@
                 headerName.innerHTML = `${currentUser.name || currentUser.id} <span class="role-badge">${getRoleLabel()}</span>`;
             }
 
-            // Bootstrap through Admin Core
-            if (typeof initAdmin === 'function') {
-                initAdmin();
-                
-                // Non-critical UI components
-                if (window.requestIdleCallback) {
-                    requestIdleCallback(() => {
-                        if (typeof setupAnimations === 'function') setupAnimations();
-                        if (typeof initCharts === 'function') initCharts();
-                    });
-                }
-            } else {
-                console.error('Admin Core not found!');
-            }
         });
 
         // ── Platform Management & Audit Logs ─────────────────────────────────
