@@ -715,9 +715,9 @@
                 <!-- ... remains same ... -->
                 <div style="margin-bottom: 15px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
                     <input type="text" id="student-search" class="form-control" style="max-width:280px;"
-                        placeholder="بحث بالاسم أو الكود..." oninput="renderStudents()">
-                    <select class="form-control" id="student-filter-status" style="max-width:160px;"
-                        onchange="renderStudents()">
+                        placeholder="بحث بالاسم أو الكود..." oninput="filterStudents()">
+                    <select class="form-control" id="student-status-filter" style="max-width:160px;"
+                        onchange="filterStudents()">
                         <option value="">كل الحالات</option>
                         <option value="active">نشط</option>
                         <option value="inactive">غير نشط</option>
@@ -766,6 +766,7 @@
                         </tbody>
                     </table>
                 </div>
+                <div id="student-pagination" style="margin-top:15px; padding:10px; display:flex; justify-content:center;"></div>
                 <div id="students-count" style="margin-top:15px; font-size:13px; color:var(--text-muted);"></div>
             </div>
         </div>
@@ -2440,7 +2441,7 @@
                     if (typeof loadLiveClasses === 'function') loadLiveClasses(); 
                     break;
                 case 'platform-management': 
-                    if (typeof loadPlatformManagement === 'function') loadPlatformManagement(); 
+                    loadPlatformManagement();
                     renderClasses();
                     renderGroups();
                     renderCourses();
@@ -2462,7 +2463,25 @@
             }
             
             // Scroll to top
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            window.scrollTo({ top: 0, bootstrap: 'smooth' });
+        }
+
+        function loadPlatformManagement() {
+            // Stats cards
+            const teacherCount = isSuperAdmin()
+                ? (allStudents.filter(u => u.role === 'teacher').length || 0)
+                : ((allTeachers && allTeachers.length) || allStudents.filter(u => u.role === 'teacher').length || 0);
+
+            if (document.getElementById('stats-total-teachers')) document.getElementById('stats-total-teachers').innerText = teacherCount;
+            if (document.getElementById('stats-total-students')) document.getElementById('stats-total-students').innerText = allStudents.filter(u => u.role === 'student').length;
+
+            let totalG = 0;
+            const src = db.classes || {};
+            for (let c in src) totalG += Object.keys(src[c].groups || {}).length;
+            if (document.getElementById('stats-total-groups')) document.getElementById('stats-total-groups').innerText = totalG;
+
+            loadTeachers();
+            loadAuditLogs();
         }
 
         // hasPlatformManage: true if user can access platform management section
@@ -2531,119 +2550,68 @@
             }
         }
 
-        function loadPlatformManagement() {
-            // Stats cards — Super Admin aggregates globally
-            const teacherCount = isSuperAdmin()
-                ? (allStudents.filter(u => u.role === 'teacher').length || 0)
-                : ((allTeachers && allTeachers.length) || allStudents.filter(u => u.role === 'teacher').length || 0);
-
-            const el = document.getElementById('stats-total-teachers');
-            if (el) el.innerText = teacherCount;
-
-            const se = document.getElementById('stats-total-students');
-            if (se) se.innerText = allStudents.filter(u => u.role === 'student').length;
-
-            let totalG = 0;
-            const src = (isSuperAdmin() ? {} : db.classes) || db.classes || {};
-            for (let c in src) totalG += Object.keys(src[c].groups || {}).length;
-            const ge = document.getElementById('stats-total-groups');
-            if (ge) ge.innerText = totalG;
-
-            // Load tables (always refresh)
-            loadTeachers();
-            loadAuditLogs();
-        }
-
-        // ── Students from MongoDB ────────────────────────────────────────────
         let allStudents = [];
+        let studentPage = 1;
+        const studentPageSize = 20;
 
-        let _isLoadingStudents = false;
         async function loadStudents() {
-            if (_isLoadingStudents) return;
-            _isLoadingStudents = true;
+            const list = document.getElementById('students-list');
+            if (list) list.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;"><i class="fas fa-spinner fa-spin"></i> جارٍ التحميل...</td></tr>';
+            
             try {
-                // NOTE: fetchDB() is intentionally NOT called here.
-                // The correct startup sequence (window.onload) calls fetchDB() before loadStudents().
-                // Calling it here would cause a redundant double network trip on every page load.
-                // If db needs refreshing, call fetchDB() explicitly before calling loadStudents().
-                const url = isSuperAdmin()
-                    ? `${API_URL}/users?scope=global`
-                    : `${API_URL}/users`;
+                const url = isSuperAdmin() ? `${API_URL}/users?scope=global` : `${API_URL}/users`;
                 const res = await fetch(url);
-                if (res.ok) {
-                    allStudents = await res.json();
+                const json = await res.json();
+                if (json.success || Array.isArray(json)) {
+                    allStudents = Array.isArray(json) ? json : json.data;
+                    studentPage = 1;
                     renderStudents();
-                    const el = document.getElementById('stats-students');
-                    if (el) el.innerText = (allStudents || []).filter(u => u.role === 'student').length;
                 }
-            } catch (err) {
-                console.error('Failed to load students', err);
-                const tbody = document.getElementById('students-list');
-                if (tbody) tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--danger);padding:30px;">فشل تحميل بيانات الطلاب</td></tr>';
-            } finally {
-                _isLoadingStudents = false;
-            }
+            } catch (err) { console.error('loadStudents Error:', err); }
         }
 
         function renderStudents() {
-            const search = (document.getElementById('student-search')?.value || '').toLowerCase();
-            const statusFilter = document.getElementById('student-filter-status')?.value || '';
+            const search = (document.getElementById('student-search')?.value || '').toLowerCase().trim();
+            const statusFilter = (document.getElementById('student-status-filter') || document.getElementById('student-filter-status'))?.value || '';
             const tbody = document.getElementById('students-list');
             const abody = document.getElementById('admins-list');
 
-            // Render Admins
+            // 1. Render Admins
             const admins = allStudents.filter(u => u.role === 'admin');
-            const tablePlaceholder = document.getElementById('table-placeholder');
-            
-            if (tablePlaceholder) {
-                // Sample Data as requested for initial testing
-                const sampleData = [
-                    { id: '123', name: "Ahmed", phone: "01000000000", password: "123", permissions: { view_students: true } }
-                ];
-                
-                const columns = [
-                    { key: "name", label: "الاسم" },
-                    { key: "phone", label: "رقم الهاتف (الاسم المستخدم)" },
-                    { key: "password", label: "كلمة المرور", render: (u) => u.password || '******' },
-                    { key: "permissions", label: "الصلاحيات", render: (u) => {
-                        let permsObj = u.permissions || {};
-                        let permsAr = [];
-                        if (permsObj.view_students || Object.keys(permsObj).length === 0) permsAr.push('استعراض الطلاب');
-                        if (permsObj.edit_student || permsObj.delete_student) permsAr.push('تعديل وحذف طلاب');
-                        if (permsObj.manage_structure) permsAr.push('تعديل الهيكل');
-                        if (permsObj.manage_lessons) permsAr.push('إدارة الدروس');
-                        if (permsObj.view_qbank || Object.keys(permsObj).length === 0) permsAr.push('بنك الأسئلة');
-                        if (permsObj.view_reports) permsAr.push('التقارير');
-                        if (permsObj.manage_admins) permsAr.push('إدارة المديرين');
-                        if (permsAr.length === 0) permsAr.push('بدون صلاحيات');
-                        return permsAr.map(p => `<span style="background:rgba(109,58,238,0.2); border:1px solid rgba(109,58,238,0.4); color:#fff; padding:2px 6px; border-radius:4px; font-size:11px; margin-bottom:4px; display:inline-block; margin-left:4px;">${p}</span>`).join('');
-                    }},
-                    { key: "actions", label: "إجراءات", render: (u) => `
-                        <button class="btn btn-sm" style="background:#3b82f6; color:white;" onclick="editAdmin('${u.id}')" title="تعديل"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteAdmin('${u.id}','${u.name}')" title="حذف"><i class="fas fa-trash"></i></button>
-                    `}
-                ];
-
-                // Inject component using real data (fallback to sample data if empty to show the component structure)
-                const dataToRender = admins.length > 0 ? admins : sampleData;
-                tablePlaceholder.innerHTML = renderDataTable(dataToRender, columns);
+            if (abody) {
+                abody.innerHTML = admins.map(u => `
+                    <tr>
+                        <td>${u.name}</td>
+                        <td>${u.phone}</td>
+                        <td><code style="color:var(--primary);">${u.password || '******'}</code></td>
+                        <td>
+                            <button class="btn btn-sm" onclick="editAdmin('${u.id}')"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteAdmin('${u.id}')"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `).join('');
             }
 
-            // Render Students
+            // 2. Render Students with Pagination
             let filtered = allStudents.filter(u => u.role === 'student');
             if (search) filtered = filtered.filter(u =>
                 (u.name || '').toLowerCase().includes(search) || (u.id || '').toLowerCase().includes(search) || (u.phone || '').includes(search)
             );
             if (statusFilter) filtered = filtered.filter(u => u.status === statusFilter);
 
-            if (!filtered.length) {
+            const totalFiltered = filtered.length;
+            const totalPages = Math.ceil(totalFiltered / studentPageSize);
+            const start = (studentPage - 1) * studentPageSize;
+            const pageData = filtered.slice(start, start + studentPageSize);
+
+            if (!pageData.length) {
                 if (tbody) tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--text-muted);padding:30px;">لا يوجد طلاب مطابقون</td></tr>`;
-                const countEl = document.getElementById('students-count');
-                if (countEl) countEl.textContent = '';
+                updateStudentPagination(0, 0, 0);
                 return;
             }
+
             if (tbody) {
-                tbody.innerHTML = filtered.map(u => {
+                tbody.innerHTML = pageData.map(u => {
                     const avatarHtml = u.avatar
                         ? `<img src="${u.avatar}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid var(--primary-light);" title="${u.name || ''}">`
                         : `<div style="width:40px;height:40px;border-radius:50%;background:var(--bg-elevated);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;border:2px solid var(--border);color:var(--text-muted);">${(u.name || '?').charAt(0)}</div>`;
@@ -2692,8 +2660,34 @@
                     </tr>`;
                 }).join('');
             }
-            const countEl = document.getElementById('students-count');
-            if (countEl) countEl.textContent = `إجمالي النتائج: ${filtered.length} طالب`;
+            updateStudentPagination(studentPage, totalPages, totalFiltered);
+        }
+
+        function updateStudentPagination(current, total, totalRecords) {
+            const container = document.getElementById('student-pagination');
+            if (!container) return;
+            if (total <= 1) {
+                container.innerHTML = `<span style="font-size:12px; color:var(--text-muted);">عرض ${totalRecords} طالب</span>`;
+                return;
+            }
+            container.innerHTML = `
+                <div style="display:flex; align-items:center; gap:15px; font-size:13px;">
+                    <button class="btn btn-sm" ${current === 1 ? 'disabled' : ''} onclick="changeStudentPage(-1)">السابق</button>
+                    <span>صفحة ${current} من ${total}</span>
+                    <button class="btn btn-sm" ${current === total ? 'disabled' : ''} onclick="changeStudentPage(1)">التالي</button>
+                </div>
+            `;
+        }
+
+        function changeStudentPage(delta) {
+            studentPage += delta;
+            renderStudents();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function filterStudents() {
+            studentPage = 1;
+            renderStudents();
         }
 
         // ── Teachers Logic ────────────────────────────────────────────
