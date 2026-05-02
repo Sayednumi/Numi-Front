@@ -150,13 +150,18 @@ async function fetchDB() {
     GLOBAL_STORE.setLoading('db', true);
 
     try {
+        // Optimized: Only fetch what's needed for the dashboard/sidebar first
         const data = await API_CLIENT.get('/platform-data');
-        if (data && data.classes) {
+        if (data) {
             db = data;
             window.db = db;
             GLOBAL_STORE.setState({ db: data });
             GLOBAL_STORE.persistCache();
-            console.log('[Core] DB synced with server');
+            console.log('[Core] DB fully synced');
+            
+            // Refresh UI components that depend on DB
+            if (typeof updateStats === 'function') updateStats();
+            if (typeof refreshAllDropdowns === 'function') refreshAllDropdowns();
         }
     } catch (err) {
         console.error('Fetch DB failed:', err);

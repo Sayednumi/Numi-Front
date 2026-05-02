@@ -2586,31 +2586,42 @@
         let studentPage = 1;
         const studentPageSize = 20;
 
-        async function loadStudents() {
+        let studentTotalCount = 0;
+        let studentTotalPages = 1;
+
+        async function loadStudents(page = 1) {
             const list = document.getElementById('students-list');
             if (list) list.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;"><i class="fas fa-spinner fa-spin"></i> جارٍ التحميل...</td></tr>';
             
+            studentPage = page;
+            const search = (document.getElementById('student-search')?.value || '').trim();
+            const statusFilter = (document.getElementById('student-status-filter') || document.getElementById('student-filter-status'))?.value || '';
+
             try {
-                const url = isSuperAdmin() ? `${API_URL}/users?scope=global` : `${API_URL}/users`;
+                let url = isSuperAdmin() ? `${API_URL}/users?scope=global` : `${API_URL}/users`;
+                url += `&page=${page}&limit=${studentPageSize}`;
+                if (search) url += `&search=${encodeURIComponent(search)}`;
+                if (statusFilter) url += `&status=${statusFilter}`;
+
                 const res = await fetch(url);
                 const json = await res.json();
-                if (json.success || Array.isArray(json)) {
-                    allStudents = Array.isArray(json) ? json : json.data;
-                    studentPage = 1;
+                
+                if (json.success) {
+                    allStudents = json.data;
+                    studentTotalCount = json.pagination.total;
+                    studentTotalPages = json.pagination.pages;
                     renderStudents();
                 }
             } catch (err) { console.error('loadStudents Error:', err); }
         }
 
         function renderStudents() {
-            const search = (document.getElementById('student-search')?.value || '').toLowerCase().trim();
-            const statusFilter = (document.getElementById('student-status-filter') || document.getElementById('student-filter-status'))?.value || '';
             const tbody = document.getElementById('students-list');
             const abody = document.getElementById('admins-list');
 
-            // 1. Render Admins
+            // 1. Render Admins (Separate fetch if needed, for now from current page if any)
             const admins = allStudents.filter(u => u.role === 'admin');
-            if (abody) {
+            if (abody && admins.length > 0) {
                 abody.innerHTML = admins.map(u => `
                     <tr>
                         <td>${u.name}</td>
@@ -2624,26 +2635,17 @@
                 `).join('');
             }
 
-            // 2. Render Students with Pagination
-            let filtered = allStudents.filter(u => u.role === 'student');
-            if (search) filtered = filtered.filter(u =>
-                (u.name || '').toLowerCase().includes(search) || (u.id || '').toLowerCase().includes(search) || (u.phone || '').includes(search)
-            );
-            if (statusFilter) filtered = filtered.filter(u => u.status === statusFilter);
-
-            const totalFiltered = filtered.length;
-            const totalPages = Math.ceil(totalFiltered / studentPageSize);
-            const start = (studentPage - 1) * studentPageSize;
-            const pageData = filtered.slice(start, start + studentPageSize);
-
-            if (!pageData.length) {
+            // 2. Render Students (allStudents is already a single page)
+            const students = allStudents.filter(u => u.role === 'student' || !u.role);
+            
+            if (!students.length) {
                 if (tbody) tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--text-muted);padding:30px;">لا يوجد طلاب مطابقون</td></tr>`;
                 updateStudentPagination(0, 0, 0);
                 return;
             }
 
             if (tbody) {
-                tbody.innerHTML = pageData.map(u => {
+                tbody.innerHTML = students.map(u => {
                     const avatarHtml = u.avatar
                         ? `<img src="${u.avatar}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid var(--primary-light);" title="${u.name || ''}">`
                         : `<div style="width:40px;height:40px;border-radius:50%;background:var(--bg-elevated);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;border:2px solid var(--border);color:var(--text-muted);">${(u.name || '?').charAt(0)}</div>`;
@@ -2692,7 +2694,7 @@
                     </tr>`;
                 }).join('');
             }
-            updateStudentPagination(studentPage, totalPages, totalFiltered);
+            updateStudentPagination(studentPage, studentTotalPages, studentTotalCount);
         }
 
         function updateStudentPagination(current, total, totalRecords) {
@@ -2712,14 +2714,12 @@
         }
 
         function changeStudentPage(delta) {
-            studentPage += delta;
-            renderStudents();
+            loadStudents(studentPage + delta);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function filterStudents() {
-            studentPage = 1;
-            renderStudents();
+            loadStudents(1);
         }
 
         // ── Teachers Logic ────────────────────────────────────────────
