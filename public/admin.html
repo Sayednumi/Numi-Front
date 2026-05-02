@@ -4,7 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Numi Admin Dashboard</title>
+    <title>Numi Admin | السيطرة الكاملة</title>
+    
+    <!-- Performance Optimization: Resource Hinting -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="https://numi-production-7484.up.railway.app">
+
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Kufi+Arabic:wght@400;700&display=swap" rel="stylesheet">
     <link rel="icon" href="icon-192x192.png">
     <link rel="manifest" href="manifest.json">
     <meta name="mobile-web-app-capable" content="yes">
@@ -41,6 +49,19 @@
         if (localStorage.getItem('numi_super_admin_backup')) {
             document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('super-admin-return-banner').style.display = 'block';
+                
+                // Defer non-critical UI initialization to idle periods
+                if (window.requestIdleCallback) {
+                    requestIdleCallback(() => {
+                        initCharts();
+                        setupLottieAnimations();
+                    });
+                } else {
+                    setTimeout(() => {
+                        initCharts();
+                        setupLottieAnimations();
+                    }, 1000);
+                }
             });
         }
     </script>
@@ -2480,8 +2501,11 @@
             for (let c in src) totalG += Object.keys(src[c].groups || {}).length;
             if (document.getElementById('stats-total-groups')) document.getElementById('stats-total-groups').innerText = totalG;
 
-            loadTeachers();
-            loadAuditLogs();
+            // Parallel Load non-blocking data
+            Promise.all([
+                loadTeachers(),
+                loadAuditLogs()
+            ]).catch(err => console.error('Parallel load failed', err));
         }
 
         // hasPlatformManage: true if user can access platform management section
@@ -2505,6 +2529,14 @@
             // Bootstrap through Admin Core
             if (typeof initAdmin === 'function') {
                 initAdmin();
+                
+                // Non-critical UI components
+                if (window.requestIdleCallback) {
+                    requestIdleCallback(() => {
+                        if (typeof setupAnimations === 'function') setupAnimations();
+                        if (typeof initCharts === 'function') initCharts();
+                    });
+                }
             } else {
                 console.error('Admin Core not found!');
             }
