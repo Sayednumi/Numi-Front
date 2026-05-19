@@ -50,24 +50,7 @@ function initAdmin() {
     // and apply UI based on cached roles first for perceived speed.
     applyRoleBasedUI();
 
-    fetchDB().then(() => {
-        window.db = db;
-        // Trigger initial UI render for the active section only
-        const activeSection = GLOBAL_STORE.state.activeSection || 'dashboard';
-        if (typeof showSection === 'function') showSection(activeSection);
-        
-        // Context-specific flows
-        if (typeof initSuperAdminDashboard === 'function') initSuperAdminDashboard();
-        if (typeof checkOnboardingStatus === 'function') checkOnboardingStatus();
-
-        // Non-critical UI components
-        if (window.requestIdleCallback) {
-            requestIdleCallback(() => {
-                if (typeof setupAnimations === 'function') setupAnimations();
-                if (typeof initCharts === 'function') initCharts();
-            });
-        }
-    });
+    fetchDB();
 }
 
 /**
@@ -159,7 +142,6 @@ async function fetchDB() {
     GLOBAL_STORE.setLoading('db', true);
 
     try {
-        // Optimized: Only fetch what's needed for the dashboard/sidebar first
         const data = await API_CLIENT.get('/platform-data');
         if (data) {
             db = data;
@@ -167,15 +149,35 @@ async function fetchDB() {
             GLOBAL_STORE.setState({ db: data });
             GLOBAL_STORE.persistCache();
             console.log('[Core] DB fully synced');
-            
-            // Refresh UI components that depend on DB
-            if (typeof updateStats === 'function') updateStats();
-            if (typeof refreshAllDropdowns === 'function') refreshAllDropdowns();
         }
     } catch (err) {
         console.error('Fetch DB failed:', err);
+        // Fallback to cache if available
+        if (!db || Object.keys(db.classes).length === 0) {
+             const cache = localStorage.getItem('numi_db_cache');
+             if (cache) db = JSON.parse(cache);
+        }
     } finally {
         GLOBAL_STORE.setLoading('db', false);
+        
+        // Trigger UI render regardless of fetch success (using cache or empty state)
+        if (typeof updateStats === 'function') updateStats();
+        if (typeof refreshAllDropdowns === 'function') refreshAllDropdowns();
+        
+        const activeSection = GLOBAL_STORE.state.activeSection || 'dashboard';
+        if (typeof showSection === 'function') showSection(activeSection);
+
+        // Context-specific flows
+        if (typeof initSuperAdminDashboard === 'function') initSuperAdminDashboard();
+        if (typeof checkOnboardingStatus === 'function') checkOnboardingStatus();
+
+        // Non-critical UI components
+        if (window.requestIdleCallback) {
+            requestIdleCallback(() => {
+                if (typeof setupAnimations === 'function') setupAnimations();
+                if (typeof initCharts === 'function') initCharts();
+            });
+        }
     }
 }
 
