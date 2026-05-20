@@ -10,10 +10,18 @@ const API_CLIENT = {
 
     getHeaders() {
         const session = JSON.parse(localStorage.getItem('numi_session_user') || '{}');
-        return {
+        const headers = {
             'Content-Type': 'application/json',
-            'x-user-id': session.id || ''
+            'x-user-id': session.id || '' // Legacy fallback for backwards compatibility
         };
+
+        // Attach JWT token if available
+        const token = session.token || localStorage.getItem('numi_auth_token');
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        return headers;
     },
 
     async request(endpoint, options = {}) {

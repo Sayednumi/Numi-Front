@@ -27,8 +27,13 @@ window.fetch = function() {
         try {
             const u = JSON.parse(userStr);
             if (u && u.id) {
-                config.headers['x-user-id'] = u.id;
+                config.headers['x-user-id'] = u.id; // Legacy fallback
                 if (u.tenantId) activeTenantId = u.tenantId;
+            }
+            // Attach JWT token if available
+            const token = u.token || localStorage.getItem('numi_auth_token');
+            if (token && !config.headers['Authorization']) {
+                config.headers['Authorization'] = `Bearer ${token}`;
             }
         } catch(e) {}
     }
@@ -185,6 +190,11 @@ async function login() {
         const data = await res.json();
         if (data.success) {
             currentUser = data.user;
+            // Save token separately for quick access and embed in session
+            if (data.token) {
+                localStorage.setItem('numi_auth_token', data.token);
+                currentUser.token = data.token;
+            }
             localStorage.setItem(SESSION_KEY, JSON.stringify(currentUser));
             err.style.display = 'none';
             if (currentUser.role === 'admin') {
@@ -244,6 +254,7 @@ function logout() {
     currentUser = null;
     localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(CHAT_KEY);
+    localStorage.removeItem('numi_auth_token'); // Clear JWT token
     document.getElementById('chat-history').innerHTML = '<div class="msg bot">جاهز للفهم العميق؟ 💪 اسأل أي سؤال، وسنستكشف الإجابة معًا!</div>';
     document.getElementById('app').classList.add('hidden');
     document.getElementById('login-page').style.display = 'flex';

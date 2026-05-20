@@ -95,7 +95,13 @@ function setupFetchInterceptor() {
         let [resource, config] = arguments;
         if (!config) config = {};
         if (!config.headers) config.headers = {};
-        config.headers['x-user-id'] = currentUser.id;
+        config.headers['x-user-id'] = currentUser.id; // Legacy fallback
+
+        // Attach JWT token if available
+        const token = currentUser.token || localStorage.getItem('numi_auth_token');
+        if (token && !config.headers['Authorization']) {
+            config.headers['Authorization'] = `Bearer ${token}`;
+        }
 
         if (typeof resource === 'string' && resource.startsWith(API_URL)) {
             try {
